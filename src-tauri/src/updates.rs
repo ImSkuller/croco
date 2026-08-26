@@ -1,5 +1,7 @@
-// App self-update: checks ImSkuller/croco-releases for a newer release,
-// downloads and silently runs the installer, then relaunches. Also the
+// App self-update: checks ImSkuller/croco (the main repo's own GitHub
+// Releases, now that the project is open-source and no longer needs a
+// separate private releases repo) for a newer release, downloads and
+// silently runs the installer, then relaunches. Also the
 // GitHub OAuth device flow used by Settings -> GitHub "Login with GitHub"
 // (separate from the personal-access-token field, which stays the primary
 // path since it works without an OAuth App being configured).
@@ -38,7 +40,7 @@ pub async fn check_for_updates(app: AppHandle) -> Result<Value, String> {
 
     let client  = reqwest::Client::new();
     let mut req = client
-        .get("https://api.github.com/repos/ImSkuller/croco-releases/releases/latest")
+        .get("https://api.github.com/repos/ImSkuller/croco/releases/latest")
         .header("User-Agent", crate::UA)
         .header("Accept", "application/vnd.github.v3+json")
         .timeout(std::time::Duration::from_secs(8));

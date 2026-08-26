@@ -3,15 +3,15 @@
 A fast, minimal desktop project manager built for developers. ~8 MB binary, no browser engine overhead. Open source, built with Tauri + React.
 
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
-![Version](https://img.shields.io/github/v/release/ImSkuller/croco-releases?label=latest)
-![Downloads](https://img.shields.io/github/downloads/ImSkuller/croco-releases/total?label=downloads)
+![Version](https://img.shields.io/github/v/release/ImSkuller/croco?label=latest)
+![Downloads](https://img.shields.io/github/downloads/ImSkuller/croco/total?label=downloads)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 Cross-platform (macOS/Linux) support is active work-in-progress for v2 — the codebase already builds a 3-OS matrix in CI, but only Windows has had an actual tested release so far.
 
 ## Download
 
-Go to the [**Releases**](https://github.com/ImSkuller/croco-releases/releases) tab and download the installer for your platform.
+Go to the [**Releases**](https://github.com/ImSkuller/croco/releases) tab and download the installer for your platform.
 
 | Platform | File |
 |---|---|
@@ -76,7 +76,7 @@ Issues and pull requests are welcome. This is a young open-source project — if
 
 ## Changelog
 
-Full version history and release notes live on the [**Releases**](https://github.com/ImSkuller/croco-releases/releases) page — every release is tagged there with its own notes, so this README doesn't need to be updated each time.
+Full version history and release notes live on the [**Releases**](https://github.com/ImSkuller/croco/releases) page — every release is tagged there with its own notes, so this README doesn't need to be updated each time.
 
 ## License
 
@@ -84,4 +84,4 @@ MIT — see [LICENSE](LICENSE).
 
 ## Support
 
-Found a bug or have a suggestion? Open an [issue](https://github.com/ImSkuller/croco-releases/issues).
+Found a bug or have a suggestion? Open an [issue](https://github.com/ImSkuller/croco/issues).
