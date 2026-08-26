@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1270" height="760" viewBox="0 0 1270 760">
+  <defs>
+    <pattern id="grid" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.8" fill="#1c1c1c"/>
+    </pattern>
+    <radialGradient id="glowGreen" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3dba4e" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#3dba4e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1270" height="760" fill="#080808"/>
+  <rect width="1270" height="760" fill="url(#grid)"/>
+
+  <!-- Ambient green glow behind logo -->
+  <ellipse cx="635" cy="290" rx="300" ry="230" fill="url(#glowGreen)"/>
+
+  <!-- App icon: dark rounded square -->
+  <rect x="547" y="130" width="176" height="176" rx="36" fill="#141414"/>
+
+  <!-- === Crocodile Face === -->
+
+  <!-- Main head -->
+  <circle cx="635" cy="218" r="70" fill="#3dba4e"/>
+
+  <!-- Snout / lower face -->
+  <ellipse cx="635" cy="246" rx="47" ry="33" fill="#52cc66"/>
+
+  <!-- Mouth crease -->
+  <path d="M592 240 Q635 245 678 240" stroke="#2a8c3c" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+
+  <!-- Left eye white -->
+  <circle cx="607" cy="201" r="19" fill="#ffffff"/>
+  <!-- Right eye white -->
+  <circle cx="663" cy="201" r="19" fill="#ffffff"/>
+
+  <!-- Left pupil -->
+  <circle cx="610" cy="204" r="10" fill="#111111"/>
+  <!-- Right pupil -->
+  <circle cx="666" cy="204" r="10" fill="#111111"/>
+
+  <!-- Eye highlights -->
+  <circle cx="605" cy="199" r="4" fill="#ffffff"/>
+  <circle cx="661" cy="199" r="4" fill="#ffffff"/>
+
+  <!-- Nostrils -->
+  <circle cx="622" cy="232" r="5" fill="#2a8c3c"/>
+  <circle cx="648" cy="232" r="5" fill="#2a8c3c"/>
+
+  <!-- Teeth -->
+  <rect x="614" y="240" width="13" height="15" rx="3" fill="#ffffff"/>
+  <rect x="643" y="240" width="13" height="15" rx="3" fill="#ffffff"/>
+
+  <!-- === Text === -->
+
+  <!-- "Croco" in green -->
+  <text
+    x="635" y="415"
+    font-family="'Segoe UI', 'Arial Black', Arial, sans-serif"
+    font-size="112"
+    font-weight="800"
+    fill="#3dba4e"
+    text-anchor="middle"
+    letter-spacing="-2">Croco</text>
+
+  <!-- Tagline in white -->
+  <text
+    x="635" y="470"
+    font-family="'Segoe UI', Arial, sans-serif"
+    font-size="27"
+    font-weight="300"
+    fill="#e0e0e0"
+    text-anchor="middle"
+    letter-spacing="1.5">Be on track and organized</text>
+
+  <!-- Thin divider -->
+  <line x1="520" y1="496" x2="750" y2="496" stroke="#252525" stroke-width="1"/>
+
+  <!-- Platform text in grey -->
+  <text
+    x="635" y="526"
+    font-family="'Segoe UI', Arial, sans-serif"
+    font-size="17"
+    font-weight="400"
+    fill="#4a4a4a"
+    text-anchor="middle"
+    letter-spacing="4">AVAILABLE FOR WINDOWS</text>
+</svg>

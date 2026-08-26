@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Background rounded square -->
+  <rect width="1024" height="1024" rx="220" fill="#1a1a1a"/>
+
+  <!-- Croc body / head - main green ellipse -->
+  <ellipse cx="512" cy="560" rx="340" ry="310" fill="#4CAF50"/>
+
+  <!-- Eye socket bumps -->
+  <circle cx="370" cy="370" r="110" fill="#388E3C"/>
+  <circle cx="654" cy="370" r="110" fill="#388E3C"/>
+
+  <!-- Eye whites -->
+  <circle cx="370" cy="370" r="80" fill="#ffffff"/>
+  <circle cx="654" cy="370" r="80" fill="#ffffff"/>
+
+  <!-- Pupils -->
+  <circle cx="388" cy="390" r="46" fill="#111111"/>
+  <circle cx="672" cy="390" r="46" fill="#111111"/>
+
+  <!-- Eye highlights -->
+  <circle cx="360" cy="358" r="18" fill="rgba(255,255,255,0.8)"/>
+  <circle cx="644" cy="358" r="18" fill="rgba(255,255,255,0.8)"/>
+
+  <!-- Snout / mouth area -->
+  <ellipse cx="512" cy="680" rx="210" ry="140" fill="#66BB6A"/>
+
+  <!-- Jaw line -->
+  <path d="M302 660 Q512 610 722 660" stroke="#2E7D32" stroke-width="14" fill="none" stroke-linecap="round"/>
+
+  <!-- Nostrils -->
+  <circle cx="456" cy="610" r="26" fill="#2E7D32"/>
+  <circle cx="568" cy="610" r="26" fill="#2E7D32"/>
+
+  <!-- Teeth top -->
+  <rect x="418" y="668" width="52" height="72" rx="22" fill="#ffffff"/>
+  <rect x="554" y="668" width="52" height="72" rx="22" fill="#ffffff"/>
+
+  <!-- Subtle shine on eye sockets -->
+  <ellipse cx="370" cy="360" rx="30" ry="18" fill="rgba(255,255,255,0.1)"/>
+  <ellipse cx="654" cy="360" rx="30" ry="18" fill="rgba(255,255,255,0.1)"/>
+</svg>

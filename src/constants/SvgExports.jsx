@@ -1,0 +1,7 @@
+export { default as GridIcon } from './Svgs/GridIcon.jsx'
+export { default as ListIcon } from './Svgs/ListIcon.jsx'
+export { default as Logo } from './Svgs/Logo.jsx'
+export { default as NoteIcon } from './Svgs/NoteIcon.jsx'
+export { default as SearchIcon } from './Svgs/SearchIcon.jsx'
+export { default as SettingsIcon } from './Svgs/SettingsIcon.jsx'
+export { default as TodoIcon } from './Svgs/TodoIcon.jsx'
