@@ -133,7 +133,7 @@ async function main() {
     await callApi(driver, 'todos.create', { title: 'P1 c', priority: 'high' })
     await callApi(driver, 'todos.create', { title: 'P1 d', priority: 'high' })
     // Same cross-page invalidation event the app itself dispatches after
-    // mutations (CLAUDE.md) — makes the store refetch and Dashboard re-render.
+    // mutations — makes the store refetch and Dashboard re-render.
     await driver.executeScript("window.dispatchEvent(new CustomEvent('croco:data-changed'))")
 
     // SectionHeader applies text-transform: uppercase in CSS, and

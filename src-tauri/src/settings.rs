@@ -1,9 +1,10 @@
 // Settings storage: a single JSON file (settings.json in app_data_dir),
 // always read through a deep-merge onto default_settings() so new nested
 // keys added in later versions show up for upgrading installs without a
-// migration step. See CLAUDE.md's data-model notes for the storage-backend
-// split (settings.json itself is always plain JSON, independent of
-// settings.app.storageBackend which only affects projects/notes/todos).
+// migration step. See ARCHITECTURE.md's storage-backends section for the
+// storage-backend split (settings.json itself is always plain JSON,
+// independent of settings.app.storageBackend which only affects
+// projects/notes/todos).
 
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use serde_json::{json, Value};

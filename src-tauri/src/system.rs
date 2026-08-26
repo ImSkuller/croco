@@ -37,10 +37,12 @@ pub fn system_open_in_app_browser(app: AppHandle, label: String, url: String, ti
         .title(title)
         .inner_size(1200.0, 840.0)
         .min_inner_size(600.0, 400.0);
-    // drag_and_drop() only exists on Windows in the tauri crate (it's a
-    // WebView2-specific quirk — see CLAUDE.md's dragDropEnabled note; other
-    // platforms' webviews don't intercept HTML5 drag events natively, so
-    // there's nothing to disable there and the method isn't compiled in).
+    // drag_and_drop() only exists on Windows in the tauri crate — it's a
+    // WebView2-specific quirk. WebView2 intercepts HTML5 drag gestures at
+    // the native level unless drag-and-drop is explicitly disabled on the
+    // window; other platforms' webviews don't intercept HTML5 drag events
+    // natively, so there's nothing to disable there and the method isn't
+    // compiled in.
     #[cfg(windows)]
     let builder = builder.drag_and_drop(false);
     builder.build().map_err(|e| e.to_string())?;
