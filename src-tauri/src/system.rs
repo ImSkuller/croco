@@ -37,10 +37,12 @@ pub fn system_open_in_app_browser(app: AppHandle, label: String, url: String, ti
         .title(title)
         .inner_size(1200.0, 840.0)
         .min_inner_size(600.0, 400.0);
-    // drag_and_drop() only exists on Windows in the tauri crate (it's a
-    // WebView2-specific quirk — see CLAUDE.md's dragDropEnabled note; other
-    // platforms' webviews don't intercept HTML5 drag events natively, so
-    // there's nothing to disable there and the method isn't compiled in).
+    // drag_and_drop() only exists on Windows in the tauri crate — it's a
+    // WebView2-specific quirk. WebView2 intercepts HTML5 drag gestures at
+    // the native level unless drag-and-drop is explicitly disabled on the
+    // window; other platforms' webviews don't intercept HTML5 drag events
+    // natively, so there's nothing to disable there and the method isn't
+    // compiled in.
     #[cfg(windows)]
     let builder = builder.drag_and_drop(false);
     builder.build().map_err(|e| e.to_string())?;
@@ -201,7 +203,118 @@ pub fn app_exit(app: AppHandle) {
     app.exit(0);
 }
 
+// Directories a write/delete must never land in even though this command
+// has no single fixed root (its only real caller, Ideas.jsx's scribble
+// export, lets the user save anywhere via a native save dialog — an
+// OS-level trust boundary JS can't forge, but one that also can't be
+// verified from inside a Tauri command). This is a denylist of concrete
+// system paths, not a substitute for CSP/DOMPurify keeping untrusted
+// content from ever reaching this command in the first place.
+pub(crate) fn sensitive_system_dirs() -> Vec<std::path::PathBuf> {
+    let mut dirs = Vec::new();
+    #[cfg(windows)]
+    {
+        if let Ok(windir) = std::env::var("WINDIR") {
+            dirs.push(std::path::PathBuf::from(windir));
+        }
+        for var in ["ProgramFiles", "ProgramFiles(x86)", "ProgramData"] {
+            if let Ok(p) = std::env::var(var) {
+                dirs.push(std::path::PathBuf::from(p));
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        for p in ["/etc", "/usr", "/bin", "/sbin", "/boot", "/System", "/Library", "/private", "/var"] {
+            dirs.push(std::path::PathBuf::from(p));
+        }
+    }
+    dirs
+}
+
+// Extensions that can achieve code execution on their own (double-click,
+// shell association, or being dropped in a startup/autorun location).
+// Blocked outside the app's own trusted roots — a canvas-export PNG never
+// needs one of these, and nothing else calls this command today.
+const DANGEROUS_EXTENSIONS: &[&str] = &[
+    "exe", "dll", "bat", "cmd", "com", "scr", "msi", "ps1", "vbs", "vbe",
+    "js", "jse", "wsf", "wsh", "app", "sh", "command",
+];
+
+// Guards recursive-delete callers (projects_remove_local_files today)
+// against a corrupted/malicious `paths.projectRoot` turning "remove this
+// project's local files" into "wipe a drive" — a shallow or well-known
+// directory almost certainly isn't a real project folder.
+pub(crate) fn assert_safe_delete_root(path: &Path) -> Result<(), String> {
+    let canon = path.canonicalize().map_err(|e| e.to_string())?;
+    if canon.parent().is_none() {
+        return Err("Refusing to delete a filesystem root".into());
+    }
+    if let Some(home) = dirs::home_dir() {
+        if let Ok(canon_home) = home.canonicalize() {
+            if canon == canon_home {
+                return Err("Refusing to delete the home directory".into());
+            }
+        }
+    }
+    for sensitive in sensitive_system_dirs() {
+        if let Ok(canon_sensitive) = sensitive.canonicalize() {
+            if canon == canon_sensitive || canon_sensitive.starts_with(&canon) {
+                return Err("Refusing to delete a system directory".into());
+            }
+        }
+    }
+    Ok(())
+}
+
+fn assert_write_target_safe(app: &AppHandle, path: &Path) -> Result<(), String> {
+    let path_str = path.to_string_lossy();
+    #[cfg(windows)]
+    if path_str.starts_with(r"\\") {
+        return Err("Network (UNC) paths are not allowed".into());
+    }
+    if !path.is_absolute() {
+        return Err("Path must be absolute".into());
+    }
+
+    let parent = path.parent().ok_or("Refusing to write to a filesystem root")?;
+    let canon_parent = parent.canonicalize().map_err(|_| "Target directory does not exist".to_string())?;
+    if canon_parent.parent().is_none() {
+        return Err("Refusing to write directly into a filesystem root".into());
+    }
+    for sensitive in sensitive_system_dirs() {
+        if let Ok(canon_sensitive) = sensitive.canonicalize() {
+            if canon_parent.starts_with(&canon_sensitive) {
+                return Err("Refusing to write into a system directory".into());
+            }
+        }
+    }
+
+    let settings = crate::read_settings(app);
+    let trusted_roots = [
+        Some(crate::app_data_dir(app)),
+        settings["paths"]["publicProjects"].as_str().map(std::path::PathBuf::from),
+        settings["paths"]["hiddenProjects"].as_str().map(std::path::PathBuf::from),
+        settings["app"]["obsidian"]["vaultPath"].as_str().filter(|s| !s.is_empty()).map(std::path::PathBuf::from),
+    ];
+    let under_trusted_root = trusted_roots.iter().flatten().any(|r| {
+        r.canonicalize().map(|cr| canon_parent.starts_with(cr)).unwrap_or(false)
+    });
+
+    if !under_trusted_root {
+        if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+            if DANGEROUS_EXTENSIONS.contains(&ext.to_lowercase().as_str()) {
+                return Err(format!("Refusing to write a .{} file outside Croco's own data directories", ext));
+            }
+        }
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
-pub fn system_write_bytes(path: String, data: Vec<u8>) -> Result<(), String> {
-    std::fs::write(&path, data).map_err(|e| e.to_string())
+pub fn system_write_bytes(app: AppHandle, path: String, data: Vec<u8>) -> Result<(), String> {
+    let target = Path::new(&path);
+    assert_write_target_safe(&app, target)?;
+    std::fs::write(target, data).map_err(|e| e.to_string())
 }

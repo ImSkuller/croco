@@ -54,6 +54,13 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signs the updater artifacts (tauri-plugin-updater verifies this
+          # against the public key embedded in tauri.conf.json) — see
+          # SECURITY.md and CONTRIBUTING.md for how this key was generated
+          # and why it must never be committed. tauri-action wants the raw
+          # key content here, not a file path.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Croco ${{ github.ref_name }}'

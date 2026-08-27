@@ -1,93 +1,112 @@
-// App self-update: checks ImSkuller/croco (the main repo's own GitHub
-// Releases, now that the project is open-source and no longer needs a
-// separate private releases repo) for a newer release, downloads and
-// silently runs the installer, then relaunches. Also the
-// GitHub OAuth device flow used by Settings -> GitHub "Login with GitHub"
-// (separate from the personal-access-token field, which stays the primary
-// path since it works without an OAuth App being configured).
+// App self-update via tauri-plugin-updater: the plugin fetches the static
+// `latest.json` manifest published alongside each GitHub Release, verifies
+// its Ed25519 (minisign) signature against the public key embedded in
+// tauri.conf.json, and only then downloads/installs the matching platform
+// artifact — also signature-checked. We never parse GitHub's release JSON
+// or run an installer ourselves; this module is a thin wrapper so the
+// Settings UI can show a custom "vX available" banner instead of the
+// plugin's default (headless) flow.
+//
+// Also home to the GitHub OAuth device flow used by Settings -> GitHub
+// "Login with GitHub" (separate from the personal-access-token field, which
+// stays the primary path since it works without an OAuth App being
+// configured).
 
+use once_cell::sync::Lazy;
+use semver::Version;
 use serde_json::{json, Value};
-use std::fs;
-use std::process::Command;
+use std::sync::Mutex;
 use tauri::AppHandle;
+use tauri_plugin_updater::{Update, UpdaterExt};
 
-fn semver_gt(a: &str, b: &str) -> bool {
-    let parse = |s: &str| -> (u64, u64, u64) {
-        let parts: Vec<&str> = s.split('.').collect();
-        let n = |i: usize| parts.get(i).and_then(|p| p.parse().ok()).unwrap_or(0);
-        (n(0), n(1), n(2))
-    };
-    parse(a) > parse(b)
+fn parse_version(v: &str) -> Option<Version> {
+    let v = v.trim().trim_start_matches('v');
+    if let Ok(parsed) = Version::parse(v) {
+        return Some(parsed);
+    }
+    // Tolerate short/odd forms (e.g. "1.14", or a 4th build component) by
+    // keeping only the leading numeric-dot run and padding missing
+    // minor/patch components with zero, rather than refusing to compare.
+    let numeric: String = v
+        .chars()
+        .take_while(|c| c.is_ascii_digit() || *c == '.')
+        .collect();
+    let mut parts: Vec<&str> = numeric.split('.').filter(|p| !p.is_empty()).collect();
+    if parts.is_empty() {
+        return None;
+    }
+    while parts.len() < 3 {
+        parts.push("0");
+    }
+    Version::parse(&parts[..3].join(".")).ok()
+}
+
+/// True if `a` is a strictly newer released version than `b`. Malformed
+/// input on either side fails closed (returns false) rather than guessing —
+/// unlike the old naive `.split('.')` parser, a prerelease tag like
+/// "1.14.0-beta" compares correctly against "1.14.0" instead of both
+/// silently truncating to the same (major, minor, patch) triple.
+pub fn semver_gt(a: &str, b: &str) -> bool {
+    match (parse_version(a), parse_version(b)) {
+        (Some(va), Some(vb)) => va > vb,
+        _ => false,
+    }
 }
 
 // Set your GitHub OAuth App client_id here (optional — enables "Login with GitHub")
 const GITHUB_OAUTH_CLIENT_ID: &str = "Ov23lipwixVRwrFFbWNN";
 
-// GitHub token as stored by Settings -> User (user.github.token),
-// with a fallback to the legacy top-level key.
+// GitHub token as stored by Settings -> User, read from the OS keyring (see
+// secrets.rs). settings.json itself never holds this value — a startup
+// migration (secrets::migrate_secrets_to_keyring) moves it out of any
+// pre-1.14 settings.json the first time this version runs.
 pub fn stored_github_token(app: &AppHandle) -> Option<String> {
-    let v = crate::read_settings(app);
-    v["user"]["github"]["token"].as_str()
-        .filter(|t| !t.is_empty())
-        .or_else(|| v["githubToken"].as_str().filter(|t| !t.is_empty()))
-        .map(|t| t.to_string())
+    crate::get_secret(app, "github_token")
+}
+
+// Holds the last `Update` returned by a successful check, so `updates_install`
+// can install exactly what the user was shown without re-downloading a URL
+// the frontend passed in (the old, unverified `download_and_install_update(url)`
+// design let the caller point the installer at anything).
+static PENDING_UPDATE: Lazy<Mutex<Option<Update>>> = Lazy::new(|| Mutex::new(None));
+
+#[tauri::command]
+pub async fn updates_check(app: AppHandle) -> Result<Value, String> {
+    let current = env!("CARGO_PKG_VERSION").to_string();
+    let updater = app.updater().map_err(|e| e.to_string())?;
+    let found = updater.check().await.map_err(|e| e.to_string())?;
+
+    let result = match &found {
+        Some(update) => {
+            let has_update = semver_gt(&update.version, &update.current_version);
+            json!({
+                "current":   update.current_version,
+                "latest":    update.version,
+                "hasUpdate": has_update,
+                "body":      update.body,
+            })
+        }
+        None => json!({ "current": current, "latest": current, "hasUpdate": false }),
+    };
+
+    *PENDING_UPDATE.lock().unwrap() = found;
+
+    Ok(result)
 }
 
 #[tauri::command]
-pub async fn check_for_updates(app: AppHandle) -> Result<Value, String> {
-    let current = env!("CARGO_PKG_VERSION");
-    let token = stored_github_token(&app);
-
-    let client  = reqwest::Client::new();
-    let mut req = client
-        .get("https://api.github.com/repos/ImSkuller/croco/releases/latest")
-        .header("User-Agent", crate::UA)
-        .header("Accept", "application/vnd.github.v3+json")
-        .timeout(std::time::Duration::from_secs(8));
-    if let Some(ref t) = token {
-        req = req.header("Authorization", format!("token {}", t));
-    }
-    let resp = req.send().await.map_err(|e| e.to_string())?;
-
-    let status = resp.status().as_u16();
-    if status == 404 || status == 401 || status == 403 {
-        return Ok(json!({ "current": current, "latest": current, "hasUpdate": false }));
-    }
-    let body: Value = resp.json().await.unwrap_or(json!({}));
-    let tag = body["tag_name"].as_str().unwrap_or("").trim_start_matches('v');
-    let has_update = !tag.is_empty() && semver_gt(tag, current);
-
-    // Find platform-specific asset download URL. macOS CI builds two .dmg
-    // files (aarch64 + x64, one per Apple Silicon/Intel) — matching on
-    // extension alone would pick whichever one the GitHub API happens to
-    // list first, which isn't guaranteed to be this machine's architecture,
-    // so an Apple Silicon Mac could get offered the Intel build or vice
-    // versa. Match on arch too for macOS (Windows/Linux only ever produce
-    // one asset of their extension today, so extension alone is enough there).
-    let matches_asset = |name: &str| -> bool {
-        if cfg!(target_os = "windows") {
-            name.ends_with(".exe")
-        } else if cfg!(target_os = "macos") {
-            let arch = if cfg!(target_arch = "aarch64") { "aarch64" } else { "x64" };
-            name.ends_with(".dmg") && name.contains(arch)
-        } else {
-            name.ends_with(".AppImage")
-        }
+pub async fn updates_install(app: AppHandle) -> Result<(), String> {
+    let update = PENDING_UPDATE.lock().unwrap().take();
+    let Some(update) = update else {
+        return Err("No update was found — run a check first.".into());
     };
-    let asset_url = body["assets"].as_array().and_then(|assets| {
-        assets.iter().find(|a| {
-            a["name"].as_str().map(matches_asset).unwrap_or(false)
-        }).and_then(|a| a["browser_download_url"].as_str())
-    }).unwrap_or(body["html_url"].as_str().unwrap_or(""));
 
-    Ok(json!({
-        "current":     current,
-        "latest":      tag,
-        "hasUpdate":   has_update,
-        "downloadUrl": body["html_url"],
-        "assetUrl":    asset_url,
-        "body":        body["body"]
-    }))
+    update
+        .download_and_install(|_chunk, _total| {}, || {})
+        .await
+        .map_err(|e| e.to_string())?;
+
+    app.restart();
 }
 
 // ─── GitHub OAuth Device Flow ──────────────────────────────────────────────────
@@ -161,99 +180,60 @@ pub async fn github_oauth_poll(device_code: String) -> Result<Value, String> {
     Ok(json!({ "status": body["error"].as_str().unwrap_or("authorization_pending") }))
 }
 
-// ─── Download and install update ──────────────────────────────────────────────
+#[cfg(test)]
+mod tests {
+    use super::semver_gt;
 
-#[tauri::command]
-pub async fn download_and_install_update(app: AppHandle, url: String) -> Result<(), String> {
-    // Read GitHub token for private-repo download auth
-    let token = stored_github_token(&app);
+    #[test]
+    fn equal_versions_are_not_greater() {
+        assert!(!semver_gt("1.14.0", "1.14.0"));
+    }
 
-    let client = reqwest::Client::new();
-    let mut req = client.get(&url)
-        .header("User-Agent", crate::UA)
-        .timeout(std::time::Duration::from_secs(300));
-    if let Some(ref t) = token {
-        req = req.header("Authorization", format!("token {}", t));
+    #[test]
+    fn patch_bump_is_greater() {
+        assert!(semver_gt("1.14.1", "1.14.0"));
+        assert!(!semver_gt("1.14.0", "1.14.1"));
     }
-    let resp = req.send().await.map_err(|e| e.to_string())?;
-    if !resp.status().is_success() {
-        return Err(format!("Download failed: HTTP {}", resp.status()));
-    }
-    let fname = url.rsplit('/').next().unwrap_or("update-installer.exe");
-    let tmp = std::env::temp_dir().join(fname);
-    let bytes = resp.bytes().await.map_err(|e| e.to_string())?;
-    fs::write(&tmp, &bytes).map_err(|e| e.to_string())?;
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
 
-        let installer_path = tmp.to_string_lossy().into_owned();
-        let exe_path = std::env::current_exe()
-            .map(|p| p.to_string_lossy().into_owned())
-            .unwrap_or_default();
+    #[test]
+    fn minor_bump_is_greater() {
+        assert!(semver_gt("1.15.0", "1.14.9"));
+    }
 
-        // Batch: wait for current app to exit, run installer silently, relaunch updated exe
-        let bat_content = format!(
-            "@echo off\r\nping 127.0.0.1 -n 4 >nul\r\nstart /wait \"\" \"{}\" /S /NCRC\r\ntimeout /t 2 /nobreak >nul\r\nstart \"\" \"{}\"\r\ndel \"%~f0\"\r\n",
-            installer_path,
-            exe_path
-        );
-        let bat_path = std::env::temp_dir().join("croco_relaunch.bat");
+    #[test]
+    fn major_bump_is_greater() {
+        assert!(semver_gt("2.0.0", "1.99.99"));
+    }
 
-        if fs::write(&bat_path, bat_content.as_bytes()).is_ok() {
-            Command::new("cmd")
-                .raw_arg(&format!("/c \"{}\"", bat_path.to_string_lossy()))
-                .creation_flags(CREATE_NO_WINDOW)
-                .spawn()
-                .map_err(|e| e.to_string())?;
-        } else {
-            // Fallback: silent install without auto-relaunch
-            Command::new("cmd")
-                .raw_arg(&format!(
-                    "/c start \"\" \"{}\" /S /NCRC",
-                    installer_path.replace('"', "\\\"")
-                ))
-                .creation_flags(CREATE_NO_WINDOW)
-                .spawn()
-                .map_err(|e| e.to_string())?;
-        }
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        app.exit(0);
+    #[test]
+    fn release_is_greater_than_its_own_prerelease() {
+        // The bug this replaces: naive `.split('.')` parsing dropped the
+        // "-beta" suffix's non-numeric patch component to 0, so "1.14.0-beta"
+        // and "1.14.0" compared equal instead of the release being newer.
+        assert!(semver_gt("1.14.0", "1.14.0-beta"));
+        assert!(!semver_gt("1.14.0-beta", "1.14.0"));
     }
-    #[cfg(target_os = "macos")]
-    {
-        // Unlike Windows/NSIS, macOS apps conventionally aren't silently
-        // replaced in place — the standard (and Gatekeeper-friendly)
-        // convention is mounting the DMG and letting the user drag the
-        // .app to Applications, same as a first install. Automating the
-        // copy would need to assume an install location (fragile: sandboxed
-        // vs. user-moved installs differ) and isn't verifiable from this
-        // Windows dev machine, so this stays a safe, explicit hand-off
-        // rather than an unverified silent-replace attempt.
-        Command::new("open").arg(&tmp).spawn().map_err(|e| e.to_string())?;
-        crate::emit_toast(&app, "Update downloaded", "Drag Croco to Applications to finish updating", "info");
+
+    #[test]
+    fn prerelease_ordering_is_respected() {
+        assert!(semver_gt("1.14.0-beta.2", "1.14.0-beta.1"));
     }
-    #[cfg(target_os = "linux")]
-    {
-        // AppImages are conventionally self-updating: the AppImage runtime
-        // sets $APPIMAGE to the path of the running file, so replace it in
-        // place and relaunch — mirrors the Windows silent-update UX. Falls
-        // back to just opening the file for non-AppImage installs (.deb/.rpm).
-        use std::os::unix::fs::PermissionsExt;
-        if let Ok(appimage_path) = std::env::var("APPIMAGE") {
-            let mut perms = fs::metadata(&tmp).map_err(|e| e.to_string())?.permissions();
-            perms.set_mode(0o755);
-            fs::set_permissions(&tmp, perms).map_err(|e| e.to_string())?;
-            // Copy (not rename) since the temp dir and the AppImage's real
-            // location may be on different filesystems, where rename fails.
-            fs::copy(&tmp, &appimage_path).map_err(|e| e.to_string())?;
-            fs::remove_file(&tmp).ok();
-            Command::new(&appimage_path).spawn().map_err(|e| e.to_string())?;
-            app.exit(0);
-        } else {
-            Command::new("xdg-open").arg(&tmp).spawn().map_err(|e| e.to_string())?;
-        }
+
+    #[test]
+    fn v_prefixed_tags_are_handled() {
+        assert!(semver_gt("v1.14.1", "v1.14.0"));
+        assert!(semver_gt("v1.14.1", "1.14.0"));
     }
-    Ok(())
+
+    #[test]
+    fn malformed_tags_fail_closed() {
+        assert!(!semver_gt("not-a-version", "1.14.0"));
+        assert!(!semver_gt("1.14.0", "not-a-version"));
+        assert!(!semver_gt("garbage", "also-garbage"));
+    }
+
+    #[test]
+    fn short_version_forms_are_padded() {
+        assert!(semver_gt("1.15", "1.14.9"));
+    }
 }

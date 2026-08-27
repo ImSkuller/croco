@@ -2,7 +2,7 @@
 // storage backend (JSON files under notes_dir()/todos_dir(), or SQLite via
 // db.rs) and are cached in memory after first read — every mutation here
 // MUST call invalidate_notes_cache()/invalidate_todos_cache() or reads go
-// stale (see CLAUDE.md's data-model notes).
+// stale.
 //
 // Every command that builds a filesystem path from a caller-supplied `id`
 // runs it through validate_safe_id() first (path-traversal guard) — this

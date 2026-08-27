@@ -56,32 +56,30 @@ export default function UpdatesSection({
             </div>
             {updateInfo.hasUpdate && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                {updateInfo.assetUrl && updateInfo.assetUrl !== updateInfo.downloadUrl && (
-                  <button
-                    onClick={async () => {
-                      setUpdateInstalling(true)
-                      try {
-                        // On Windows, app exits automatically after download — show status then it closes
-                        await window.api.updates.downloadAndInstall(updateInfo.assetUrl)
-                        toast.success('Update downloaded — restarting…')
-                      } catch (e) {
-                        toast.error('Download failed', e?.message || '')
-                        window.api?.system.openExternal(updateInfo.downloadUrl)
-                        setUpdateInstalling(false)
-                      }
-                    }}
-                    disabled={updateInstalling}
-                    style={{
-                      padding: '7px 16px', borderRadius: 7, border: 'none',
-                      background: updateInstalling ? 'var(--border)' : 'var(--accent)', color: updateInstalling ? 'var(--dim)' : '#000',
-                      fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: updateInstalling ? 'default' : 'pointer',
-                    }}
-                  >
-                    {updateInstalling ? 'Downloading…' : `Install v${updateInfo.latest}`}
-                  </button>
-                )}
                 <button
-                  onClick={() => window.api?.system.openExternal(updateInfo.downloadUrl)}
+                  onClick={async () => {
+                    setUpdateInstalling(true)
+                    try {
+                      // Downloads, verifies the signature, installs, and
+                      // restarts the app — the promise only rejects, it
+                      // never resolves on success.
+                      await window.api.updates.install()
+                    } catch (e) {
+                      toast.error('Update failed', e?.message || '')
+                      setUpdateInstalling(false)
+                    }
+                  }}
+                  disabled={updateInstalling}
+                  style={{
+                    padding: '7px 16px', borderRadius: 7, border: 'none',
+                    background: updateInstalling ? 'var(--border)' : 'var(--accent)', color: updateInstalling ? 'var(--dim)' : '#000',
+                    fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: updateInstalling ? 'default' : 'pointer',
+                  }}
+                >
+                  {updateInstalling ? 'Installing…' : `Install v${updateInfo.latest}`}
+                </button>
+                <button
+                  onClick={() => window.api?.system.openExternal(`https://github.com/ImSkuller/croco/releases/tag/v${updateInfo.latest}`)}
                   style={{
                     padding: '7px 16px', borderRadius: 7, border: '1px solid var(--border)',
                     background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer',

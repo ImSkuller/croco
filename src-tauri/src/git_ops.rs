@@ -86,8 +86,13 @@ fn push_with_auth_fallback(app: &AppHandle, id: &str, cwd: &str, branch: &str) -
                 return Err(first_err);
             }
             let authed = format!("https://{}@github.com/{}.git", token, gh);
+            // Scrub every error path, not just the retry's — the first
+            // attempt uses the `origin` remote as configured, which could
+            // itself have a token embedded outside Croco (e.g. a user-set
+            // remote URL), and git sometimes echoes the remote URL back in
+            // its own error text.
+            let first_err = first_err.replace(&token, "***");
             run_git(&["push", &authed, &format!("HEAD:{}", branch)], cwd)
-                // Never leak the token into error messages shown in the UI
                 .map_err(|e| e.replace(&token, "***"))
                 .map_err(|e| format!("{} (token retry: {})", first_err, e))
         }
@@ -110,6 +115,7 @@ fn pull_with_auth_fallback(app: &AppHandle, id: &str, cwd: &str, branch: &str) -
                 return Err(first_err);
             }
             let authed = format!("https://{}@github.com/{}.git", token, gh);
+            let first_err = first_err.replace(&token, "***");
             run_git(&["pull", &authed, branch], cwd)
                 .map_err(|e| e.replace(&token, "***"))
                 .map_err(|e| format!("{} (token retry: {})", first_err, e))
@@ -134,6 +140,7 @@ fn fetch_with_auth_fallback(app: &AppHandle, id: &str, cwd: &str) -> Result<Stri
                 return Err(first_err);
             }
             let authed = format!("https://{}@github.com/{}.git", token, gh);
+            let first_err = first_err.replace(&token, "***");
             run_git(&["fetch", "--quiet", &authed], cwd)
                 .map_err(|e| e.replace(&token, "***"))
                 .map_err(|e| format!("{} (token retry: {})", first_err, e))

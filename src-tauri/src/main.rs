@@ -44,6 +44,9 @@ pub(crate) use data_transfer::*;
 mod updates;
 pub(crate) use updates::*;
 
+mod secrets;
+pub(crate) use secrets::*;
+
 mod projects;
 pub(crate) use projects::*;
 
@@ -138,6 +141,12 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         let _ = write_settings(&handle, &default_settings());
     }
 
+    // Secret storage: probe the OS keyring once so the UI's fallback warning
+    // is accurate from launch, then sweep any plaintext secret left by a
+    // pre-1.14 install into it (idempotent — a no-op on every later launch).
+    probe_keyring_available();
+    migrate_secrets_to_keyring(&handle);
+
     // Build tray menu
     let show  = MenuItem::with_id(app, "show",  "Show Window", true, None::<&str>)?;
     let sep   = PredefinedMenuItem::separator(app)?;
@@ -195,11 +204,12 @@ fn main() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| setup_app(app))
         .invoke_handler(tauri::generate_handler![
             // settings
             settings_get, settings_set, settings_update, settings_reset,
-            settings_test_github, settings_save_avatar,
+            settings_test_github, settings_save_avatar, settings_set_github_token,
             // projects
             projects_get_all, projects_get_by_id, projects_create, projects_import,
             projects_edit, projects_delete, projects_open_in_ide, projects_open_folder,
@@ -239,7 +249,7 @@ fn main() {
             // notify
             notify_send, notify_send_desktop, notify_desktop_permission_granted, notify_request_desktop_permission,
             // updates
-            check_for_updates, download_and_install_update, app_exit,
+            updates_check, updates_install, app_exit,
             // github oauth
             github_oauth_configured, github_oauth_start, github_oauth_poll,
             // git cross-project
