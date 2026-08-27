@@ -58,17 +58,73 @@ pub async fn git_status(app: AppHandle, id: String) -> Result<Value, String> {
     let status_out = run_git(&["status", "--short"], &cwd)?;
     let branch = run_git(&["rev-parse", "--abbrev-ref", "HEAD"], &cwd)
         .unwrap_or_else(|_| "main".into());
-    let lines: Vec<&str> = status_out.lines().filter(|l| l.len() >= 3).collect();
-    // Porcelain format: XY <path> — X = staged state, Y = worktree state
-    fn file<'a>(l: &&'a str) -> &'a str { l.get(3..).unwrap_or("").trim() }
-    let modified:  Vec<&str> = lines.iter()
-        .filter(|l| matches!(l.chars().nth(1), Some('M') | Some('D') | Some('T')))
-        .map(file).collect();
-    let untracked: Vec<&str> = lines.iter().filter(|l| l.starts_with("??")).map(file).collect();
-    let staged:    Vec<&str> = lines.iter()
-        .filter(|l| l.chars().next().map(|c| "MADRCT".contains(c)).unwrap_or(false))
-        .map(file).collect();
-    Ok(json!({ "branch": branch, "modified": modified, "untracked": untracked, "staged": staged, "clean": lines.is_empty(), "total": lines.len() }))
+    let parsed = parse_git_status_short(&status_out);
+    Ok(json!({
+        "branch": branch,
+        "modified": parsed.modified,
+        "untracked": parsed.untracked,
+        "staged": parsed.staged,
+        "clean": parsed.total == 0,
+        "total": parsed.total,
+    }))
+}
+
+struct GitStatusLines {
+    modified: Vec<String>,
+    untracked: Vec<String>,
+    staged: Vec<String>,
+    total: usize,
+}
+
+// Parses `git status --short` (porcelain v1) output. Format per line is
+// `XY PATH`, where X is the index/staged state and Y is the worktree state
+// — except a rename or copy (X == 'R' or 'C'), which instead encodes as
+// `XY ORIG_PATH -> NEW_PATH`. The old naive version returned that whole
+// "orig -> new" string as if it were a single path for staged/modified
+// entries, which broke git.stageFiles/unstageFiles for any renamed file
+// (git add "old.js -> new.js" fails — no such file). Only the destination
+// path is addressable for staging operations, so that's what's returned.
+fn parse_git_status_short(output: &str) -> GitStatusLines {
+    let mut modified = Vec::new();
+    let mut untracked = Vec::new();
+    let mut staged = Vec::new();
+    let mut total = 0;
+
+    for line in output.lines() {
+        if line.len() < 3 {
+            continue;
+        }
+        total += 1;
+
+        let x = line.chars().next().unwrap_or(' ');
+        let y = line.chars().nth(1).unwrap_or(' ');
+        // Byte index 3 is always a valid char boundary here: X, Y and the
+        // separating space are each exactly one ASCII byte, so this can
+        // never land mid-character even for a unicode path.
+        let rest = line.get(3..).unwrap_or("").trim();
+
+        let path = if x == 'R' || x == 'C' {
+            rest.rsplit_once(" -> ").map(|(_orig, new)| new).unwrap_or(rest)
+        } else {
+            rest
+        };
+        if path.is_empty() {
+            continue;
+        }
+
+        if x == '?' && y == '?' {
+            untracked.push(path.to_string());
+            continue;
+        }
+        if matches!(y, 'M' | 'D' | 'T') {
+            modified.push(path.to_string());
+        }
+        if "MADRCT".contains(x) {
+            staged.push(path.to_string());
+        }
+    }
+
+    GitStatusLines { modified, untracked, staged, total }
 }
 
 // Push to origin; if that fails with an auth-style error and a GitHub token is
@@ -242,7 +298,7 @@ pub async fn git_commit(app: AppHandle, id: String, msg: String) -> Result<Value
 pub async fn git_get_log(app: AppHandle, id: String, limit: Option<u32>) -> Result<Vec<Value>, String> {
     let cwd   = project_root(&app, &id)?;
     let limit = limit.unwrap_or(10);
-    let out   = run_git(&["log", &format!("--oneline"), &format!("-{}", limit), "--format=%H|%s|%ar|%an"], &cwd)?;
+    let out   = run_git(&["log", "--oneline", &format!("-{}", limit), "--format=%H|%s|%ar|%an"], &cwd)?;
     Ok(out.lines().filter(|l| !l.is_empty()).map(|line| {
         let parts: Vec<&str> = line.splitn(4, '|').collect();
         let hash    = parts.first().map(|h| &h[..h.len().min(7)]).unwrap_or("");
@@ -322,7 +378,7 @@ pub async fn git_pull(app: AppHandle, id: String) -> Result<Value, String> {
 #[tauri::command]
 pub async fn git_get_ahead_behind(app: AppHandle, id: String) -> Result<Value, String> {
     let cwd = project_root(&app, &id)?;
-    if let Err(_) = fetch_with_auth_fallback(&app, &id, &cwd) {
+    if fetch_with_auth_fallback(&app, &id, &cwd).is_err() {
         return Ok(json!({ "ahead": 0, "behind": 0, "unavailable": true }));
     }
     match run_git(&["rev-list", "--left-right", "--count", "HEAD...@{u}"], &cwd) {
@@ -452,23 +508,23 @@ pub async fn git_get_all_recent_commits(app: AppHandle, limit: Option<u32>) -> V
             let emoji = p["emoji"].as_str().unwrap_or("📁");
             let out = run_git(&["log", &format!("-{}", per),
                 "--format=%ct|%H|%s|%ar|%an"], &root).ok()?;
-            let items: Vec<(i64, Value)> = out.lines().filter(|l| !l.is_empty()).filter_map(|line| {
+            let items: Vec<(i64, Value)> = out.lines().filter(|l| !l.is_empty()).map(|line| {
                 let parts: Vec<&str> = line.splitn(5, '|').collect();
                 let ts  = parts.first().and_then(|s| s.parse::<i64>().ok()).unwrap_or(0);
                 let hash    = parts.get(1).map(|h| &h[..h.len().min(7)]).unwrap_or("");
                 let message = parts.get(2).copied().unwrap_or("");
                 let date    = parts.get(3).copied().unwrap_or("");
                 let author  = parts.get(4).copied().unwrap_or("");
-                Some((ts, json!({
+                (ts, json!({
                     "hash": hash, "message": message.trim(), "date": date, "author": author,
                     "projectId": id, "projectName": name, "projectEmoji": emoji,
-                })))
+                }))
             }).collect();
             Some(items)
         })
         .flatten()
         .collect();
-    all.sort_by(|a, b| b.0.cmp(&a.0));
+    all.sort_by_key(|(ts, _)| std::cmp::Reverse(*ts));
     all.truncate(40);
     all.into_iter().map(|(_, v)| v).collect()
 }
@@ -594,4 +650,102 @@ pub async fn git_get_commit_dates(app: AppHandle, id: String, limit: Option<u32>
     let limit = limit.unwrap_or(1000);
     let out   = run_git(&["log", &format!("-{}", limit), "--format=%cs"], &cwd)?;
     Ok(out.lines().filter(|l| !l.is_empty()).map(|s| s.to_string()).collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_git_status_short;
+
+    #[test]
+    fn empty_output_is_clean() {
+        let r = parse_git_status_short("");
+        assert_eq!(r.total, 0);
+        assert!(r.modified.is_empty() && r.untracked.is_empty() && r.staged.is_empty());
+    }
+
+    #[test]
+    fn untracked_file() {
+        let r = parse_git_status_short("?? newfile.txt\n");
+        assert_eq!(r.untracked, vec!["newfile.txt"]);
+        assert!(r.modified.is_empty() && r.staged.is_empty());
+        assert_eq!(r.total, 1);
+    }
+
+    #[test]
+    fn modified_unstaged() {
+        let r = parse_git_status_short(" M src/index.js\n");
+        assert_eq!(r.modified, vec!["src/index.js"]);
+        assert!(r.staged.is_empty());
+    }
+
+    #[test]
+    fn staged_addition() {
+        let r = parse_git_status_short("A  src/new.js\n");
+        assert_eq!(r.staged, vec!["src/new.js"]);
+        assert!(r.modified.is_empty());
+    }
+
+    #[test]
+    fn staged_and_further_modified_same_file() {
+        // "MM" = staged modification, then modified again in the worktree —
+        // one status line contributes to both lists, but is still one entry.
+        let r = parse_git_status_short("MM src/both.js\n");
+        assert_eq!(r.staged, vec!["src/both.js"]);
+        assert_eq!(r.modified, vec!["src/both.js"]);
+        assert_eq!(r.total, 1);
+    }
+
+    #[test]
+    fn plain_rename_reports_only_the_new_path() {
+        let r = parse_git_status_short("R  old-name.js -> new-name.js\n");
+        assert_eq!(r.staged, vec!["new-name.js"]);
+        assert!(r.modified.is_empty());
+    }
+
+    #[test]
+    fn rename_with_further_worktree_modification() {
+        let r = parse_git_status_short("RM old-name.js -> new-name.js\n");
+        assert_eq!(r.staged, vec!["new-name.js"]);
+        assert_eq!(r.modified, vec!["new-name.js"]);
+    }
+
+    #[test]
+    fn rename_where_paths_themselves_contain_spaces() {
+        let r = parse_git_status_short("R  old file name.js -> new file name.js\n");
+        assert_eq!(r.staged, vec!["new file name.js"]);
+    }
+
+    #[test]
+    fn plain_path_with_spaces_is_not_mistaken_for_a_rename() {
+        let r = parse_git_status_short(" M my cool file.js\n");
+        assert_eq!(r.modified, vec!["my cool file.js"]);
+    }
+
+    #[test]
+    fn unicode_paths_are_not_mangled() {
+        let r = parse_git_status_short("?? café-résumé-日本語.txt\n");
+        assert_eq!(r.untracked, vec!["café-résumé-日本語.txt"]);
+    }
+
+    #[test]
+    fn unicode_rename_extracts_new_path_correctly() {
+        let r = parse_git_status_short("R  日本語-old.txt -> 日本語-new.txt\n");
+        assert_eq!(r.staged, vec!["日本語-new.txt"]);
+    }
+
+    #[test]
+    fn multiple_lines_mixed_statuses() {
+        let out = "M  staged.js\n?? untracked.js\n M modified.js\nR  a.js -> b.js\n";
+        let r = parse_git_status_short(out);
+        assert_eq!(r.total, 4);
+        assert_eq!(r.staged, vec!["staged.js", "b.js"]);
+        assert_eq!(r.modified, vec!["modified.js"]);
+        assert_eq!(r.untracked, vec!["untracked.js"]);
+    }
+
+    #[test]
+    fn short_or_blank_lines_are_ignored_not_panicking() {
+        let r = parse_git_status_short("\n \nM \nM  ok.js\n");
+        assert_eq!(r.staged, vec!["ok.js"]);
+    }
 }

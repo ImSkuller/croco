@@ -112,6 +112,10 @@ pub async fn github_list_releases(app: AppHandle, id: String) -> Result<Vec<Valu
     })).collect())
 }
 
+// Each parameter is one field of the IPC payload the frontend sends for
+// this command — grouping them into a struct would just move the same
+// count into a nested object without reducing real complexity.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn github_create_release(
     app: AppHandle,

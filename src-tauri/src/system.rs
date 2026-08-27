@@ -194,7 +194,7 @@ pub fn validate_safe_id(id: &str) -> Result<(), String> {
     {
         Ok(())
     } else {
-        Err(format!("Invalid project ID"))
+        Err("Invalid project ID".to_string())
     }
 }
 

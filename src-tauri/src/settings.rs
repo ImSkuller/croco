@@ -236,3 +236,70 @@ pub fn settings_save_avatar(app: AppHandle, file_path: String) -> Result<String,
     write_settings(&app, &s)?;
     Ok(b64)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{deep_merge, set_nested};
+    use serde_json::json;
+
+    #[test]
+    fn deep_merge_overwrites_scalar_leaves() {
+        let base = json!({ "a": 1, "b": 2 });
+        let patch = json!({ "b": 3 });
+        assert_eq!(deep_merge(base, patch), json!({ "a": 1, "b": 3 }));
+    }
+
+    #[test]
+    fn deep_merge_recurses_into_nested_objects_instead_of_replacing_them() {
+        let base = json!({ "user": { "name": "a", "tag": "Developer" } });
+        let patch = json!({ "user": { "name": "b" } });
+        // If this replaced the whole "user" object instead of merging into
+        // it, "tag" would be lost — exactly the bug a settings-upgrade
+        // migration must not have.
+        assert_eq!(deep_merge(base, patch), json!({ "user": { "name": "b", "tag": "Developer" } }));
+    }
+
+    #[test]
+    fn deep_merge_adds_new_keys_from_defaults_not_present_in_the_saved_file() {
+        // Simulates an old settings.json (patch) being merged onto a newer
+        // default_settings() (base) that added a field the old file never had.
+        let base = json!({ "app": { "storageBackend": "json", "newField": true } });
+        let patch = json!({ "app": { "storageBackend": "sqlite" } });
+        assert_eq!(deep_merge(base, patch), json!({ "app": { "storageBackend": "sqlite", "newField": true } }));
+    }
+
+    #[test]
+    fn deep_merge_patch_value_wins_when_types_conflict() {
+        let base = json!({ "a": { "nested": true } });
+        let patch = json!({ "a": "now a string" });
+        assert_eq!(deep_merge(base, patch), json!({ "a": "now a string" }));
+    }
+
+    #[test]
+    fn set_nested_sets_a_top_level_key() {
+        let mut v = json!({ "a": 1 });
+        set_nested(&mut v, &["a"], json!(2));
+        assert_eq!(v, json!({ "a": 2 }));
+    }
+
+    #[test]
+    fn set_nested_sets_a_deeply_nested_key_creating_intermediate_objects() {
+        let mut v = json!({});
+        set_nested(&mut v, &["user", "github", "username"], json!("skuller"));
+        assert_eq!(v, json!({ "user": { "github": { "username": "skuller" } } }));
+    }
+
+    #[test]
+    fn set_nested_preserves_sibling_keys() {
+        let mut v = json!({ "user": { "name": "a", "tag": "Developer" } });
+        set_nested(&mut v, &["user", "name"], json!("b"));
+        assert_eq!(v, json!({ "user": { "name": "b", "tag": "Developer" } }));
+    }
+
+    #[test]
+    fn set_nested_on_empty_keys_is_a_noop() {
+        let mut v = json!({ "a": 1 });
+        set_nested(&mut v, &[], json!("ignored"));
+        assert_eq!(v, json!({ "a": 1 }));
+    }
+}

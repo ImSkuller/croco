@@ -122,7 +122,7 @@ pub fn run_start(app: AppHandle, project_id: String, command_type: String, env: 
     {
         let app = app.clone(); let pid = project_id.clone();
         thread::spawn(move || {
-            for line in BufReader::new(stdout).lines().flatten() {
+            for line in BufReader::new(stdout).lines().map_while(Result::ok) {
                 app.emit("run:output", json!({ "projectId": pid, "text": line, "type": "stdout" })).ok();
             }
         });
@@ -131,7 +131,7 @@ pub fn run_start(app: AppHandle, project_id: String, command_type: String, env: 
     {
         let app = app.clone(); let pid = project_id.clone();
         thread::spawn(move || {
-            for line in BufReader::new(stderr).lines().flatten() {
+            for line in BufReader::new(stderr).lines().map_while(Result::ok) {
                 app.emit("run:output", json!({ "projectId": pid, "text": line, "type": "stderr" })).ok();
             }
         });

@@ -121,7 +121,7 @@ fn unique_filename(dir: &Path, base_slug: &str, skip: Option<&Path>) -> PathBuf 
     let mut candidate = dir.join(format!("{}.md", base_slug));
     let mut i = 2;
     loop {
-        let is_self = skip.map_or(false, |s| s == candidate);
+        let is_self = skip.is_some_and(|s| s == candidate);
         if is_self || !candidate.exists() {
             return candidate;
         }
