@@ -11,6 +11,8 @@
     "opener:allow-open-path",
     "process:allow-exit",
     "autostart:default",
-    "notification:default"
+    "notification:default",
+    "updater:default",
+    "process:allow-restart"
   ]
 }

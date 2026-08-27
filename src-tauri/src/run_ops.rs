@@ -32,7 +32,7 @@ pub fn emit_toast(app: &AppHandle, title: &str, body: &str, kind: &str) {
 }
 
 #[tauri::command]
-pub fn run_start(app: AppHandle, project_id: String, command_type: String, env: Option<Value>) -> Result<Value, String> {
+pub fn run_start(app: AppHandle, project_id: String, command_type: String, env: Option<Value>, confirmed: Option<bool>) -> Result<Value, String> {
     if RUNNING_PIDS.lock().unwrap().contains_key(&project_id) {
         return Err("Already running. Stop it first.".into());
     }
@@ -41,6 +41,21 @@ pub fn run_start(app: AppHandle, project_id: String, command_type: String, env: 
     let project_name = project["name"].as_str().unwrap_or("Unknown").to_string();
     let cmd = resolve_run_command(&project, &command_type)
         .ok_or_else(|| format!("No command for type \"{}\"", command_type))?;
+
+    // A freshly created/imported project's commands came from scanning
+    // package.json/etc in the (possibly just-cloned, possibly hostile)
+    // project folder — require one explicit "yes, run this" before ever
+    // executing it. Projects that predate this check (no field at all)
+    // default to already-confirmed so existing users aren't suddenly
+    // blocked from a command they've already been running.
+    let already_confirmed = project.get("commandsConfirmed").map(|v| v.as_bool().unwrap_or(true)).unwrap_or(true);
+    if !already_confirmed && !confirmed.unwrap_or(false) {
+        return Ok(json!({ "needsConfirmation": true, "command": cmd }));
+    }
+    if !already_confirmed {
+        crate::projects_edit(app.clone(), project_id.clone(), json!({ "commandsConfirmed": true }))?;
+    }
+
     let cwd = crate::project_root_str(&project);
 
     let extra_env: HashMap<String, String> = env

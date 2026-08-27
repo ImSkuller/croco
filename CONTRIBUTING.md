@@ -55,6 +55,39 @@ Plain, descriptive commit messages — no required prefix convention. Explain
 Use the issue templates. For security vulnerabilities, see
 [SECURITY.md](SECURITY.md) instead of opening a public issue.
 
+## Windows code signing (not yet set up)
+
+The NSIS installer `.github/workflows/release.yml` builds is currently
+**unsigned**. That triggers a Windows SmartScreen warning on every download,
+which hurts first-install conversion, and `installMode: "perMachine"` means
+every install/update needs a UAC elevation prompt on top of that. Neither is
+fixed yet — no certificate is available as of this writing. To fix it:
+
+1. Get a code-signing certificate. Two realistic options:
+   - **Azure Trusted Signing** (Microsoft's newer, cheaper option — a
+     per-year subscription rather than a traditional EV cert purchase).
+     Requires a verified Azure account and a few days for identity
+     verification the first time.
+   - A traditional **EV code-signing certificate** from a CA (DigiCert,
+     SSL.com, etc.) — more expensive, but works with the classic
+     `signtool.exe`-based signing step without an Azure dependency.
+2. Wire the signing step into `.github/workflows/release.yml`, after
+   `tauri-apps/tauri-action` produces the NSIS installer and before the
+   release asset is uploaded. For Azure Trusted Signing, use
+   `azure/trusted-signing-action`; for a traditional cert, use `signtool
+   sign /f <cert> /p <password> /fd sha256 /tr <timestamp-url> /td sha256`
+   on the built `.exe`.
+3. Store whatever credential the chosen path needs (Azure service principal
+   secret, or the `.pfx` + password) as GitHub Actions secrets — never
+   commit them, same rule as the updater signing key in `SECURITY.md`.
+4. Once signing is live, `installMode` can be revisited — a signed
+   `perMachine` install still prompts for UAC once per install/update, but
+   without the SmartScreen "unknown publisher" warning on top of it.
+
+**Tracking:** this needs a GitHub issue opened (labelled `security`, not yet
+created as of the Phase 1 remediation pass — see the phase report) so it
+doesn't get silently forgotten.
+
 ## Code of Conduct
 
 This project follows the [Code of Conduct](CODE_OF_CONDUCT.md).

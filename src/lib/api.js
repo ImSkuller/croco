@@ -48,6 +48,8 @@ export const api = {
     reset:       ()         => invoke('settings_reset'),
     testGithub:  (token)    => invoke('settings_test_github',  { token }),
     saveAvatar:  (filePath) => invoke('settings_save_avatar',  { filePath }),
+    // Stored in the OS keyring, never in settings.json — pass '' to clear.
+    setGithubToken: (token) => invoke('settings_set_github_token', { token }),
   },
 
   // ── Projects ─────────────────────────────────────────────────────────────────
@@ -103,7 +105,7 @@ export const api = {
 
   // ── Run ──────────────────────────────────────────────────────────────────────
   run: {
-    start:      (projectId, commandType, env) => invoke('run_start', { projectId, commandType, env: env || {} }),
+    start:      (projectId, commandType, env, confirmed) => invoke('run_start', { projectId, commandType, env: env || {}, confirmed: confirmed || false }),
     stop:       (projectId)                   => invoke('run_stop',       { projectId }),
     getRunning: ()                            => invoke('run_get_running'),
     isRunning:  (projectId)                   => invoke('run_is_running', { projectId }),
@@ -234,9 +236,12 @@ export const api = {
   },
 
   // ── Updates ──────────────────────────────────────────────────────────────────
+  // Signature-verified via tauri-plugin-updater (see src-tauri/src/updates.rs).
+  // install() always installs whatever check() most recently found — there is
+  // no way to point it at an arbitrary URL from the frontend.
   updates: {
-    check:               ()    => invoke('check_for_updates'),
-    downloadAndInstall:  (url) => invoke('download_and_install_update', { url }),
+    check:   ()  => invoke('updates_check'),
+    install: ()  => invoke('updates_install'),
   },
 
   // ── App lifecycle ─────────────────────────────────────────────────────────────

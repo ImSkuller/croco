@@ -362,6 +362,14 @@ export default function ProjectDetail() {
     } finally { setBranchOp(null) }
   }
 
+  function applyRunStarted(result, commandType) {
+    setIsRunning(true)
+    setTermCmd(result.command || commandType)
+    const envTag = runEnv !== 'development' ? ` [NODE_ENV=${runEnv}]` : ''
+    setTermOutput(prev => [...prev, { type: 'system', text: `$ ${result.command || commandType}${envTag}\n` }])
+    if (tab !== 'terminal') setTab('terminal')
+  }
+
   async function handleRun(commandType = 'dev') {
     if (!window.api || !project) return
     if (isRunning) {
@@ -372,11 +380,23 @@ export default function ProjectDetail() {
       try {
         const env = runEnv !== 'development' ? { NODE_ENV: runEnv } : {}
         const result = await window.api.run.start(project.id, commandType, env)
-        setIsRunning(true)
-        setTermCmd(result.command || commandType)
-        const envTag = runEnv !== 'development' ? ` [NODE_ENV=${runEnv}]` : ''
-        setTermOutput(prev => [...prev, { type: 'system', text: `$ ${result.command || commandType}${envTag}\n` }])
-        if (tab !== 'terminal') setTab('terminal')
+        if (result?.needsConfirmation) {
+          // Commands auto-detected from an imported project's own files
+          // (e.g. package.json scripts) get one explicit confirmation
+          // before their first run — a hostile cloned repo could otherwise
+          // get its suggested command run with zero user intent.
+          openModal({
+            title: 'Run this command?',
+            desc: `This project's command was auto-detected from its files and hasn't been run before:\n\n${result.command}\n\nOnly continue if you trust where this project's code came from.`,
+            confirmLabel: 'Run Command',
+            onConfirm: async () => {
+              const confirmedResult = await window.api.run.start(project.id, commandType, env, true)
+              applyRunStarted(confirmedResult, commandType)
+            },
+          })
+          return
+        }
+        applyRunStarted(result, commandType)
       } catch (e) {
         toast.error('Run failed', e.message)
       }

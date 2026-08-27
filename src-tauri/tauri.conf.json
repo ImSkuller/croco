@@ -24,11 +24,20 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' ipc: http://ipc.localhost https://api.github.com https://github.com https://objects.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNGQjU0NTgzMTFFNkJDNTQKUldSVXZPWVJnMFcxUDVmWGZnempnZXFFTkR5eWtlT1pENysvUklXZEY1RnhkTzIrTm92MkVHMVUK",
+      "endpoints": [
+        "https://github.com/ImSkuller/croco/releases/latest/download/latest.json"
+      ]
     }
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "publisher": "Skuller",
     "copyright": "© 2026 Skuller",

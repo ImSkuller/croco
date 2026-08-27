@@ -76,8 +76,13 @@ export default function Settings() {
   const [defaultVisibility, setDefaultVisibility] = useState('public')
 
   const [ghUsername,    setGhUsername]    = useState('')
+  // ghToken only ever holds a value the user just typed/received this
+  // session — settings_get never returns the real stored token (it lives in
+  // the OS keyring), so "is a token on file" is tracked separately.
   const [ghToken,       setGhToken]       = useState('')
+  const [ghTokenStored, setGhTokenStored] = useState(false)
   const [ghTestStatus,  setGhTestStatus]  = useState(null) // null | 'testing' | {ok, login, message}
+  const [secretsFallbackActive, setSecretsFallbackActive] = useState(false)
   const [userAvatar,    setUserAvatar]    = useState(null)
   const [oauthEnabled,  setOauthEnabled]  = useState(true) // optimistic default (always true in shipped builds); corrected after the async check below
   const [oauthData,     setOauthData]     = useState(null) // {user_code, verification_uri, device_code, interval}
@@ -201,7 +206,8 @@ export default function Settings() {
     setDefaultBranch(s.defaults?.gitBranch || 'main')
     setDefaultVisibility(s.defaults?.visibility || 'public')
     setGhUsername(s.user?.github?.username || '')
-    setGhToken(s.user?.github?.token || '')
+    setGhTokenStored(!!s.user?.github?.tokenStored)
+    setSecretsFallbackActive(!!s.app?.secretsFallbackActive)
     setCloseBehavior(s.app?.closeBehavior || 'tray')
     setCustomDataPath(s.app?.dataPath || '')
     const color = s.appearance?.accentColor || '#e8e4dc'
@@ -376,10 +382,14 @@ export default function Settings() {
             const login = res.login || ''
             const token = res.token || ''
             finish({ ok: true, login })
-            setGhToken(token)
             setGhUsername(login)
-            // Auto-save credentials so they persist without requiring a manual Save click
-            await window.api.settings.update({ user: { github: { username: login, token } } }).catch(console.error)
+            // Auto-save credentials so they persist without requiring a manual Save click.
+            // Token goes straight to the OS keyring, never through settings.update.
+            if (token) {
+              await window.api.settings.setGithubToken(token).catch(console.error)
+              setGhTokenStored(true)
+            }
+            await window.api.settings.update({ user: { github: { username: login } } }).catch(console.error)
             // Lookup community tag
             if (login) {
               const cu = await window.api.system.lookupCommunityUser(login).catch(() => null)
@@ -408,8 +418,15 @@ export default function Settings() {
 
   const handleSave = async () => {
     if (window.api) {
+      // Only touch the stored token if the user actually typed a new one —
+      // an empty field here means "leave it alone", not "clear it".
+      if (ghToken.trim()) {
+        await window.api.settings.setGithubToken(ghToken.trim()).catch(console.error)
+        setGhTokenStored(true)
+        setGhToken('')
+      }
       await window.api.settings.update({
-        user: { name: userName, tag: userTag, github: { username: ghUsername, token: ghToken } },
+        user: { name: userName, tag: userTag, github: { username: ghUsername } },
         paths: { publicProjects: publicPath, hiddenProjects: hiddenPath },
         defaults: { ide: defaultIDE, gitBranch: defaultBranch, visibility: defaultVisibility, shell: defaultShell },
         appearance: { accentColor, theme: selectedTheme, style: selectedStyle, glass: glassEnabled, fontBody, fontDisplay, logoBg },
@@ -458,7 +475,7 @@ export default function Settings() {
     await Promise.all(projects.map(p => window.api.projects.delete(p.id).catch(console.error)))
   }
 
-  const ghConnected = ghUsername.trim() !== '' && ghToken.trim() !== ''
+  const ghConnected = ghUsername.trim() !== '' && (ghTokenStored || ghToken.trim() !== '')
 
   const DANGER_ACTIONS = {
     todos:    { label: 'Clear all todos?',    body: 'This will permanently delete every todo across all projects. This cannot be undone.', confirm: 'Clear Todos',    fn: handleClearTodos    },
@@ -756,11 +773,19 @@ export default function Settings() {
                   )}
                   <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
                     <FieldLabel>Personal Access Token</FieldLabel>
-                    <FieldDesc>Fallback when one-click login isn't available. Needs the <code style={codeStyle}>repo</code> scope — generate one at github.com/settings/tokens.</FieldDesc>
+                    <FieldDesc>
+                      Fallback when one-click login isn't available. Needs the <code style={codeStyle}>repo</code> scope — generate one at github.com/settings/tokens.
+                      {ghTokenStored && ' A token is currently stored — paste a new one here and Save to replace it.'}
+                    </FieldDesc>
                     <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                      <TextInput type="password" value={ghToken} onChange={setGhToken} placeholder="ghp_..." mono />
+                      <TextInput type="password" value={ghToken} onChange={setGhToken} placeholder={ghTokenStored ? '••••••••  (stored — paste to replace)' : 'ghp_...'} mono />
                       <SmallBtn onClick={handleTestGithub}>{ghTestStatus === 'testing' ? 'Testing…' : 'Test Connection'}</SmallBtn>
                     </div>
+                    {secretsFallbackActive && (
+                      <InfoBox style={{ marginTop: 10 }}>
+                        Your OS credential store isn't available, so this token is stored in an encrypted local file instead. It's protected from casual disk access but not from other processes on this machine.
+                      </InfoBox>
+                    )}
                   </div>
                   {ghTestStatus && ghTestStatus !== 'testing' && (
                     <div style={{ marginTop: 10, fontSize: 12, color: ghTestStatus.ok ? 'var(--green)' : 'var(--red)', fontFamily: 'Geist Mono, monospace' }}>

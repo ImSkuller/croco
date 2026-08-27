@@ -19,7 +19,7 @@ pub fn default_settings() -> Value {
             "name": "",
             "avatar": null,
             "tag": "Developer",
-            "github": { "username": "", "token": "" }
+            "github": { "username": "", "tokenStored": false }
         },
         "paths": {
             "publicProjects": home.join("projects").to_string_lossy(),
@@ -85,25 +85,54 @@ pub fn deep_merge(base: Value, patch: Value) -> Value {
     }
 }
 
-pub fn read_settings(app: &AppHandle) -> Value {
-    let path = crate::settings_path(app);
-    if path.exists() {
-        if let Ok(s) = fs::read_to_string(&path) {
-            if let Ok(v) = serde_json::from_str::<Value>(&s) {
-                // Deep-merge onto defaults so new nested keys (added in later
-                // versions) are present for installs upgrading from an older
-                // settings.json, without needing a migration step.
-                return deep_merge(default_settings(), v);
-            }
+// Secret fields that must never survive a read (returned to the frontend)
+// or a write (persisted to settings.json) in plaintext. Actual values live
+// in the OS keyring / secrets.rs fallback — see settings_set_github_token
+// and secrets::migrate_secrets_to_keyring for how they get there.
+fn strip_secrets(v: &mut Value) {
+    if let Some(github) = v.get_mut("user").and_then(|u| u.get_mut("github")).and_then(|g| g.as_object_mut()) {
+        github.remove("token");
+    }
+    if let Some(obj) = v.as_object_mut() {
+        obj.remove("githubToken");
+    }
+    if let Some(keys) = v.get_mut("ai").and_then(|a| a.get_mut("keys")).and_then(|k| k.as_object_mut()) {
+        for k in ["anthropic", "openai", "gemini"] {
+            keys.insert(k.into(), Value::String(String::new()));
         }
     }
-    default_settings()
+}
+
+pub fn read_settings(app: &AppHandle) -> Value {
+    let path = crate::settings_path(app);
+    let mut merged = if path.exists() {
+        match fs::read_to_string(&path).ok().and_then(|s| serde_json::from_str::<Value>(&s).ok()) {
+            // Deep-merge onto defaults so new nested keys (added in later
+            // versions) are present for installs upgrading from an older
+            // settings.json, without needing a migration step.
+            Some(v) => deep_merge(default_settings(), v),
+            None => default_settings(),
+        }
+    } else {
+        default_settings()
+    };
+
+    strip_secrets(&mut merged);
+    if let Some(github) = merged.get_mut("user").and_then(|u| u.get_mut("github")).and_then(|g| g.as_object_mut()) {
+        github.insert("tokenStored".into(), Value::Bool(crate::get_secret(app, "github_token").is_some()));
+    }
+    if let Some(app_obj) = merged.get_mut("app").and_then(|a| a.as_object_mut()) {
+        app_obj.insert("secretsFallbackActive".into(), Value::Bool(crate::fallback_in_use()));
+    }
+    merged
 }
 
 pub fn write_settings(app: &AppHandle, v: &Value) -> Result<(), String> {
+    let mut v = v.clone();
+    strip_secrets(&mut v);
     let path = crate::settings_path(app);
     fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
-    fs::write(&path, serde_json::to_string_pretty(v).unwrap()).map_err(|e| e.to_string())
+    fs::write(&path, serde_json::to_string_pretty(&v).unwrap()).map_err(|e| e.to_string())
 }
 
 pub fn set_nested(obj: &mut Value, keys: &[&str], val: Value) {
@@ -152,6 +181,15 @@ pub fn settings_reset(app: AppHandle) -> Result<Value, String> {
     let d = default_settings();
     write_settings(&app, &d)?;
     Ok(d)
+}
+
+// Stores the GitHub token in the OS keyring (never in settings.json — see
+// strip_secrets above). Passing an empty string clears it.
+#[tauri::command]
+pub fn settings_set_github_token(app: AppHandle, token: String) -> Result<(), String> {
+    crate::set_secret(&app, "github_token", &token)?;
+    crate::activity_log(&app, "setting.github", json!({}));
+    Ok(())
 }
 
 #[tauri::command]

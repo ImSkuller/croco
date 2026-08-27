@@ -608,6 +608,10 @@ pub async fn projects_import(app: AppHandle, folder_path: String, opts: Option<V
         "github":      github,
         "paths":       { "projectRoot": folder_path, "entryFile": "" },
         "commands":    cmds,
+        // Auto-detected from a folder that wasn't necessarily created by
+        // Croco itself (could be a repo the user just cloned) — run_start
+        // requires one explicit confirmation before the first run.
+        "commandsConfirmed": false,
         "favourite":   false,
         "imported":    true,
         "meta":        { "createdAt": now, "lastOpenedAt": now, "lastCommitAt": null, "openCount": 0 }
@@ -763,6 +767,7 @@ pub async fn projects_remove_local_files(app: AppHandle, id: String) -> Result<V
     let project = get_project(&app, &id).ok_or("Project not found")?;
     let root = project_root_str(&project);
     if !root.is_empty() && Path::new(&root).exists() {
+        crate::assert_safe_delete_root(Path::new(&root))?;
         #[cfg(windows)]
         {
             let mut c = Command::new("cmd");
