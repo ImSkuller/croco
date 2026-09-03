@@ -57,14 +57,16 @@ const UA: &str = concat!("Croco-DevManager/", env!("CARGO_PKG_VERSION"));
 
 // ─── Suppress console window on Windows for all child processes ───────────────
 
+#[cfg(windows)]
 fn no_window(cmd: &mut Command) {
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
-    }
-    let _ = cmd; // suppress unused warning on non-Windows
+    use std::os::windows::process::CommandExt;
+    cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 }
+
+// No console window to suppress outside Windows — a no-op so every call
+// site stays platform-agnostic.
+#[cfg(not(windows))]
+fn no_window(_cmd: &mut Command) {}
 
 // ─── Path helpers ──────────────────────────────────────────────────────────────
 
