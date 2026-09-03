@@ -1,0 +1,51 @@
+name: E2E (nightly)
+
+# Drives the real, compiled Croco app via tauri-driver + Edge WebDriver — see
+# .claude/skills/run-croco-e2e/SKILL.md for the local-setup version of this
+# same pattern. Windows-only: these scripts exercise WebView2 specifically,
+# which has no equivalent on the Linux/macOS CI runners. Nightly rather than
+# per-PR because a full release build plus 8 app launches is too slow to
+# gate every PR on, and driver/WebView2 version drift on the runner image
+# is an infra concern, not a per-change one.
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - run: npm ci
+
+      - name: Install tauri-driver
+        run: cargo install tauri-driver --locked
+
+      - name: Install matching Edge WebDriver
+        shell: pwsh
+        run: |
+          $webview2Version = (Get-Item 'C:\Program Files (x86)\Microsoft\EdgeWebView\Application\*').Name | Select-Object -First 1
+          Write-Host "WebView2 runtime version: $webview2Version"
+          $driverUrl = "https://msedgedriver.microsoft.com/$webview2Version/edgedriver_win64.zip"
+          Invoke-WebRequest -Uri $driverUrl -OutFile edgedriver.zip
+          Expand-Archive -Path edgedriver.zip -DestinationPath "$env:USERPROFILE\.cargo\bin" -Force
+          & "$env:USERPROFILE\.cargo\bin\msedgedriver.exe" --version
+
+      - name: Build a release exe (no installer bundling needed for e2e)
+        run: npx tauri build --no-bundle
+
+      - name: Run e2e suite
+        run: npm run test:e2e
+        env:
+          E2E_VERBOSE: 1

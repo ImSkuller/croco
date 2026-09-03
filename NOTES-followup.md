@@ -5,9 +5,10 @@ scope for the current phase. Not acted on yet.
 
 ## From Phase 0 baseline
 
-- `npm audit` reports 8 vulnerabilities (2 low, 1 moderate, 5 high) in
-  `node_modules` as of the 2026-08-26 baseline. Not triaged — belongs in
-  Phase 2 (supply chain: `npm audit --audit-level=high` in CI).
+- `npm audit` reported 8 vulnerabilities (2 low, 1 moderate, 5 high) in
+  `node_modules` as of the 2026-08-26 baseline. **Resolved in Phase 2** via
+  `npm audit fix` (all had non-breaking fixes available) — see the Phase 2
+  section below.
 - `npm run build` warns that `dist/assets/index-*.js` is 791 KB
   (min+gzip 200 KB), above Vite's 500 KB chunk-size-warning threshold. No
   code-splitting today. Not a Phase 0 concern; worth a look during Phase 4
@@ -65,3 +66,42 @@ scope for the current phase. Not acted on yet.
   `font-src` to avoid breaking the current UI. Phase 4 already plans to
   self-host these; once that lands, those two CSP allowances should come
   out too.
+
+## From Phase 2 (CI, tests, supply chain)
+
+- **`cargo fmt --check` is NOT in CI**, deliberately — the codebase's
+  compact single-line if/match style fails it on all 16 Rust source files
+  (282 diff hunks), and stable `rustfmt` has no config option to preserve
+  that style. You chose "skip the fmt gate, keep clippy + test + build"
+  over a mass reformat. If that changes, the reformat should be its own
+  isolated commit (see the Phase 2 report for the full option writeup)
+  before turning the CI check on.
+- `npm audit` is clean (0 vulnerabilities) as of this phase — fixed via
+  `npm audit fix` (bumped `@babel/core`, `brace-expansion`, `dompurify`,
+  `nanoid`, `postcss`, `react-router`/`react-router-dom`, `vite`, all
+  within semver-compatible ranges, no `--force` needed).
+- `cargo audit` still reports 2 unfixable vulnerabilities: RUSTSEC-2026-0194
+  and -0195 (quick-xml, both DoS-on-untrusted-XML), pulled in transitively
+  via `plist` (pinned by `tauri v2.11.2` itself to `quick-xml ^0.39.2`,
+  which can't be bumped to the fixed `>=0.41.0` without an upstream
+  tauri/plist release). Explicitly ignored in CI with a comment explaining
+  why and what would unblock it — re-check on every tauri version bump.
+  (A third, quinn-proto, *was* fixable and got bumped via `cargo update -p
+  quinn-proto --precise 0.11.15`.)
+- `cargo audit` also surfaces 19 "unmaintained" (not vulnerable) warnings,
+  mostly the GTK3 bindings pulled in transitively via `rfd`'s Linux file-
+  dialog backend (`atk`/`gdk`/`gtk`/etc.), plus `proc-macro-error` and the
+  `unic-*` crates. These don't fail the CI gate (only actual vulnerabilities
+  do, not warnings) and weren't chased down — worth a look whenever `rfd`
+  or its GTK3 dependency chain has a maintained alternative.
+- The e2e nightly workflow (`.github/workflows/e2e-nightly.yml`) is written
+  and mirrors the locally-verified tauri-driver + msedgedriver pattern
+  (WebView2-version-matched driver download, `--no-bundle` release build,
+  `npm run test:e2e`), but **has not been run on an actual GitHub-hosted
+  runner** — only the equivalent local setup was verified in Phase 1. Watch
+  its first scheduled/manual run for anything environment-specific that
+  doesn't hold on `windows-latest` (e.g. WebView2 version availability,
+  `cargo install tauri-driver` build time within the job timeout).
+- Branch protection settings for `main` were recommended in the Phase 2
+  report but not applied (no `gh` CLI / repo-admin access from this
+  session) — still needs doing by hand in GitHub repo settings.

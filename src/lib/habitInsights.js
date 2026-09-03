@@ -78,7 +78,16 @@ export function computeWeeklyTrend(commitDates, weeks = 12) {
   startOfThisWeek.setDate(today.getDate() - today.getDay())
   for (const d of commitDates) {
     const day = new Date(`${d}T00:00:00`)
-    const weeksAgo = Math.floor((startOfThisWeek - day) / (7 * 86400000))
+    // Align to each date's own week-start (Sunday) before diffing, so the
+    // division is always a whole number of weeks. Diffing startOfThisWeek
+    // directly against `day` (a point *within* its week) produced a
+    // fractional value that `Math.floor` rounded the wrong way for any day
+    // after the week's Sunday — silently dropping the current week's own
+    // commits (index landed one past the end of the array) while
+    // miscounting last week's commits into the current-week bucket.
+    const startOfDayWeek = new Date(day)
+    startOfDayWeek.setDate(day.getDate() - day.getDay())
+    const weeksAgo = Math.round((startOfThisWeek - startOfDayWeek) / (7 * 86400000))
     const idx = weeks - 1 - weeksAgo
     if (idx >= 0 && idx < weeks) counts[idx] += 1
   }

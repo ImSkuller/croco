@@ -88,12 +88,10 @@ pub fn read_all_projects(app: &AppHandle) -> Vec<Value> {
     }
 
     // SQLite backend
-    if crate::is_sqlite_enabled(app) {
-        if crate::open_db(app).is_ok() {
-            let ps = crate::db_get_all("projects");
-            *PROJECTS_CACHE.lock().unwrap() = Some(ps.clone());
-            return ps;
-        }
+    if crate::is_sqlite_enabled(app) && crate::open_db(app).is_ok() {
+        let ps = crate::db_get_all("projects");
+        *PROJECTS_CACHE.lock().unwrap() = Some(ps.clone());
+        return ps;
     }
 
     let dir = crate::project_details_dir(app);
@@ -167,10 +165,8 @@ pub fn get_project(app: &AppHandle, id: &str) -> Option<Value> {
         }
     }
     // SQLite backend
-    if crate::is_sqlite_enabled(app) {
-        if crate::open_db(app).is_ok() {
-            return crate::db_get_by_id("projects", id);
-        }
+    if crate::is_sqlite_enabled(app) && crate::open_db(app).is_ok() {
+        return crate::db_get_by_id("projects", id);
     }
     // Cold read of single file
     let path = crate::project_file(app, id);
@@ -377,7 +373,7 @@ fn open_in_ide(ide: &str, path: &str) -> Result<(), String> {
         c.args(["/c", cmd, path]);
         crate::no_window(&mut c);
         c.spawn().map_err(|e| format!("Failed to open {} — is it installed and in PATH? ({})", ide, e))?;
-        return Ok(());
+        Ok(())
     }
     #[cfg(not(windows))]
     {
@@ -592,8 +588,7 @@ pub async fn projects_import(app: AppHandle, folder_path: String, opts: Option<V
         .filter(|o| o.status.success())
         .and_then(|o| {
             let url = String::from_utf8_lossy(&o.stdout).trim().to_string();
-            let re = regex_lite(&url);
-            re
+            regex_lite(&url)
         });
 
     let project = json!({
@@ -627,7 +622,7 @@ fn regex_lite(url: &str) -> Option<Value> {
     let url = url.trim();
     let pat = url.find("github.com")?;
     let rest = &url[pat + "github.com".len()..];
-    let rest = rest.trim_start_matches(|c| c == '/' || c == ':');
+    let rest = rest.trim_start_matches(['/', ':']);
     let parts: Vec<&str> = rest.splitn(3, '/').collect();
     if parts.len() >= 2 {
         let repo = parts[1].trim_end_matches(".git");
@@ -739,7 +734,7 @@ pub async fn projects_detect_languages(app: AppHandle, id: String) -> Vec<Value>
         entry.0 += bytes;
     }
     let mut sorted: Vec<_> = by_lang.into_iter().collect();
-    sorted.sort_by(|a, b| b.1.0.cmp(&a.1.0));
+    sorted.sort_by_key(|(_, (bytes, _))| std::cmp::Reverse(*bytes));
     // No cap here — every detected language is returned so the language bar
     // always sums to 100%. (Previously capped at the top 8, which silently
     // dropped languages from projects using more than 8 file types.)
@@ -845,7 +840,7 @@ pub fn projects_get_dependencies(app: AppHandle, id: String) -> Value {
             .lines()
             .filter(|l| !l.trim().is_empty() && !l.trim().starts_with('#'))
             .filter_map(|l| {
-                let m: Vec<&str> = l.splitn(2, |c| c == '=' || c == '>' || c == '<').collect();
+                let m: Vec<&str> = l.splitn(2, ['=', '>', '<']).collect();
                 if m.is_empty() { return None; }
                 Some((m[0].trim().to_string(), json!(m.get(1).map(|s| s.trim()).unwrap_or("*"))))
             })
