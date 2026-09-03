@@ -30,5 +30,5 @@ futures-util    = "0.3"
 base64          = "0.22"
 walkdir         = "2"
 urlencoding     = "2"
-rusqlite        = { version = "0.31", features = ["bundled"] }
+rusqlite        = { version = "0.40", features = ["bundled"] }
 serde_yaml      = "0.9"
