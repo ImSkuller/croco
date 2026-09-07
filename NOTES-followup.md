@@ -198,3 +198,45 @@ scope for the current phase. Not acted on yet.
   `POST /v1/admin/entitlements` — functional and tested, but a real
   admin workflow (a script, at minimum) would help once this is actually
   used for anything.
+
+## From Phase 4.1 (UI audit)
+
+- **The `color: '#000'`-hardcoded-near-`var(--accent)` contrast bug found
+  in the audit exists in 11 files beyond the one fixed** (Projects.jsx):
+  `Ideas.jsx`, `Notes.jsx`, `Onboarding.jsx`, `ProjectDetail.jsx`,
+  `ProjectForm.jsx`, `Todo.jsx`, `CrocoGame/CrocoGame.jsx`,
+  `GitHub/ChangelogPanel.jsx`, `ProjectDetail/GitPanel.jsx`,
+  `Settings/ObsidianSection.jsx`, `Settings/StorageSection.jsx` (found via
+  `grep -rln "color: '#000'"`). Each needs the same fix (`var(--accent-
+  text)` instead of the hardcoded value) — deliberately not hand-patched
+  now; these are exactly the pages Phase 4.2's page-by-page extraction
+  will touch anyway, and patching them outside that process risks the
+  same silent-inline-override trap this one instance already hit once
+  (the class fix alone did nothing until the inline override was also
+  removed).
+- **Vim Classic's `dimmer`-on-`card` contrast (2.99:1, just under the
+  3:1 large-text/UI threshold) was found but not fixed** — smaller margin
+  of failure than Latte's, and depends on confirming actual font-size at
+  each real use site before deciding whether it's a normal-text (4.5:1)
+  or large-text (3:1) violation. Worth closing out alongside whichever
+  theme-retirement decision you make (§5 of the audit) — moot if Vim
+  Classic itself gets retired.
+- **Theme retirement (8 → 4) is a recommendation only, not applied** —
+  needs your sign-off per the brief before any theme is actually removed.
+  See `docs/ui-audit.md` §5 for the specific proposal (keep Default/
+  Futuristic/Mocha + pick one of NeoVim-Dark/Vim-Classic; retire Latte/
+  Frappé/Macchiato + whichever of NeoVim/Vim isn't kept).
+- **`pasta-galaxy` removal is similarly a recommendation, not applied** —
+  confirmed dead (one line, no implementation anywhere), but removing a
+  user-facing picker entry is exactly the kind of thing the brief's own
+  Phase 4.4 asks to bring back for sign-off before deleting, so it wasn't
+  touched in the audit pass itself.
+- **Phase 4.2 (the actual ~2019-inline-style extraction) has not been
+  started.** The audit (4.1) is done; the extraction, the new minimal
+  Style (4.4), and the theme cleanup (4.5) are not. This is by far the
+  largest remaining piece of Phase 4 — the brief itself calls it "the
+  largest phase" and asks for before/after screenshots of every page in
+  both the new Style and the previous default as part of its gate, which
+  is real, cumulative, per-page visual-verification work, not something
+  that compresses into a single pass. Flagging the scale honestly rather
+  than either skipping the verification or claiming completion.
