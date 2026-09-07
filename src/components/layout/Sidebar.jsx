@@ -6,6 +6,7 @@ import ManagerVersion from '../../constants/versionManager.jsx'
 import { useToast } from '../Toast/useToast.js'
 import { useData, useDataStore, EMPTY_LIST } from '../../lib/store'
 import { modKeyHint } from '../../lib/platform'
+import { refreshCapabilitiesOnLaunch } from '../../lib/capabilities'
 import CrocoGame from '../CrocoGame/CrocoGame.jsx'
 
 const TYPE_COLOR = {
@@ -72,6 +73,13 @@ export default function Sidebar() {
   useEffect(() => {
     ensure('projects'); ensure('notes'); ensure('todos'); ensure('settings')
   }, [location.pathname, ensure])
+
+  // Kick off the first entitlements refresh on launch — cosmetic UI state
+  // only (see lib/capabilities.js); failures (offline, no GitHub login,
+  // server unreachable) are expected and silently degrade to free tier.
+  useEffect(() => {
+    refreshCapabilitiesOnLaunch()
+  }, [])
 
   // Check for updates once on mount — show toast if update is available
   useEffect(() => {
@@ -151,8 +159,8 @@ export default function Sidebar() {
   return (
     <>
       <aside style={{
-        width: 200,
-        minWidth: 200,
+        width: 'var(--sidebar-width)',
+        minWidth: 'var(--sidebar-width)',
         height: '100vh',
         background: 'var(--sidebar-bg)',
         borderRight: '1px solid var(--sidebar-border)',
