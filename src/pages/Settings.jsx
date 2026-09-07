@@ -4,6 +4,7 @@ import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, Tex
 import { useToast } from '../components/Toast/useToast.js'
 import { THEMES, applyTheme, getThemeAccentSwatch, normalizeThemeId } from '../lib/theme.js'
 import { STYLES, applyStyle, normalizeStyleId } from '../lib/appearanceStyle.js'
+import { lazyLoadAllPickerFonts } from '../lib/lazyGoogleFont.js'
 import { SHORTCUT_DEFS } from '../lib/shortcuts'
 import StorageSection from '../components/Settings/StorageSection'
 import ObsidianSection from '../components/Settings/ObsidianSection'
@@ -64,6 +65,13 @@ export default function Settings() {
   const [activeSection, setActiveSection] = useState('user')
   const [saved,         setSaved]         = useState(false)
   const [loading,       setLoading]       = useState(true)
+
+  // Opt-in font picker previews need their real faces loaded to render
+  // correctly — deferred until the Appearance tab is actually opened
+  // rather than on every app launch (see lib/lazyGoogleFont.js).
+  useEffect(() => {
+    if (activeSection === 'appearance') lazyLoadAllPickerFonts()
+  }, [activeSection])
 
   const [userName,    setUserName]    = useState('')
 
