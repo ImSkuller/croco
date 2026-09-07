@@ -159,8 +159,8 @@ export default function Sidebar() {
   return (
     <>
       <aside style={{
-        width: 200,
-        minWidth: 200,
+        width: 'var(--sidebar-width)',
+        minWidth: 'var(--sidebar-width)',
         height: '100vh',
         background: 'var(--sidebar-bg)',
         borderRight: '1px solid var(--sidebar-border)',

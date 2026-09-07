@@ -1,4 +1,48 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Nunito:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&family=Fira+Code:wght@400;500&display=swap');
+/* ── Self-hosted default fonts ──────────────────────────────────────────
+   Geist, Geist Mono and Lora are the only fonts every install actually
+   uses (they're the shipped defaults; everything else in the Settings
+   font pickers is opt-in and lazy-loaded on demand — see
+   lib/lazyGoogleFont.js). Previously all 12 picker fonts were pulled from
+   fonts.googleapis.com via a single blocking @import on every cold start,
+   regardless of which one (if any) the user had actually chosen — a
+   startup network dependency, a privacy leak (every launch phoned
+   Google), and a broken-offline first paint. These four files are the
+   `latin`-subset, variable-weight woff2s Google itself serves for these
+   three families (each covers its whole weight range in one file — that's
+   why one @font-face per style, not one per weight) — bundled locally
+   fixes all three problems for the common case. JetBrains Mono and Fira
+   Code were in the old @import too but are dead: grep confirms neither is
+   referenced anywhere outside this file, not even in the picker — dropped
+   entirely rather than self-hosted.
+   ── */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fonts/geist-variable.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/fonts/geist-mono-variable.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/lora-variable.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/lora-italic-variable.woff2') format('woff2');
+}
 
 /* ── Colour tokens ── */
 :root {
@@ -62,93 +106,29 @@
   --transition-fast: 120ms cubic-bezier(0.16,1,0.3,1);
   --transition-base: 200ms cubic-bezier(0.16,1,0.3,1);
   --transition-slow: 350ms cubic-bezier(0.16,1,0.3,1);
+
+  /* ── Layout (Phase 4.3) — the tokens a Style needs to restructure, not
+     just recolour. --sidebar-width is live (Sidebar.jsx reads it, so the
+     minimal Style below genuinely narrows the sidebar). The rest are
+     declared and consumed by the shared .pm-* primitives added in this
+     pass, but NOT yet threaded through the ~2000 inline-styled per-page
+     layouts audited in docs/ui-audit.md — that's the still-open, much
+     larger part of Phase 4.2 (page-by-page extraction with visual proof
+     per page), tracked in NOTES-followup.md, not silently pretended done
+     here. Until a page's own root wrapper is migrated to read these,
+     Style can restructure its sidebar and any shared primitive it uses,
+     but not that page's bespoke layout. ── */
+  --sidebar-width: 200px;
+  --sidebar-width-compact: 64px; /* icon-only, opt-in via a Style */
+  --content-max-width: none;     /* 'none' = full-bleed, the current default */
+  --content-align: flex-start;   /* vs 'center', for a max-width'd content column */
+  --density-pad: var(--sp-2);    /* card/panel padding; Styles may override to --sp-1 for a compact density */
+  --density-gap: var(--sp-1);    /* gap between adjacent controls/rows */
 }
 
 /* ══════════════════════════════════════════════
    THEME OVERRIDES
    ══════════════════════════════════════════════ */
-
-/* ── Catppuccin Latte (light) ── */
-html.theme-catppuccin-latte {
-  --base:          #eff1f5;
-  --surface:       #e6e9ef;
-  --card:          #dce0e8;
-  --card-hover:    #ccd0da;
-  --border:        #bcc0cc;
-  --border-bright: #acb0be;
-  --text:          #4c4f69;
-  --dim:           #5c5f77;
-  --dimmer:        #6c6f85;
-  --orange:        #fe640b;
-  --green:         #40a02b;
-  --blue:          #1e66f5;
-  --purple:        #8839ef;
-  --yellow:        #df8e1d;
-  --red:           #d20f39;
-  --accent:        #8839ef;
-  --accent-dim:    rgba(136,57,239,0.12);
-  --accent-glow:   rgba(136,57,239,0.25);
-  --sidebar-bg:    #e6e9ef;
-  --sidebar-border:#bcc0cc;
-  --is-light:      1;
-  --hover-bg:      rgba(0,0,0,0.05);
-  --logo-bg:       #8839ef;
-  /* Only theme whose accent is dark enough to need white text instead of
-     black to pass AA — see the --accent-text definition in :root. */
-  --accent-text:   #ffffff;
-}
-
-/* ── Catppuccin Frappé ── */
-html.theme-catppuccin-frappe {
-  --base:          #232634;
-  --surface:       #292c3c;
-  --card:          #303446;
-  --card-hover:    #414559;
-  --border:        #414559;
-  --border-bright: #51576d;
-  --text:          #c6d0f5;
-  --dim:           #a5adce;
-  --dimmer:        #8a90aa;
-  --orange:        #ef9f76;
-  --green:         #a6d189;
-  --blue:          #8caaee;
-  --purple:        #ca9ee6;
-  --yellow:        #e5c890;
-  --red:           #e78284;
-  --accent:        #ca9ee6;
-  --accent-dim:    rgba(202,158,230,0.12);
-  --accent-glow:   rgba(202,158,230,0.25);
-  --sidebar-bg:    #232634;
-  --sidebar-border:#414559;
-  --is-light:      0;
-  --logo-bg:       #ca9ee6;
-}
-
-/* ── Catppuccin Macchiato ── */
-html.theme-catppuccin-macchiato {
-  --base:          #181926;
-  --surface:       #1e2030;
-  --card:          #24273a;
-  --card-hover:    #363a4f;
-  --border:        #363a4f;
-  --border-bright: #494d64;
-  --text:          #cad3f5;
-  --dim:           #a5adcb;
-  --dimmer:        #7c8099;
-  --orange:        #f5a97f;
-  --green:         #a6da95;
-  --blue:          #8aadf4;
-  --purple:        #c6a0f6;
-  --yellow:        #eed49f;
-  --red:           #ed8796;
-  --accent:        #c6a0f6;
-  --accent-dim:    rgba(198,160,246,0.12);
-  --accent-glow:   rgba(198,160,246,0.25);
-  --sidebar-bg:    #181926;
-  --sidebar-border:#363a4f;
-  --is-light:      0;
-  --logo-bg:       #c6a0f6;
-}
 
 /* ── Catppuccin Mocha ── */
 html.theme-catppuccin-mocha {
@@ -200,32 +180,6 @@ html.theme-neovim {
   --sidebar-border:#292e42;
   --is-light:      0;
   --logo-bg:       #73daca;
-}
-
-/* ── Vim Classic ── */
-html.theme-vim {
-  --base:          #1c1c1c;
-  --surface:       #262626;
-  --card:          #303030;
-  --card-hover:    #3a3a3a;
-  --border:        #444444;
-  --border-bright: #585858;
-  --text:          #d0d0d0;
-  --dim:           #9e9e9e;
-  --dimmer:        #787878;
-  --orange:        #d78700;
-  --green:         #5faf5f;
-  --blue:          #5f87af;
-  --purple:        #af87af;
-  --yellow:        #d7af00;
-  --red:           #af5f5f;
-  --accent:        #5faf5f;
-  --accent-dim:    rgba(95,175,95,0.12);
-  --accent-glow:   rgba(95,175,95,0.25);
-  --sidebar-bg:    #1c1c1c;
-  --sidebar-border:#444444;
-  --is-light:      0;
-  --logo-bg:       #5faf5f;
 }
 
 /* ── Futuristic (neon dark) ── */
@@ -334,29 +288,101 @@ html.style-natural .font-display {
   letter-spacing: normal;
 }
 
+/* ── Minimal (Phase 4.4, docs/ui-audit.md §6) — the new default for new
+   installs (src-tauri/src/settings.rs::default_settings). Existing users
+   keep whatever Style they had; a one-time prompt (Dashboard.jsx) offers
+   the switch. Builds on Natural's flourish-removal (no gradient/glow/
+   lift/shadow) and goes further into layout, per the brief: this is the
+   one Style so far that restructures rather than only recolouring —
+   narrower sidebar, no max-width'd content column (that needs each
+   page's own wrapper migrated, still open), tighter density, a forced
+   sans-serif display face regardless of the user's fontDisplay choice,
+   near-zero border radius, and motion capped at 150ms honouring
+   prefers-reduced-motion (see the media query below, which now applies
+   app-wide, not just to this Style — reduced motion should always be
+   honoured no matter which Style is active). ── */
+html.style-minimal {
+  --dash-accent-card-bg: var(--card);
+  --card-hover-lift: 0px;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: 0 1px 2px rgba(0,0,0,0.10);
+  --accent-glow: transparent;
+  --r-sm: 3px;
+  --r-md: 4px;
+  --r-lg: 6px;
+  --r-xl: 8px;
+  --transition-fast: 100ms ease;
+  --transition-base: 130ms ease;
+  --transition-slow: 150ms ease;
+  --sidebar-width: 176px;
+  --density-pad: var(--sp-1);
+  --density-gap: 6px;
+  /* Forces a single family for this Style regardless of the user's
+     fontDisplay pick — "consider dropping the display serif entirely and
+     running a single family" (brief §4.4). Themes/fonts stay the user's
+     choice everywhere else; this is Style overriding on purpose. */
+  --font-display: var(--font-body);
+}
+html.style-minimal .pm-card {
+  border-color: var(--border);
+}
+html.style-minimal .pm-card:hover,
+html.style-minimal .glass-card:hover {
+  box-shadow: none;
+  transform: none;
+}
+html.style-minimal h1,
+html.style-minimal h2,
+html.style-minimal .font-display {
+  text-shadow: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+/* No decorative glow on the primary action — accent stays but flat. */
+html.style-minimal .pm-btn-primary {
+  box-shadow: none;
+}
+html.style-minimal .pm-btn-primary:hover {
+  box-shadow: none;
+  transform: none;
+  opacity: 0.85;
+}
+html.style-minimal .pm-btn-secondary:hover {
+  transform: none;
+}
+
+/* Motion is functional only, everywhere, in every Style — not just
+   Minimal's own 150ms cap above. A user who's asked their OS to reduce
+   motion should never see spring bounces (Apple), slide-ins, or hover
+   lift, regardless of which Style is otherwise active. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .pm-card:hover, .glass-card:hover {
+    transform: none !important;
+  }
+}
+
 /* ══════════════════════════════════════════════
    GLASSMORPHISM — semi-transparent cards per theme
    ══════════════════════════════════════════════ */
 
 html.glass                                { --card: rgba(22,22,22,0.72);      --sidebar-bg: rgba(13,13,13,0.84);      }
-html.glass.theme-catppuccin-latte     { --card: rgba(220,224,232,0.80); --sidebar-bg: rgba(230,233,239,0.88);  }
-html.glass.theme-catppuccin-frappe    { --card: rgba(48,52,70,0.78);    --sidebar-bg: rgba(35,38,52,0.86);     }
-html.glass.theme-catppuccin-macchiato { --card: rgba(36,39,58,0.78);    --sidebar-bg: rgba(24,25,38,0.86);     }
 html.glass.theme-catppuccin-mocha     { --card: rgba(30,30,46,0.78);    --sidebar-bg: rgba(17,17,27,0.86);     }
 html.glass.theme-neovim               { --card: rgba(26,27,38,0.78);    --sidebar-bg: rgba(19,19,26,0.86);     }
-html.glass.theme-vim                  { --card: rgba(48,48,48,0.78);    --sidebar-bg: rgba(28,28,28,0.86);     }
 
 /* Glass body — visible blurred background */
 html.glass body {
   background: linear-gradient(135deg, rgba(30,30,50,0.9) 0%, rgba(10,10,20,0.95) 100%);
   backdrop-filter: blur(0px);
 }
-html.glass.theme-catppuccin-latte body  { background: linear-gradient(135deg, rgba(200,210,220,0.88) 0%, rgba(180,190,205,0.92) 100%); }
-html.glass.theme-catppuccin-frappe body { background: linear-gradient(135deg, rgba(38,42,58,0.90) 0%, rgba(25,28,42,0.95) 100%); }
-html.glass.theme-catppuccin-macchiato body { background: linear-gradient(135deg, rgba(28,32,48,0.90) 0%, rgba(18,20,34,0.95) 100%); }
 html.glass.theme-catppuccin-mocha body  { background: linear-gradient(135deg, rgba(22,22,38,0.90) 0%, rgba(10,10,22,0.95) 100%); }
 html.glass.theme-neovim body            { background: linear-gradient(135deg, rgba(18,20,30,0.90) 0%, rgba(8,10,18,0.95) 100%); }
-html.glass.theme-vim body               { background: linear-gradient(135deg, rgba(22,22,22,0.90) 0%, rgba(8,8,8,0.95) 100%); }
 html.glass.theme-futuristic             { --card: rgba(11,15,30,0.72);    --sidebar-bg: rgba(3,5,9,0.85);        }
 html.glass.theme-futuristic body        { background: linear-gradient(135deg, rgba(8,14,30,0.92) 0%, rgba(3,5,9,0.96) 100%); }
 
@@ -438,7 +464,7 @@ aside {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  padding: var(--sp-2);
+  padding: var(--density-pad);
   backdrop-filter: var(--panel-blur);
   -webkit-backdrop-filter: var(--panel-blur);
   transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-base), transform var(--transition-base);
@@ -489,6 +515,48 @@ aside {
   background: var(--card-hover);
   transform: translateY(-1px);
 }
+
+.pm-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(229,100,106,0.35);
+  background: rgba(229,100,106,0.08);
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Geist', sans-serif;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+}
+.pm-btn-danger:hover {
+  border-color: var(--red);
+  background: rgba(229,100,106,0.14);
+  transform: translateY(-1px);
+}
+
+.pm-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--dim);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+.pm-btn-icon:hover {
+  border-color: var(--border-bright);
+  background: var(--card-hover);
+  color: var(--text);
+}
+
+.pm-btn-sm { padding: 5px 10px; font-size: 11px; }
 
 /* ── Reset ── */
 *, *::before, *::after {
