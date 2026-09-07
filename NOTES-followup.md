@@ -94,14 +94,56 @@ scope for the current phase. Not acted on yet.
   `unic-*` crates. These don't fail the CI gate (only actual vulnerabilities
   do, not warnings) and weren't chased down — worth a look whenever `rfd`
   or its GTK3 dependency chain has a maintained alternative.
-- The e2e nightly workflow (`.github/workflows/e2e-nightly.yml`) is written
-  and mirrors the locally-verified tauri-driver + msedgedriver pattern
-  (WebView2-version-matched driver download, `--no-bundle` release build,
-  `npm run test:e2e`), but **has not been run on an actual GitHub-hosted
-  runner** — only the equivalent local setup was verified in Phase 1. Watch
-  its first scheduled/manual run for anything environment-specific that
-  doesn't hold on `windows-latest` (e.g. WebView2 version availability,
-  `cargo install tauri-driver` build time within the job timeout).
 - Branch protection settings for `main` were recommended in the Phase 2
   report but not applied (no `gh` CLI / repo-admin access from this
   session) — still needs doing by hand in GitHub repo settings.
+
+## Post-merge CI fallout (fixed directly on main, not a numbered phase)
+
+- Phase 2's CI matrix went live on the real PR merge and immediately
+  failed `cargo clippy` on `ubuntu-22.04` and `macos-latest` (never
+  catchable locally — this dev machine is Windows-only). Two separate,
+  genuinely distinct bugs, found by exhaustively auditing every
+  `#[cfg(windows)]`/`#[cfg(not(windows))]`/`#[cfg(unix)]` block in the
+  codebase for asymmetric variable usage:
+  1. `no_window()` only mutated its `&mut Command` param inside
+     `#[cfg(windows)]`; the non-Windows body was `let _ = cmd;` —
+     `clippy::needless_pass_by_ref_mut`. Fixed by splitting into two
+     platform-gated function definitions.
+  2. `assert_write_target_safe()` computed `path_str` unconditionally but
+     only read it inside a `#[cfg(windows)]` UNC-path check — plain
+     `unused_variables` on non-Windows. Fixed by inlining the
+     `.to_string_lossy()` call into the cfg-gated check itself.
+  Both verified against real CI after push (commit `63c1b3d`) — green
+  across all three platforms.
+- The e2e nightly workflow ran for real (4 scheduled runs) and failed
+  every single time, always at the same point: every `e2e/verify-*.mjs`
+  script assumes `settings.json` already exists (backs it up before
+  mutating, restores after) — true on a dev machine that's launched Croco
+  before, false on a brand-new CI runner, so the first script in the
+  chain (`verify-obsidian-sync.mjs`) threw immediately and the whole
+  `&&`-chained `test:e2e` script never got past it. Fixed at the
+  workflow level: a new step launches the built exe briefly and stops it
+  (`setup_app()` writes default settings.json on startup) before the
+  suite runs. **Not** fixed at the script level — all 8 scripts duplicate
+  the identical existence check rather than sharing a helper, so anyone
+  running `npm run test:e2e` locally on a genuinely fresh machine (never
+  launched Croco) will still hit this; worth centralizing into a shared
+  "ensure settings.json exists" helper at some point rather than fixing
+  each script individually.
+- This dev machine's Rust toolchain was accidentally left in a broken,
+  version-mismatched state (rustc 1.96.0 paired with cargo 1.98.0) by an
+  interrupted `rustup update stable` call during the CI-failure
+  investigation. Repaired via a clean toolchain uninstall/reinstall, now
+  on a consistent 1.98.1 — closer to what CI's `dtolnay/rust-toolchain@
+  stable` actually fetches, which should reduce (not eliminate) future
+  local/CI clippy-lint drift.
+- Tried to get a genuine non-Windows compile locally (WSL Ubuntu) to
+  verify the clippy fixes before pushing rather than relying on push-and-
+  check. Blocked twice: `sudo` needed an interactive password this
+  session couldn't provide (worked around via `wsl -u root`, which
+  doesn't need one), then the actual `apt-get install` of Tauri's Linux
+  deps (webkit2gtk et al.) hit ~14KB/s throughput on this WSL instance's
+  network — >100MB at that rate is hours, not minutes. Abandoned as
+  impractical; pushed the best-reasoned fix instead and verified against
+  real CI, which turned out faster overall despite two round-trips.
