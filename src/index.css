@@ -20,6 +20,13 @@
   --accent:        #e8e4dc;
   --accent-dim:    rgba(232,228,220,0.10);
   --accent-glow:   rgba(232,228,220,0.22);
+  /* Text color placed ON var(--accent) (buttons, badges) — most themes'
+     accents are light enough that black passes AA (4.5:1); only
+     Catppuccin Latte's saturated-purple accent needs white instead (its
+     accent, unlike every other theme's, is a mid-tone rather than a pale
+     one). See docs/ui-audit.md §5 — black-on-Latte-accent measured
+     3.88:1, a real under-AA bug this token fixes. */
+  --accent-text:   #000000;
   --sidebar-bg:    #0a0a0a;
   --sidebar-border:#1a1a1a;
   --is-light:      0;
@@ -86,6 +93,9 @@ html.theme-catppuccin-latte {
   --is-light:      1;
   --hover-bg:      rgba(0,0,0,0.05);
   --logo-bg:       #8839ef;
+  /* Only theme whose accent is dark enough to need white text instead of
+     black to pass AA — see the --accent-text definition in :root. */
+  --accent-text:   #ffffff;
 }
 
 /* ── Catppuccin Frappé ── */
@@ -448,7 +458,7 @@ aside {
   border-radius: var(--r-md);
   border: none;
   background: var(--accent);
-  color: #000;
+  color: var(--accent-text);
   font-size: 12px;
   font-weight: 600;
   font-family: 'Geist', sans-serif;
