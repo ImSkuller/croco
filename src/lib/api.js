@@ -283,9 +283,14 @@ export const api = {
     importAll: (srcPath)  => invoke('data_import_all', { srcPath }),
   },
 
-  // ── Premium ───────────────────────────────────────────────────────────────────
-  premium: {
-    validateKey: (key) => invoke('premium_validate_key', { key }),
+  // ── Entitlements ─────────────────────────────────────────────────────────────
+  // Server-verified only — see src-tauri/src/entitlements.rs. No client-side
+  // key/flag can grant a capability; both calls degrade to an empty
+  // capability list (free tier) rather than throwing, since "no premium"
+  // must never look like an error to the rest of the app.
+  entitlements: {
+    refresh: () => invoke('entitlements_refresh'), // hits the network; call on launch + periodically
+    get:     () => invoke('entitlements_get'),     // local-only cache read, safe on every render
   },
 
   // ── Ping (legacy stub) ───────────────────────────────────────────────────────

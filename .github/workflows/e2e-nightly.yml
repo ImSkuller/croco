@@ -45,6 +45,25 @@ jobs:
       - name: Build a release exe (no installer bundling needed for e2e)
         run: npx tauri build --no-bundle
 
+      # Every e2e script backs up settings.json before mutating it and
+      # restores it after — reasonable on a dev machine that's already run
+      # Croco at least once, but a fresh CI runner has never launched the
+      # app, so settings.json doesn't exist yet and every script fails
+      # immediately ("launch the app once first"). Bootstrap it the same
+      # way a real first launch would: run the exe briefly (setup_app()
+      # writes default settings.json on startup) and stop it.
+      - name: Bootstrap settings.json (first-launch simulation)
+        shell: pwsh
+        run: |
+          $proc = Start-Process -FilePath "src-tauri\target\release\croco.exe" -PassThru
+          Start-Sleep -Seconds 5
+          Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+          $settingsPath = "$env:APPDATA\xyz.skuller.croco\settings.json"
+          if (-not (Test-Path $settingsPath)) {
+            throw "settings.json still missing after bootstrap launch — the app may not have started in time."
+          }
+          Write-Host "settings.json bootstrapped at $settingsPath"
+
       - name: Run e2e suite
         run: npm run test:e2e
         env:

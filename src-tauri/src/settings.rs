@@ -33,10 +33,25 @@ pub fn default_settings() -> Value {
         },
         "appearance": {
             "theme": "default",
-            "style": "default",
+            // 'minimal' (Phase 4.4) is the default for brand-new installs
+            // only — an existing settings.json already has a concrete
+            // value here (even "default" is a real, previously-written
+            // choice), and deep_merge always lets the file win, so this
+            // line never silently switches an existing user's Style.
+            // They instead see a one-time prompt (Dashboard.jsx) gated on
+            // minimalStylePromptShown below.
+            "style": "minimal",
             "accentColor": "#E8E4DC",
             "fontBody": "Geist",
-            "fontDisplay": "Lora"
+            "fontDisplay": "Lora",
+            // Deliberately false for everyone, including new installs —
+            // the prompt itself (Dashboard.jsx) only shows when
+            // appearance.style !== 'minimal', which is already false for
+            // a new install (they start on 'minimal' above), so this flag
+            // alone never needs to distinguish "new" from "existing
+            // upgrading": new installs simply never hit the style-check
+            // half of the condition.
+            "minimalStylePromptShown": false
         },
         "todos": {
             "priorities": [
@@ -52,7 +67,11 @@ pub fn default_settings() -> Value {
             "closeBehavior": "tray",
             "dataPath": "",
             "storageBackend": "json",
-            "obsidian": { "enabled": false, "vaultPath": "", "lastSyncAt": null }
+            "obsidian": { "enabled": false, "vaultPath": "", "lastSyncAt": null },
+            // Stable, non-secret per-install identifier for entitlements.rs
+            // — safe to keep in plain settings.json, unlike anything in
+            // secrets.rs. Generated lazily on first use, not here.
+            "deviceId": ""
         },
         "ai": {
             "tool": "", "keys": { "anthropic": "", "openai": "", "gemini": "" }, "ollamaModel": "llama3.2",
@@ -67,9 +86,28 @@ pub fn default_settings() -> Value {
                 },
                 "ollamaBaseUrl": "http://localhost:11434"
             }
-        },
-        "premium": { "key": "", "active": false }
+        }
     })
+}
+
+/// One-time migration off the old client-side-only premium stub
+/// (`premium.key`/`premium.active` — trivially bypassable by editing
+/// settings.json by hand, replaced in Phase 3 by server-verified
+/// entitlements; see entitlements.rs). Idempotent — a no-op once the
+/// field is gone. Doesn't touch any other part of the file, unlike
+/// write_settings' defensive strip_secrets, since `premium` was never a
+/// secret, just dead client-side gating state.
+pub fn migrate_away_premium_stub(app: &AppHandle) {
+    let path = crate::settings_path(app);
+    let Ok(raw) = fs::read_to_string(&path) else { return };
+    let Ok(mut v) = serde_json::from_str::<Value>(&raw) else { return };
+    let Some(obj) = v.as_object_mut() else { return };
+    if obj.remove("premium").is_none() {
+        return; // already migrated (or a fresh install that never had it)
+    }
+    if let Ok(pretty) = serde_json::to_string_pretty(&v) {
+        let _ = fs::write(&path, pretty);
+    }
 }
 
 pub fn deep_merge(base: Value, patch: Value) -> Value {
