@@ -47,6 +47,9 @@ pub(crate) use updates::*;
 mod secrets;
 pub(crate) use secrets::*;
 
+mod entitlements;
+pub(crate) use entitlements::*;
+
 mod projects;
 pub(crate) use projects::*;
 
@@ -148,6 +151,7 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     // pre-1.14 install into it (idempotent — a no-op on every later launch).
     probe_keyring_available();
     migrate_secrets_to_keyring(&handle);
+    migrate_away_premium_stub(&handle);
 
     // Build tray menu
     let show  = MenuItem::with_id(app, "show",  "Show Window", true, None::<&str>)?;
@@ -264,8 +268,8 @@ fn main() {
             git_init_repo, git_add_to_gitignore,
             // project extras
             projects_publish_to_github,
-            // premium
-            premium_validate_key,
+            // entitlements
+            entitlements_refresh, entitlements_get,
             // data backup / restore
             data_export_all, data_import_all,
             // obsidian vault sync
