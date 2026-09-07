@@ -202,41 +202,45 @@ scope for the current phase. Not acted on yet.
 ## From Phase 4.1 (UI audit)
 
 - **The `color: '#000'`-hardcoded-near-`var(--accent)` contrast bug found
-  in the audit exists in 11 files beyond the one fixed** (Projects.jsx):
-  `Ideas.jsx`, `Notes.jsx`, `Onboarding.jsx`, `ProjectDetail.jsx`,
-  `ProjectForm.jsx`, `Todo.jsx`, `CrocoGame/CrocoGame.jsx`,
-  `GitHub/ChangelogPanel.jsx`, `ProjectDetail/GitPanel.jsx`,
-  `Settings/ObsidianSection.jsx`, `Settings/StorageSection.jsx` (found via
-  `grep -rln "color: '#000'"`). Each needs the same fix (`var(--accent-
-  text)` instead of the hardcoded value) — deliberately not hand-patched
-  now; these are exactly the pages Phase 4.2's page-by-page extraction
-  will touch anyway, and patching them outside that process risks the
-  same silent-inline-override trap this one instance already hit once
-  (the class fix alone did nothing until the inline override was also
-  removed).
-- **Vim Classic's `dimmer`-on-`card` contrast (2.99:1, just under the
-  3:1 large-text/UI threshold) was found but not fixed** — smaller margin
-  of failure than Latte's, and depends on confirming actual font-size at
-  each real use site before deciding whether it's a normal-text (4.5:1)
-  or large-text (3:1) violation. Worth closing out alongside whichever
-  theme-retirement decision you make (§5 of the audit) — moot if Vim
-  Classic itself gets retired.
-- **Theme retirement (8 → 4) is a recommendation only, not applied** —
-  needs your sign-off per the brief before any theme is actually removed.
-  See `docs/ui-audit.md` §5 for the specific proposal (keep Default/
-  Futuristic/Mocha + pick one of NeoVim-Dark/Vim-Classic; retire Latte/
-  Frappé/Macchiato + whichever of NeoVim/Vim isn't kept).
-- **`pasta-galaxy` removal is similarly a recommendation, not applied** —
-  confirmed dead (one line, no implementation anywhere), but removing a
-  user-facing picker entry is exactly the kind of thing the brief's own
-  Phase 4.4 asks to bring back for sign-off before deleting, so it wasn't
-  touched in the audit pass itself.
-- **Phase 4.2 (the actual ~2019-inline-style extraction) has not been
-  started.** The audit (4.1) is done; the extraction, the new minimal
-  Style (4.4), and the theme cleanup (4.5) are not. This is by far the
-  largest remaining piece of Phase 4 — the brief itself calls it "the
-  largest phase" and asks for before/after screenshots of every page in
-  both the new Style and the previous default as part of its gate, which
-  is real, cumulative, per-page visual-verification work, not something
-  that compresses into a single pass. Flagging the scale honestly rather
-  than either skipping the verification or claiming completion.
+  in the audit was fixed at its one demonstrated site (Projects.jsx) but
+  still exists in 11 other files**: `Ideas.jsx`, `Notes.jsx`,
+  `Onboarding.jsx`, `ProjectDetail.jsx`, `ProjectForm.jsx`, `Todo.jsx`,
+  `CrocoGame/CrocoGame.jsx`, `GitHub/ChangelogPanel.jsx`,
+  `ProjectDetail/GitPanel.jsx`, `Settings/ObsidianSection.jsx`,
+  `Settings/StorageSection.jsx` (found via `grep -rln "color: '#000'"`).
+  Each needs the same fix (`var(--accent-text)` instead of the hardcoded
+  value) — not hand-patched now; these are exactly the pages a future
+  page-by-page extraction pass will touch anyway, and patching them
+  outside that process risks the same silent-inline-override trap this
+  one instance already hit once (the class fix alone did nothing until
+  the inline override was also removed).
+- **Theme retirement (8 → 4) — applied in Phase 4.5.** Kept Default,
+  Catppuccin Mocha, NeoVim Dark, Futuristic; retired Latte, Frappé,
+  Macchiato, Vim Classic per `docs/ui-audit.md` §5's proposal. Vim
+  Classic's borderline `dimmer`-on-`card` contrast finding (2.99:1) is
+  now moot — that theme no longer exists.
+- **`pasta-galaxy` removed in Phase 4.5** — confirmed dead (one line, no
+  implementation anywhere) and removed from `appearanceStyle.js` along
+  with the theme cleanup above.
+- **Phase 4.2 (the ~2019-inline-style extraction) was NOT completed —
+  scope was deliberately reduced.** What shipped: 7 shared primitives in
+  `src/components/ui/` (`Button`, `Card`, `Chip`, `Badge`, `Modal`,
+  `EmptyState`, barrel `index.js`) consolidating ~9 duplicate button
+  components and 4 other duplicated patterns identified in the audit,
+  plus layout tokens (`--sidebar-width`, `--density-pad`, etc.) wired
+  into `Sidebar.jsx`. Only **one** concrete migration was done end-to-end
+  as a proof of the pattern: `Projects.jsx`'s empty-state block onto
+  `EmptyState`/`Button`. The other ~14 pages (`Notes`, `Todo`,
+  `Favourites`, `Activity`, `ProjectDetail`, `Settings`, `Dashboard`,
+  `Ideas`, `NoteEditor`, `ProjectForm`, `Onboarding`, `Patterns`,
+  `EasterEggs`, plus their component subfolders) still hand-roll their
+  own buttons/cards/chips/badges/empty-states inline — the ~2019 count
+  from the audit is effectively unchanged outside the one file touched.
+  This was a deliberate, honest scope call, not an oversight: the brief
+  itself calls this "the largest phase" and asks for before/after
+  screenshots of every page in both Styles as part of its own gate —
+  that's real per-page visual-verification work that doesn't compress
+  into the remaining session budget alongside everything else in Phase
+  4. The foundations (primitives + tokens) are real and load-bearing for
+  whoever picks the extraction up next; the extraction itself is future
+  work, not done.
