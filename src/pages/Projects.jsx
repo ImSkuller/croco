@@ -10,6 +10,8 @@ import { ProjectCardGrid, ProjectCardList, SearchBox, FilterTab, IconBtn, ViewBt
 import { useToast } from '../components/Toast/useToast.js'
 import { useKeyboard } from '../hooks/useKeyboard'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
+import { EmptyState } from '../components/ui/EmptyState.jsx'
+import { Button } from '../components/ui/Button.jsx'
 
 const FILTERS = ['All', 'Public', 'Hidden', 'Favourites', 'Running', 'Archived']
 const SORTS   = ['Last Opened', 'Name', 'Last Commit', 'Status']
@@ -277,42 +279,19 @@ export default function Projects() {
 
           {/* Empty state */}
           {!loading && filtered.length === 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: 14 }}>
-              <div style={{
-                width: 72, height: 72, borderRadius: 20,
-                background: 'var(--card)',
-                border: '1px solid var(--border)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 32, marginBottom: 4,
-              }}>
-                {projects.length === 0 ? '📁' : '🔍'}
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', letterSpacing: -0.3 }}>
-                {projects.length === 0 ? 'No projects yet' : 'No projects found'}
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--dim)', textAlign: 'center', maxWidth: 280, lineHeight: 1.5 }}>
-                {projects.length === 0
-                  ? 'Import an existing folder or create a new project to get started.'
-                  : 'Try adjusting your search or switching the active filter.'}
-              </div>
-              {projects.length === 0 && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                  <button
-                    onClick={() => navigate('/projects/new')}
-                    className="pm-btn-primary"
-                    style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--accent-text)', fontSize: 13, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
-                  >
-                    New Project
-                  </button>
-                  <button
-                    onClick={handleImport}
-                    style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 13, fontWeight: 500, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
-                  >
-                    Import Folder
-                  </button>
-                </div>
+            <EmptyState
+              icon={projects.length === 0 ? '📁' : '🔍'}
+              title={projects.length === 0 ? 'No projects yet' : 'No projects found'}
+              body={projects.length === 0
+                ? 'Import an existing folder or create a new project to get started.'
+                : 'Try adjusting your search or switching the active filter.'}
+              action={projects.length === 0 && (
+                <>
+                  <Button variant="primary" onClick={() => navigate('/projects/new')}>New Project</Button>
+                  <Button variant="secondary" onClick={handleImport}>Import Folder</Button>
+                </>
               )}
-            </div>
+            />
           )}
 
           {/* Grid view */}
