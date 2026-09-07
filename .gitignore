@@ -37,4 +37,10 @@ dist-ssr
 # AI working notes - never commit
 CLAUDE.md
 improvements.md
-/docs
+# /docs/* (not /docs) so a "not ignored" exception below can still be
+# reached - git won't traverse into a fully-excluded directory to apply
+# per-file negation patterns underneath it.
+/docs/*
+# Exception: real, reviewable deliverables explicitly asked for by name,
+# not scratch notes. Ask before adding another one.
+!docs/ui-audit.md

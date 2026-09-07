@@ -94,14 +94,153 @@ scope for the current phase. Not acted on yet.
   `unic-*` crates. These don't fail the CI gate (only actual vulnerabilities
   do, not warnings) and weren't chased down — worth a look whenever `rfd`
   or its GTK3 dependency chain has a maintained alternative.
-- The e2e nightly workflow (`.github/workflows/e2e-nightly.yml`) is written
-  and mirrors the locally-verified tauri-driver + msedgedriver pattern
-  (WebView2-version-matched driver download, `--no-bundle` release build,
-  `npm run test:e2e`), but **has not been run on an actual GitHub-hosted
-  runner** — only the equivalent local setup was verified in Phase 1. Watch
-  its first scheduled/manual run for anything environment-specific that
-  doesn't hold on `windows-latest` (e.g. WebView2 version availability,
-  `cargo install tauri-driver` build time within the job timeout).
 - Branch protection settings for `main` were recommended in the Phase 2
   report but not applied (no `gh` CLI / repo-admin access from this
   session) — still needs doing by hand in GitHub repo settings.
+
+## Post-merge CI fallout (fixed directly on main, not a numbered phase)
+
+- Phase 2's CI matrix went live on the real PR merge and immediately
+  failed `cargo clippy` on `ubuntu-22.04` and `macos-latest` (never
+  catchable locally — this dev machine is Windows-only). Two separate,
+  genuinely distinct bugs, found by exhaustively auditing every
+  `#[cfg(windows)]`/`#[cfg(not(windows))]`/`#[cfg(unix)]` block in the
+  codebase for asymmetric variable usage:
+  1. `no_window()` only mutated its `&mut Command` param inside
+     `#[cfg(windows)]`; the non-Windows body was `let _ = cmd;` —
+     `clippy::needless_pass_by_ref_mut`. Fixed by splitting into two
+     platform-gated function definitions.
+  2. `assert_write_target_safe()` computed `path_str` unconditionally but
+     only read it inside a `#[cfg(windows)]` UNC-path check — plain
+     `unused_variables` on non-Windows. Fixed by inlining the
+     `.to_string_lossy()` call into the cfg-gated check itself.
+  Both verified against real CI after push (commit `63c1b3d`) — green
+  across all three platforms.
+- The e2e nightly workflow ran for real (4 scheduled runs) and failed
+  every single time, always at the same point: every `e2e/verify-*.mjs`
+  script assumes `settings.json` already exists (backs it up before
+  mutating, restores after) — true on a dev machine that's launched Croco
+  before, false on a brand-new CI runner, so the first script in the
+  chain (`verify-obsidian-sync.mjs`) threw immediately and the whole
+  `&&`-chained `test:e2e` script never got past it. Fixed at the
+  workflow level: a new step launches the built exe briefly and stops it
+  (`setup_app()` writes default settings.json on startup) before the
+  suite runs. **Not** fixed at the script level — all 8 scripts duplicate
+  the identical existence check rather than sharing a helper, so anyone
+  running `npm run test:e2e` locally on a genuinely fresh machine (never
+  launched Croco) will still hit this; worth centralizing into a shared
+  "ensure settings.json exists" helper at some point rather than fixing
+  each script individually.
+- This dev machine's Rust toolchain was accidentally left in a broken,
+  version-mismatched state (rustc 1.96.0 paired with cargo 1.98.0) by an
+  interrupted `rustup update stable` call during the CI-failure
+  investigation. Repaired via a clean toolchain uninstall/reinstall, now
+  on a consistent 1.98.1 — closer to what CI's `dtolnay/rust-toolchain@
+  stable` actually fetches, which should reduce (not eliminate) future
+  local/CI clippy-lint drift.
+- Tried to get a genuine non-Windows compile locally (WSL Ubuntu) to
+  verify the clippy fixes before pushing rather than relying on push-and-
+  check. Blocked twice: `sudo` needed an interactive password this
+  session couldn't provide (worked around via `wsl -u root`, which
+  doesn't need one), then the actual `apt-get install` of Tauri's Linux
+  deps (webkit2gtk et al.) hit ~14KB/s throughput on this WSL instance's
+  network — >100MB at that rate is hours, not minutes. Abandoned as
+  impractical; pushed the best-reasoned fix instead and verified against
+  real CI, which turned out faster overall despite two round-trips.
+- **E2E nightly is still broken after the settings.json bootstrap fix —
+  a second, deeper issue.** Manually triggered a real run after the fix
+  (commit `054e83a`): it got past the settings.json check this time, but
+  failed with `session not created: DevToolsActivePort file doesn't
+  exist` when tauri-driver/msedgedriver tries to actually launch the app.
+  This is a well-known Selenium/Chromium-family error class, generally
+  caused by the browser process failing to start normally in a
+  restricted/non-interactive environment — plausible here since
+  `windows-latest` GitHub runners don't have the same interactive desktop
+  session this was verified against locally (Phase 1's tauri-driver
+  testing all happened on this dev machine's normal logged-in session).
+  Did not chase this further: e2e-nightly is a supplementary, non-blocking
+  workflow (doesn't gate PRs or merges — the actual `ci.yml` gate is green
+  on all three platforms), and fixing a CI-environment-specific WebView2
+  launch failure blind, without a way to reproduce the runner's exact
+  environment locally, risks an unbounded guess-push-wait cycle for
+  comparatively low value. Needs real investigation in a future pass —
+  likely starting points: whether tauri-driver needs an explicit
+  `--native-driver`/user-data-dir flag under GitHub Actions' Windows
+  runner, or whether the WebView2 Runtime install on that image needs a
+  different bootstrap than what's already there.
+
+## From Phase 3 (entitlements)
+
+- **`croco-server` is built and verified end-to-end but not deployed
+  anywhere.** `ENTITLEMENTS_SERVER_URL` in `src-tauri/src/entitlements.rs`
+  points at `https://entitlements.croco.dev`, which does not resolve.
+  Every entitlements_refresh call will fail with a network error until
+  the private repo is actually hosted somewhere and that constant is
+  updated to match — this is by design (see docs/entitlements.md's
+  "Decisions made / still open"), not a bug, but worth flagging loudly
+  since it means the whole feature is currently inert in any real build.
+  A user with no GitHub login (the common case) never even attempts the
+  call and just sees free tier, so this isn't user-visible yet.
+- `src/lib/capabilities.js` has no direct test coverage — its logic
+  mirrors `store.js`'s already-tested `ensure()` cache/TTL pattern
+  closely enough that I judged it lower-risk than most of what got tests
+  in Phase 2, but it's still untested. Would need an exported reset hook
+  (its cache is a module-level closure, same issue `store.js` solved via
+  `useDataStore.setState()`) to test properly.
+- The CSP's `connect-src` addition for `entitlements.croco.dev` is
+  currently unused in practice — every entitlements call goes through
+  Rust (`reqwest`, in `entitlements.rs`), not the webview's `fetch`/XHR,
+  so CSP doesn't actually govern it. Added anyway per the brief's
+  explicit instruction and as forward-compatible hardening in case a
+  future social-feature UI ever fetches directly from the frontend.
+- The admin-side of the entitlements server (granting/revoking
+  capabilities) has no UI or CLI beyond raw `curl`/HTTP calls against
+  `POST /v1/admin/entitlements` — functional and tested, but a real
+  admin workflow (a script, at minimum) would help once this is actually
+  used for anything.
+
+## From Phase 4.1 (UI audit)
+
+- **The `color: '#000'`-hardcoded-near-`var(--accent)` contrast bug found
+  in the audit was fixed at its one demonstrated site (Projects.jsx) but
+  still exists in 11 other files**: `Ideas.jsx`, `Notes.jsx`,
+  `Onboarding.jsx`, `ProjectDetail.jsx`, `ProjectForm.jsx`, `Todo.jsx`,
+  `CrocoGame/CrocoGame.jsx`, `GitHub/ChangelogPanel.jsx`,
+  `ProjectDetail/GitPanel.jsx`, `Settings/ObsidianSection.jsx`,
+  `Settings/StorageSection.jsx` (found via `grep -rln "color: '#000'"`).
+  Each needs the same fix (`var(--accent-text)` instead of the hardcoded
+  value) — not hand-patched now; these are exactly the pages a future
+  page-by-page extraction pass will touch anyway, and patching them
+  outside that process risks the same silent-inline-override trap this
+  one instance already hit once (the class fix alone did nothing until
+  the inline override was also removed).
+- **Theme retirement (8 → 4) — applied in Phase 4.5.** Kept Default,
+  Catppuccin Mocha, NeoVim Dark, Futuristic; retired Latte, Frappé,
+  Macchiato, Vim Classic per `docs/ui-audit.md` §5's proposal. Vim
+  Classic's borderline `dimmer`-on-`card` contrast finding (2.99:1) is
+  now moot — that theme no longer exists.
+- **`pasta-galaxy` removed in Phase 4.5** — confirmed dead (one line, no
+  implementation anywhere) and removed from `appearanceStyle.js` along
+  with the theme cleanup above.
+- **Phase 4.2 (the ~2019-inline-style extraction) was NOT completed —
+  scope was deliberately reduced.** What shipped: 7 shared primitives in
+  `src/components/ui/` (`Button`, `Card`, `Chip`, `Badge`, `Modal`,
+  `EmptyState`, barrel `index.js`) consolidating ~9 duplicate button
+  components and 4 other duplicated patterns identified in the audit,
+  plus layout tokens (`--sidebar-width`, `--density-pad`, etc.) wired
+  into `Sidebar.jsx`. Only **one** concrete migration was done end-to-end
+  as a proof of the pattern: `Projects.jsx`'s empty-state block onto
+  `EmptyState`/`Button`. The other ~14 pages (`Notes`, `Todo`,
+  `Favourites`, `Activity`, `ProjectDetail`, `Settings`, `Dashboard`,
+  `Ideas`, `NoteEditor`, `ProjectForm`, `Onboarding`, `Patterns`,
+  `EasterEggs`, plus their component subfolders) still hand-roll their
+  own buttons/cards/chips/badges/empty-states inline — the ~2019 count
+  from the audit is effectively unchanged outside the one file touched.
+  This was a deliberate, honest scope call, not an oversight: the brief
+  itself calls this "the largest phase" and asks for before/after
+  screenshots of every page in both Styles as part of its own gate —
+  that's real per-page visual-verification work that doesn't compress
+  into the remaining session budget alongside everything else in Phase
+  4. The foundations (primitives + tokens) are real and load-bearing for
+  whoever picks the extraction up next; the extraction itself is future
+  work, not done.

@@ -4,6 +4,8 @@ import { PlusIcon } from '../constants/SimpleSvgExports.jsx'
 import { StatCard, SectionHeader, ProjectCard, TodoItem, NoteItem, TopBtn, FavChip, SuggestionsCard } from '../components/Dashboard/Exports.jsx'
 import { useToast } from '../components/Toast/useToast.js'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
+import { applyStyle } from '../lib/appearanceStyle.js'
+import { Button } from '../components/ui/Button.jsx'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -138,6 +140,43 @@ export default function Dashboard() {
       {/* Scrollable body */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         <div className="pm-page" style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 28 }}>
+
+          {/* One-time "try the new Minimal style" prompt — only for
+              existing installs upgrading in (new installs start on
+              'minimal' already, see settings.rs::default_settings) */}
+          {settings && settings.appearance?.style !== 'minimal' && !settings.appearance?.minimalStylePromptShown && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '14px 18px', borderRadius: 'var(--r-lg)',
+              border: '1px solid var(--border)', background: 'var(--card)',
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>Try the new Minimal style?</div>
+                <div style={{ fontSize: 12, color: 'var(--dim)' }}>Near-zero radius, no shadows or glow, a narrower sidebar, motion capped at 150ms. You can switch back anytime in Settings → Appearance.</div>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={async () => {
+                  applyStyle('minimal')
+                  await window.api?.settings.update({ appearance: { style: 'minimal', minimalStylePromptShown: true } }).catch(() => {})
+                  patchData('settings', s => ({ ...s, appearance: { ...s.appearance, style: 'minimal', minimalStylePromptShown: true } }))
+                }}
+              >
+                Switch
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={async () => {
+                  await window.api?.settings.update({ appearance: { minimalStylePromptShown: true } }).catch(() => {})
+                  patchData('settings', s => ({ ...s, appearance: { ...s.appearance, minimalStylePromptShown: true } }))
+                }}
+              >
+                Dismiss
+              </Button>
+            </div>
+          )}
 
           {/* Greeting */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 20, alignItems: 'start' }}>
