@@ -147,3 +147,24 @@ scope for the current phase. Not acted on yet.
   network — >100MB at that rate is hours, not minutes. Abandoned as
   impractical; pushed the best-reasoned fix instead and verified against
   real CI, which turned out faster overall despite two round-trips.
+- **E2E nightly is still broken after the settings.json bootstrap fix —
+  a second, deeper issue.** Manually triggered a real run after the fix
+  (commit `054e83a`): it got past the settings.json check this time, but
+  failed with `session not created: DevToolsActivePort file doesn't
+  exist` when tauri-driver/msedgedriver tries to actually launch the app.
+  This is a well-known Selenium/Chromium-family error class, generally
+  caused by the browser process failing to start normally in a
+  restricted/non-interactive environment — plausible here since
+  `windows-latest` GitHub runners don't have the same interactive desktop
+  session this was verified against locally (Phase 1's tauri-driver
+  testing all happened on this dev machine's normal logged-in session).
+  Did not chase this further: e2e-nightly is a supplementary, non-blocking
+  workflow (doesn't gate PRs or merges — the actual `ci.yml` gate is green
+  on all three platforms), and fixing a CI-environment-specific WebView2
+  launch failure blind, without a way to reproduce the runner's exact
+  environment locally, risks an unbounded guess-push-wait cycle for
+  comparatively low value. Needs real investigation in a future pass —
+  likely starting points: whether tauri-driver needs an explicit
+  `--native-driver`/user-data-dir flag under GitHub Actions' Windows
+  runner, or whether the WebView2 Runtime install on that image needs a
+  different bootstrap than what's already there.
