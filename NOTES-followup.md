@@ -168,3 +168,33 @@ scope for the current phase. Not acted on yet.
   `--native-driver`/user-data-dir flag under GitHub Actions' Windows
   runner, or whether the WebView2 Runtime install on that image needs a
   different bootstrap than what's already there.
+
+## From Phase 3 (entitlements)
+
+- **`croco-server` is built and verified end-to-end but not deployed
+  anywhere.** `ENTITLEMENTS_SERVER_URL` in `src-tauri/src/entitlements.rs`
+  points at `https://entitlements.croco.dev`, which does not resolve.
+  Every entitlements_refresh call will fail with a network error until
+  the private repo is actually hosted somewhere and that constant is
+  updated to match — this is by design (see docs/entitlements.md's
+  "Decisions made / still open"), not a bug, but worth flagging loudly
+  since it means the whole feature is currently inert in any real build.
+  A user with no GitHub login (the common case) never even attempts the
+  call and just sees free tier, so this isn't user-visible yet.
+- `src/lib/capabilities.js` has no direct test coverage — its logic
+  mirrors `store.js`'s already-tested `ensure()` cache/TTL pattern
+  closely enough that I judged it lower-risk than most of what got tests
+  in Phase 2, but it's still untested. Would need an exported reset hook
+  (its cache is a module-level closure, same issue `store.js` solved via
+  `useDataStore.setState()`) to test properly.
+- The CSP's `connect-src` addition for `entitlements.croco.dev` is
+  currently unused in practice — every entitlements call goes through
+  Rust (`reqwest`, in `entitlements.rs`), not the webview's `fetch`/XHR,
+  so CSP doesn't actually govern it. Added anyway per the brief's
+  explicit instruction and as forward-compatible hardening in case a
+  future social-feature UI ever fetches directly from the frontend.
+- The admin-side of the entitlements server (granting/revoking
+  capabilities) has no UI or CLI beyond raw `curl`/HTTP calls against
+  `POST /v1/admin/entitlements` — functional and tested, but a real
+  admin workflow (a script, at minimum) would help once this is actually
+  used for anything.

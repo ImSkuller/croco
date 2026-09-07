@@ -146,11 +146,6 @@ pub fn app_restart(app: AppHandle) {
     app.exit(0);
 }
 
-#[tauri::command]
-pub fn premium_validate_key(_key: String) -> Value {
-    // Stub — premium validation backend not yet implemented
-    json!({ "valid": false, "message": "Premium validation coming soon" })
-}
 
 #[tauri::command]
 pub fn notify_send(app: AppHandle, title: String, body: String) -> Result<(), String> {
