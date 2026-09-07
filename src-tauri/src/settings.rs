@@ -33,10 +33,25 @@ pub fn default_settings() -> Value {
         },
         "appearance": {
             "theme": "default",
-            "style": "default",
+            // 'minimal' (Phase 4.4) is the default for brand-new installs
+            // only — an existing settings.json already has a concrete
+            // value here (even "default" is a real, previously-written
+            // choice), and deep_merge always lets the file win, so this
+            // line never silently switches an existing user's Style.
+            // They instead see a one-time prompt (Dashboard.jsx) gated on
+            // minimalStylePromptShown below.
+            "style": "minimal",
             "accentColor": "#E8E4DC",
             "fontBody": "Geist",
-            "fontDisplay": "Lora"
+            "fontDisplay": "Lora",
+            // Deliberately false for everyone, including new installs —
+            // the prompt itself (Dashboard.jsx) only shows when
+            // appearance.style !== 'minimal', which is already false for
+            // a new install (they start on 'minimal' above), so this flag
+            // alone never needs to distinguish "new" from "existing
+            // upgrading": new installs simply never hit the style-check
+            // half of the condition.
+            "minimalStylePromptShown": false
         },
         "todos": {
             "priorities": [

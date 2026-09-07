@@ -288,6 +288,86 @@ html.style-natural .font-display {
   letter-spacing: normal;
 }
 
+/* ── Minimal (Phase 4.4, docs/ui-audit.md §6) — the new default for new
+   installs (src-tauri/src/settings.rs::default_settings). Existing users
+   keep whatever Style they had; a one-time prompt (Dashboard.jsx) offers
+   the switch. Builds on Natural's flourish-removal (no gradient/glow/
+   lift/shadow) and goes further into layout, per the brief: this is the
+   one Style so far that restructures rather than only recolouring —
+   narrower sidebar, no max-width'd content column (that needs each
+   page's own wrapper migrated, still open), tighter density, a forced
+   sans-serif display face regardless of the user's fontDisplay choice,
+   near-zero border radius, and motion capped at 150ms honouring
+   prefers-reduced-motion (see the media query below, which now applies
+   app-wide, not just to this Style — reduced motion should always be
+   honoured no matter which Style is active). ── */
+html.style-minimal {
+  --dash-accent-card-bg: var(--card);
+  --card-hover-lift: 0px;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: 0 1px 2px rgba(0,0,0,0.10);
+  --accent-glow: transparent;
+  --r-sm: 3px;
+  --r-md: 4px;
+  --r-lg: 6px;
+  --r-xl: 8px;
+  --transition-fast: 100ms ease;
+  --transition-base: 130ms ease;
+  --transition-slow: 150ms ease;
+  --sidebar-width: 176px;
+  --density-pad: var(--sp-1);
+  --density-gap: 6px;
+  /* Forces a single family for this Style regardless of the user's
+     fontDisplay pick — "consider dropping the display serif entirely and
+     running a single family" (brief §4.4). Themes/fonts stay the user's
+     choice everywhere else; this is Style overriding on purpose. */
+  --font-display: var(--font-body);
+}
+html.style-minimal .pm-card {
+  border-color: var(--border);
+}
+html.style-minimal .pm-card:hover,
+html.style-minimal .glass-card:hover {
+  box-shadow: none;
+  transform: none;
+}
+html.style-minimal h1,
+html.style-minimal h2,
+html.style-minimal .font-display {
+  text-shadow: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+/* No decorative glow on the primary action — accent stays but flat. */
+html.style-minimal .pm-btn-primary {
+  box-shadow: none;
+}
+html.style-minimal .pm-btn-primary:hover {
+  box-shadow: none;
+  transform: none;
+  opacity: 0.85;
+}
+html.style-minimal .pm-btn-secondary:hover {
+  transform: none;
+}
+
+/* Motion is functional only, everywhere, in every Style — not just
+   Minimal's own 150ms cap above. A user who's asked their OS to reduce
+   motion should never see spring bounces (Apple), slide-ins, or hover
+   lift, regardless of which Style is otherwise active. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .pm-card:hover, .glass-card:hover {
+    transform: none !important;
+  }
+}
+
 /* ══════════════════════════════════════════════
    GLASSMORPHISM — semi-transparent cards per theme
    ══════════════════════════════════════════════ */

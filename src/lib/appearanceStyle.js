@@ -5,9 +5,15 @@
 
 export const STYLES = [
   {
+    id:          'minimal',
+    label:       'Minimal',
+    description: 'The new default (Phase 4.4) — near-zero radius, no shadows or glow, a narrower sidebar, motion capped at 150ms. One accent colour, used only for the primary action and current-state.',
+    status:      'available',
+  },
+  {
     id:          'default',
     label:       'Default',
-    description: 'The current Croco look — flat cards, minimal chrome.',
+    description: 'The classic Croco look — flat cards, minimal chrome.',
     status:      'available',
   },
   {
