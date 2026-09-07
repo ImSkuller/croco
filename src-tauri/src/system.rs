@@ -268,9 +268,8 @@ pub(crate) fn assert_safe_delete_root(path: &Path) -> Result<(), String> {
 }
 
 fn assert_write_target_safe(app: &AppHandle, path: &Path) -> Result<(), String> {
-    let path_str = path.to_string_lossy();
     #[cfg(windows)]
-    if path_str.starts_with(r"\\") {
+    if path.to_string_lossy().starts_with(r"\\") {
         return Err("Network (UNC) paths are not allowed".into());
     }
     if !path.is_absolute() {
