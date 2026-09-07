@@ -1,16 +1,24 @@
+import { lazyLoadGoogleFont } from './lazyGoogleFont'
+
 export const THEMES = [
   { id: 'default',                    label: 'Default',              dark: true  },
-  { id: 'theme-catppuccin-latte',     label: 'Catppuccin Latte',     dark: false },
-  { id: 'theme-catppuccin-frappe',    label: 'Catppuccin Frappé',    dark: true  },
-  { id: 'theme-catppuccin-macchiato', label: 'Catppuccin Macchiato', dark: true  },
   { id: 'theme-catppuccin-mocha',     label: 'Catppuccin Mocha',     dark: true  },
   { id: 'theme-neovim',               label: 'NeoVim Dark',          dark: true  },
-  { id: 'theme-vim',                  label: 'Vim Classic',          dark: true  },
   { id: 'theme-futuristic',           label: 'Futuristic',           dark: true  },
 ]
 
-// Themes removed in the 1.6 minimal redesign still linger in saved settings;
-// anything unknown falls back to the default theme.
+// Retired in the Phase 4 UI rearchitecture (docs/ui-audit.md §5): Catppuccin
+// Latte/Frappé/Macchiato and Vim Classic. Latte had a confirmed WCAG AA
+// contrast failure on its own accent color; Frappé/Macchiato were redundant
+// with Mocha (one palette family at three lightness steps, keeping the
+// best-contrast one); Vim Classic overlapped heavily with NeoVim Dark
+// (both muted, desaturated editor-inspired dark themes) and NeoVim Dark is
+// the more distinctive/recognizable of the two. Four excellent themes
+// instead of eight mediocre ones, per the brief.
+//
+// Themes removed here (or in the earlier 1.6 minimal redesign) still linger
+// in saved settings for existing users; anything unknown falls back to the
+// default theme rather than erroring.
 export function normalizeThemeId(themeId) {
   return THEMES.some(t => t.id === themeId) ? themeId : 'default'
 }
@@ -34,8 +42,12 @@ export function applyTheme(themeId, glass = false, overrides = {}) {
       html.style.setProperty('--accent-glow', `rgba(${r},${g},${b},0.25)`)
     }
   }
-  if (fontBody) html.style.setProperty('--font-body', `'${fontBody}', sans-serif`)
+  if (fontBody) {
+    lazyLoadGoogleFont(fontBody)
+    html.style.setProperty('--font-body', `'${fontBody}', sans-serif`)
+  }
   if (fontDisplay) {
+    lazyLoadGoogleFont(fontDisplay)
     html.style.setProperty(
       '--font-display',
       fontDisplay === 'inherit' ? 'var(--font-body)' : `'${fontDisplay}', serif`
@@ -48,12 +60,8 @@ export function getThemeAccentSwatch(themeId) {
   // Returns a representative color pair [bg, accent] for the theme picker swatch
   const map = {
     'default':                    ['#0a0a0a', '#e8e4dc'],
-    'theme-catppuccin-latte':     ['#eff1f5', '#8839ef'],
-    'theme-catppuccin-frappe':    ['#303446', '#ca9ee6'],
-    'theme-catppuccin-macchiato': ['#24273a', '#c6a0f6'],
     'theme-catppuccin-mocha':     ['#1e1e2e', '#cba6f7'],
     'theme-neovim':               ['#1a1b26', '#73daca'],
-    'theme-vim':                  ['#1c1c1c', '#5faf5f'],
     'theme-futuristic':           ['#050914', '#00f0ff'],
   }
   return map[themeId] || ['#0a0a0a', '#e8e4dc']
