@@ -15,9 +15,11 @@
 // a materially weaker guarantee than a real OS keyring, so callers should
 // surface `fallback_in_use()` to the user rather than let it be silent.
 
-use aes_gcm::aead::rand_core::RngCore;
-use aes_gcm::aead::{Aead, KeyInit, OsRng};
-use aes_gcm::{Aes256Gcm, Key, Nonce};
+// aes_gcm re-exports its own `Nonce<NonceSize>` (parameterized by the raw
+// size type), which shadows aead's cipher-parameterized `Nonce<A>` — pull
+// Key/Nonce from `aead` directly so `Nonce::<Aes256Gcm>` resolves correctly.
+use aes_gcm::aead::{Aead, Generate, Key, KeyInit, Nonce};
+use aes_gcm::Aes256Gcm;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::fs;
@@ -118,8 +120,7 @@ fn fallback_key(app: &AppHandle) -> [u8; 32] {
             return key;
         }
     }
-    let mut key = [0u8; 32];
-    OsRng.fill_bytes(&mut key);
+    let key: [u8; 32] = Generate::generate();
     if let Some(dir) = path.parent() {
         let _ = fs::create_dir_all(dir);
     }
@@ -144,9 +145,12 @@ fn fallback_load(app: &AppHandle) -> HashMap<String, String> {
         return HashMap::new();
     }
     let key = fallback_key(app);
-    let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(&key));
+    let cipher = Aes256Gcm::new(&Key::<Aes256Gcm>::from(key));
     let (nonce, ciphertext) = bytes.split_at(12);
-    let Ok(plain) = cipher.decrypt(Nonce::from_slice(nonce), ciphertext) else {
+    let Ok(nonce) = Nonce::<Aes256Gcm>::try_from(nonce) else {
+        return HashMap::new();
+    };
+    let Ok(plain) = cipher.decrypt(&nonce, ciphertext) else {
         return HashMap::new();
     };
     serde_json::from_slice(&plain).unwrap_or_default()
@@ -154,12 +158,11 @@ fn fallback_load(app: &AppHandle) -> HashMap<String, String> {
 
 fn fallback_save(app: &AppHandle, map: &HashMap<String, String>) {
     let key = fallback_key(app);
-    let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(&key));
-    let mut nonce_bytes = [0u8; 12];
-    OsRng.fill_bytes(&mut nonce_bytes);
-    let nonce = Nonce::from_slice(&nonce_bytes);
+    let cipher = Aes256Gcm::new(&Key::<Aes256Gcm>::from(key));
+    let nonce_bytes: [u8; 12] = Generate::generate();
+    let nonce = Nonce::<Aes256Gcm>::from(nonce_bytes);
     let plain = serde_json::to_vec(map).unwrap_or_default();
-    if let Ok(ciphertext) = cipher.encrypt(nonce, plain.as_ref()) {
+    if let Ok(ciphertext) = cipher.encrypt(&nonce, plain.as_ref()) {
         let mut out = nonce_bytes.to_vec();
         out.extend(ciphertext);
         let _ = fs::write(fallback_store_path(app), out);
@@ -239,4 +242,48 @@ pub fn migrate_secrets_to_keyring(app: &AppHandle) {
         let _ = fs::write(&path, pretty);
     }
     crate::activity_log(app, "settings.migration.secrets_to_keyring", serde_json::json!({}));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // fallback_save/fallback_load need an AppHandle just to resolve file
+    // paths — this exercises the actual encrypt/decrypt call shapes those
+    // functions use (Key::from/Nonce::from/Nonce::try_from/Generate) against
+    // aes-gcm 0.11's API directly, since that's what a dependency bump here
+    // would silently break without any other test coverage.
+    #[test]
+    fn fallback_cipher_round_trips() {
+        let key: [u8; 32] = Generate::generate();
+        let cipher = Aes256Gcm::new(&Key::<Aes256Gcm>::from(key));
+
+        let nonce_bytes: [u8; 12] = Generate::generate();
+        let nonce = Nonce::<Aes256Gcm>::from(nonce_bytes);
+        let plain = b"super-secret-token".to_vec();
+        let ciphertext = cipher.encrypt(&nonce, plain.as_ref()).unwrap();
+
+        let mut stored = nonce_bytes.to_vec();
+        stored.extend(ciphertext);
+
+        let cipher2 = Aes256Gcm::new(&Key::<Aes256Gcm>::from(key));
+        let (nonce_read, ciphertext_read) = stored.split_at(12);
+        let nonce_read = Nonce::<Aes256Gcm>::try_from(nonce_read).unwrap();
+        let decrypted = cipher2.decrypt(&nonce_read, ciphertext_read).unwrap();
+
+        assert_eq!(decrypted, plain);
+    }
+
+    #[test]
+    fn fallback_cipher_rejects_wrong_key() {
+        let key: [u8; 32] = Generate::generate();
+        let wrong_key: [u8; 32] = Generate::generate();
+        let cipher = Aes256Gcm::new(&Key::<Aes256Gcm>::from(key));
+        let nonce_bytes: [u8; 12] = Generate::generate();
+        let nonce = Nonce::<Aes256Gcm>::from(nonce_bytes);
+        let ciphertext = cipher.encrypt(&nonce, b"payload".as_ref()).unwrap();
+
+        let cipher2 = Aes256Gcm::new(&Key::<Aes256Gcm>::from(wrong_key));
+        assert!(cipher2.decrypt(&nonce, ciphertext.as_ref()).is_err());
+    }
 }
