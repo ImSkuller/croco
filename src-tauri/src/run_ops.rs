@@ -4,17 +4,28 @@
 // RUNNING_PIDS so run_start can refuse a second concurrent run and
 // run_stop/run_is_running know what to signal.
 
+// Phase 5: this module was swept of every panic-on-error unwrap()/expect() —
+// deny any new one so the module can't silently regress.
+#![deny(clippy::unwrap_used)]
+
 use once_cell::sync::Lazy;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 use std::thread;
 use tauri::{AppHandle, Emitter};
 
 static RUNNING_PIDS: Lazy<Mutex<HashMap<String, u32>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
+
+// A panic while this lock is held (main thread or one of the reader/waiter
+// threads below) would otherwise poison the mutex permanently — recover the
+// poisoned guard's data rather than let every later run/stop call panic.
+fn running_pids() -> std::sync::MutexGuard<'static, HashMap<String, u32>> {
+    RUNNING_PIDS.lock().unwrap_or_else(PoisonError::into_inner)
+}
 
 fn resolve_run_command(project: &Value, command_type: &str) -> Option<String> {
     let cmds = &project["commands"];
@@ -32,8 +43,8 @@ pub fn emit_toast(app: &AppHandle, title: &str, body: &str, kind: &str) {
 }
 
 #[tauri::command]
-pub fn run_start(app: AppHandle, project_id: String, command_type: String, env: Option<Value>, confirmed: Option<bool>) -> Result<Value, String> {
-    if RUNNING_PIDS.lock().unwrap().contains_key(&project_id) {
+pub async fn run_start(app: AppHandle, project_id: String, command_type: String, env: Option<Value>, confirmed: Option<bool>) -> Result<Value, String> {
+    if running_pids().contains_key(&project_id) {
         return Err("Already running. Stop it first.".into());
     }
 
@@ -110,13 +121,16 @@ pub fn run_start(app: AppHandle, project_id: String, command_type: String, env: 
     };
 
     let pid = child.id();
-    RUNNING_PIDS.lock().unwrap().insert(project_id.clone(), pid);
+    running_pids().insert(project_id.clone(), pid);
 
     app.emit("run:started", json!({ "projectId": project_id, "command": cmd })).ok();
     crate::activity_log(&app, "run.started", json!({ "projectId": project_id, "projectName": project_name, "command": cmd }));
 
-    let stdout = child.stdout.take().unwrap();
-    let stderr = child.stderr.take().unwrap();
+    // Stdio::piped() was set on both streams above, so these are always
+    // Some — but handle it as a real error instead of asserting via unwrap,
+    // in case that ever stops being true.
+    let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
+    let stderr = child.stderr.take().ok_or("Failed to capture stderr")?;
 
     // Thread: read stdout
     {
@@ -141,7 +155,7 @@ pub fn run_start(app: AppHandle, project_id: String, command_type: String, env: 
         let app = app.clone(); let pid = project_id.clone(); let pname = project_name.clone();
         thread::spawn(move || {
             let code = child.wait().map(|s| s.code().unwrap_or(0)).unwrap_or(-1);
-            RUNNING_PIDS.lock().unwrap().remove(&pid);
+            running_pids().remove(&pid);
             app.emit("run:finished", json!({ "projectId": pid, "exitCode": code })).ok();
             crate::activity_log(&app, "run.finished", json!({ "projectId": pid, "projectName": pname, "exitCode": code }));
             let ok = code == 0;
@@ -154,7 +168,7 @@ pub fn run_start(app: AppHandle, project_id: String, command_type: String, env: 
 
 #[tauri::command]
 pub async fn run_stop(project_id: String) -> Result<Value, String> {
-    let pid = RUNNING_PIDS.lock().unwrap().remove(&project_id);
+    let pid = running_pids().remove(&project_id);
     if let Some(pid) = pid {
         #[cfg(windows)]
         {
@@ -188,10 +202,10 @@ pub async fn run_stop(project_id: String) -> Result<Value, String> {
 
 #[tauri::command]
 pub fn run_get_running() -> Vec<String> {
-    RUNNING_PIDS.lock().unwrap().keys().cloned().collect()
+    running_pids().keys().cloned().collect()
 }
 
 #[tauri::command]
 pub fn run_is_running(project_id: String) -> bool {
-    RUNNING_PIDS.lock().unwrap().contains_key(&project_id)
+    running_pids().contains_key(&project_id)
 }

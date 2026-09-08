@@ -15,6 +15,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "node e2e/verify-obsidian-sync.mjs && node e2e/verify-personality-tracking.mjs && node e2e/verify-priorities-patterns-style.mjs && node e2e/verify-v2-milestones.mjs && node e2e/verify-startup-lastcommit-todolock.mjs && node e2e/verify-github-page.mjs && node e2e/verify-schedules.mjs && node e2e/verify-suggestions.mjs",
@@ -30,7 +31,7 @@
     "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-process": "^2.3.1",
-    "@tauri-apps/plugin-updater": "^2.10.1",
+    "@tauri-apps/plugin-updater": "^2.11.0",
     "commander": "^15.0.0",
     "dompurify": "^3.4.11",
     "marked": "^18.0.11",
@@ -51,6 +52,7 @@
     "globals": "^17.11.0",
     "jsdom": "^30.0.1",
     "selenium-webdriver": "^4.48.0",
+    "typescript": "^5.9.3",
     "vite": "^8.0.10",
     "vitest": "^4.1.11"
   }

@@ -244,3 +244,132 @@ scope for the current phase. Not acted on yet.
   4. The foundations (primitives + tokens) are real and load-bearing for
   whoever picks the extraction up next; the extraction itself is future
   work, not done.
+
+## From Phase 5 (correctness and performance)
+
+All 7 items were addressed; verified via `cargo test` (54/54), `cargo
+clippy -- -D warnings`, `npm run build`/`lint`/`typecheck`, and a real
+tauri-driver e2e pass driving the compiled app for items 4, 5, and 7
+specifically (deleted after the run — not added as permanent test
+infrastructure since it wasn't asked for; the transcript of what it
+verified is in this session's own record).
+
+1. **Panic paths — eliminated in all 5 named modules** (`db.rs`,
+   `notes_todos.rs`, `projects.rs`, `run_ops.rs`, `data_transfer.rs`; 47
+   `unwrap()`/`expect()` sites total). Every mutex (`DB`, `NOTES_CACHE`,
+   `TODOS_CACHE`, `PROJECTS_CACHE`, `RUNNING_PIDS`) now recovers from
+   poisoning instead of staying permanently broken after one panic; every
+   `serde_json::to_string_pretty(...).unwrap()` converts to real `Result`
+   propagation; `run_start` is now `async fn`, closing a separate
+   CLAUDE.md-rule violation flagged back in the Phase 1 report. Each of
+   the 5 modules got `#![deny(clippy::unwrap_used)]` as a regression
+   guard. **Not done**: the crate-wide `#![deny(clippy::unwrap_used)]`
+   the brief describes as the eventual end state — 21 more
+   `unwrap()`/`expect()` sites exist outside the 5 named modules
+   (`secrets.rs` 6 — some added by this session's own aes-gcm fix,
+   `schedules.rs` 5, `entitlements.rs` 3, `updates.rs` 2, `settings.rs` 2,
+   `personality.rs` 2, `main.rs` 2, `activity.rs` 1). The brief only
+   explicitly named the 5 modules above for this phase; the rest is
+   real follow-up work, not silently skipped.
+2. **SQLite schema — resolved via the brief's own documented either/or**,
+   not a migration. Every table stays `(id, data JSON)` rather than
+   promoting `archived`/`projectId`/`dueDate`/`priority` to real indexed
+   columns; the reasoning (this app's realistic data scale, and the
+   data-loss risk a real-column migration carries against every existing
+   install) is written directly into `db.rs` as a comment, not just here.
+   The one concrete, unconditionally-required sub-fix — `db_activity_get_all`
+   binding `LIMIT` as a parameter instead of `format!`-interpolating it —
+   is done regardless.
+3. **Settings write races — fixed.** `SETTINGS_WRITE_LOCK` serializes the
+   full read-modify-write cycle across all 4 commands that do one
+   (`settings_set`, `settings_update`, `settings_reset`,
+   `settings_save_avatar`); `write_settings` now writes to a temp file and
+   renames it over the real path (atomic on both Windows and Unix).
+   Verified with a real stress test: 100 concurrent threads each doing a
+   full read-modify-write cycle against the same file, asserting none of
+   the 100 writes are lost — this is the exact scenario that was racy
+   before. No genuine rapid-fire settings-write call site exists on the
+   frontend today (the accent-color/theme picker batches into one
+   explicit "Save" click; every other `settings.update()` call site is a
+   discrete one-off toggle) — didn't add a debounce wrapper for calls that
+   are already discrete, since there was nothing concrete to debounce.
+4. **git_status write amplification — fixed**, but the specific mechanism
+   differs slightly from how the brief described it: the write itself
+   (`projects_edit`) was *already* correctly gated on the commit date
+   actually changing before this phase — verified by reading the code,
+   not assumed. What wasn't gated was the `git log -1` subprocess spawn
+   itself, which ran on every `git_status` call regardless. Added a
+   10-second-per-project throttle on that check (not the write), with an
+   explicit bypass for `git_commit`'s own post-commit call (which must
+   never show a stale timestamp just because an unrelated check happened
+   moments earlier). Verified live: first `git_status` call after project
+   creation does write the file (commit date goes from unset to real), a
+   second call within the throttle window does not.
+5. **Avatar out of settings.json — done, and a real bug was caught and
+   fixed during its own verification.** The avatar now lives as a real
+   file (`avatar.png`/`avatar.jpg`) in the app data dir; `settings.json`
+   stores only a small marker. `read_settings()` reconstructs the data URI
+   on read so every existing frontend call site (Sidebar's `<img
+   src=...>`, Settings.jsx) sees the identical shape as before — zero
+   frontend changes needed. The bug: since `read_settings()` reconstructs
+   the full data URI, a value built from it and written back
+   (`settings_set`/`settings_update` merging in unrelated changes) would
+   otherwise persist that full blob right back into the file — the exact
+   problem being fixed, just relocated to write time. Caught this via code
+   reasoning before it ever ran, not from a test failure; fixed by having
+   `write_settings` always collapse `user.avatar` back to its on-disk
+   marker before persisting, covered by 2 unit tests plus the live e2e
+   run (which specifically checked that an unrelated `settings.update()`
+   call after a legacy-avatar migration didn't re-embed the blob).
+   `migrate_avatar_out_of_settings` is a new one-time startup migration for
+   installs that already have a data-URI avatar from before this change —
+   verified live against a real legacy-shaped settings.json, including
+   that the reconstructed data URI, the on-disk marker, the file's actual
+   existence, and a subsequent clear-and-resave cycle all behave correctly
+   end-to-end.
+6. **Frontend/backend contract typing — done, for `src/lib/api.js`**
+   specifically (the file the brief named). Added `typescript` as a
+   devDependency, a minimal `tsconfig.json` (`allowJs` on, `checkJs` off
+   project-wide — files opt in individually via their own leading
+   `// @ts-check`, the incremental file-by-file path rather than a full
+   migration), and a `typecheck` npm script. Every parameter across
+   `api.js`'s ~90 methods is typed from the real Rust command signatures;
+   return types are left as `Promise<any>` rather than guessed at, since
+   getting them right would need a full pass over the Rust side to be
+   accurate. Verified the checking is real (not an inert pragma) by
+   deliberately introducing a type error (`.toFixed()` on a JSDoc'd
+   `string` parameter), confirming `tsc` caught it, then reverting.
+   **Not done**: extending `// @ts-check` to any other file, or the
+   TypeScript-migration proposal the brief separately asked for as a
+   judgment call — worth doing, given `api.js`'s JSDoc now exists as a
+   reference shape, but a full incremental-migration plan (which files
+   next, in what order, `allowJs`-wide toggle timeline) is a separate
+   piece of work from typing one file and wasn't attempted here.
+7. **Dead configuration — removed.** `default_settings()` no longer ships
+   `ai.*` or `api.*` — confirmed zero consumers via `grep` across both
+   `src/` and `src-tauri/src/` (not assumed from CLAUDE.md's own history
+   notes alone). `migrate_away_dead_ai_api_config` is a new one-time
+   startup migration stripping both blocks from an existing
+   `settings.json`, registered to run *after*
+   `migrate_secrets_to_keyring` so any legacy plaintext `ai.keys.*` value
+   is swept into the keyring first. Verified live against a real
+   legacy-shaped settings.json with both blocks present.
+
+**Gate criterion not separately measured**: "startup time measured before
+and after the avatar change." The fix's benefit is structural — every
+`read_settings()` call across a session no longer round-trips a
+potentially-large embedded image, not a one-time startup cost — so a
+stopwatch on app launch specifically wouldn't isolate it meaningfully
+against Tauri/webview's much larger baseline init overhead. Verified the
+mechanism directly instead (the marker-vs-blob round trip, live and
+unit-tested) rather than a proxy timing measurement that wouldn't actually
+show the effect being fixed.
+
+**Also fixed in passing, found while building a release binary for this
+phase's e2e verification**: `npm run tauri:build` was failing outright —
+`@tauri-apps/plugin-updater` (npm) had drifted to `^2.10.1` while
+`tauri-plugin-updater` (the Rust crate, unpinned at `"2"` in Cargo.toml)
+had resolved to `2.11.0`, and Tauri refuses to build on a major/minor
+mismatch between the two. Bumped the npm package to match. This blocks any
+real release, not just this session's testing — worth a periodic check
+whenever either side's lockfile moves.

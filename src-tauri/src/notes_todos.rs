@@ -9,10 +9,14 @@
 // was previously inconsistent (present on some newer commands, missing
 // here); now applied uniformly.
 
+// Phase 5: this module was swept of every panic-on-error unwrap()/expect() —
+// deny any new one so the module can't silently regress.
+#![deny(clippy::unwrap_used)]
+
 use once_cell::sync::Lazy;
 use serde_json::{json, Value};
 use std::fs;
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 use tauri::AppHandle;
 
 // Raw notes (with _content) and todos, cached in memory after first read.
@@ -23,8 +27,11 @@ static NOTES_CACHE: Lazy<Mutex<Option<Vec<Value>>>> =
 static TODOS_CACHE: Lazy<Mutex<Option<Vec<Value>>>> =
     Lazy::new(|| Mutex::new(None));
 
-pub fn invalidate_notes_cache() { *NOTES_CACHE.lock().unwrap() = None; }
-pub fn invalidate_todos_cache() { *TODOS_CACHE.lock().unwrap() = None; }
+// A panic while a cache lock is held (e.g. a bug elsewhere in the same
+// critical section) would otherwise poison the mutex permanently — recover
+// the poisoned guard's data rather than let every later read/write panic.
+pub fn invalidate_notes_cache() { *NOTES_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = None; }
+pub fn invalidate_todos_cache() { *TODOS_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = None; }
 
 pub fn ensure_notes_dir(app: &AppHandle) { fs::create_dir_all(crate::notes_dir(app)).ok(); }
 pub fn ensure_todos_dir(app: &AppHandle) { fs::create_dir_all(crate::todos_dir(app)).ok(); }
@@ -36,7 +43,7 @@ fn note_word_count(text: &str) -> usize {
 // Read all notes (raw, with _content) — served from the in-memory cache when warm.
 pub fn read_all_notes_raw(app: &AppHandle) -> Vec<Value> {
     {
-        let c = NOTES_CACHE.lock().unwrap();
+        let c = NOTES_CACHE.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(ref ns) = *c { return ns.clone(); }
     }
     let out: Vec<Value> = if crate::is_sqlite_enabled(app) && crate::open_db(app).is_ok() {
@@ -63,14 +70,14 @@ pub fn read_all_notes_raw(app: &AppHandle) -> Vec<Value> {
         }
         out
     };
-    *NOTES_CACHE.lock().unwrap() = Some(out.clone());
+    *NOTES_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = Some(out.clone());
     out
 }
 
 // Read all todos (raw) — served from the in-memory cache when warm.
 pub fn read_all_todos_raw(app: &AppHandle) -> Vec<Value> {
     {
-        let c = TODOS_CACHE.lock().unwrap();
+        let c = TODOS_CACHE.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(ref ts) = *c { return ts.clone(); }
     }
     let out: Vec<Value> = if crate::is_sqlite_enabled(app) && crate::open_db(app).is_ok() {
@@ -88,7 +95,7 @@ pub fn read_all_todos_raw(app: &AppHandle) -> Vec<Value> {
             Err(_) => vec![],
         }
     };
-    *TODOS_CACHE.lock().unwrap() = Some(out.clone());
+    *TODOS_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = Some(out.clone());
     out
 }
 
@@ -168,7 +175,8 @@ pub fn notes_create(app: AppHandle, data: Value) -> Result<Value, String> {
     } else {
         ensure_notes_dir(&app);
         let dir = crate::notes_dir(&app);
-        fs::write(dir.join(format!("{}.json", id)), serde_json::to_string_pretty(&meta).unwrap()).map_err(|e| e.to_string())?;
+        let meta_json = serde_json::to_string_pretty(&meta).map_err(|e| e.to_string())?;
+        fs::write(dir.join(format!("{}.json", id)), meta_json).map_err(|e| e.to_string())?;
         fs::write(dir.join(format!("{}.md", id)), &content).map_err(|e| e.to_string())?;
         if let Value::Object(ref mut m) = meta { m.insert("content".into(), json!(&content)); }
     }
@@ -221,7 +229,8 @@ pub fn notes_update(app: AppHandle, id: String, changes: Value) -> Result<Value,
         let dir = crate::notes_dir(&app);
         let json_path = dir.join(format!("{}.json", id));
         if let Value::Object(ref mut m) = updated { m.remove("_content"); }
-        fs::write(&json_path, serde_json::to_string_pretty(&updated).unwrap()).map_err(|e| e.to_string())?;
+        let updated_json = serde_json::to_string_pretty(&updated).map_err(|e| e.to_string())?;
+        fs::write(&json_path, updated_json).map_err(|e| e.to_string())?;
         let md_path = dir.join(format!("{}.md", id));
         if let Some(ref c) = content_opt {
             fs::write(&md_path, c).map_err(|e| e.to_string())?;
@@ -317,7 +326,8 @@ pub fn todos_create(app: AppHandle, data: Value) -> Result<Value, String> {
         crate::db_upsert("todos", &id, &todo)?;
     } else {
         ensure_todos_dir(&app);
-        fs::write(crate::todos_dir(&app).join(format!("{}.json", id)), serde_json::to_string_pretty(&todo).unwrap())
+        let todo_json = serde_json::to_string_pretty(&todo).map_err(|e| e.to_string())?;
+        fs::write(crate::todos_dir(&app).join(format!("{}.json", id)), todo_json)
             .map_err(|e| e.to_string())?;
     }
     invalidate_todos_cache();
@@ -349,7 +359,8 @@ pub fn todos_toggle(app: AppHandle, id: String) -> Result<Value, String> {
         crate::db_upsert("todos", &id, &todo)?;
     } else {
         let path = crate::todos_dir(&app).join(format!("{}.json", id));
-        fs::write(&path, serde_json::to_string_pretty(&todo).unwrap()).map_err(|e| e.to_string())?;
+        let todo_json = serde_json::to_string_pretty(&todo).map_err(|e| e.to_string())?;
+        fs::write(&path, todo_json).map_err(|e| e.to_string())?;
     }
     invalidate_todos_cache();
     let title      = todo["title"].as_str().unwrap_or("").to_string();
@@ -381,7 +392,8 @@ pub fn todos_update(app: AppHandle, id: String, changes: Value) -> Result<Value,
         crate::db_upsert("todos", &id, &updated)?;
     } else {
         let path = crate::todos_dir(&app).join(format!("{}.json", id));
-        fs::write(&path, serde_json::to_string_pretty(&updated).unwrap()).map_err(|e| e.to_string())?;
+        let updated_json = serde_json::to_string_pretty(&updated).map_err(|e| e.to_string())?;
+        fs::write(&path, updated_json).map_err(|e| e.to_string())?;
     }
     invalidate_todos_cache();
     if title_changed {

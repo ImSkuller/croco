@@ -3,20 +3,27 @@
 // the create-time git-init/GitHub-repo-creation flow. The largest module
 // in the backend — this used to be ~900 lines inline in main.rs.
 
+// Phase 5: this module was swept of every panic-on-error unwrap()/expect() —
+// deny any new one so the module can't silently regress.
+#![deny(clippy::unwrap_used)]
+
 use once_cell::sync::Lazy;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 use tauri::AppHandle;
 use tauri_plugin_opener::OpenerExt;
 
 static PROJECTS_CACHE: Lazy<Mutex<Option<Vec<Value>>>> =
     Lazy::new(|| Mutex::new(None));
 
-pub fn invalidate_projects_cache() { *PROJECTS_CACHE.lock().unwrap() = None; }
+// A panic while the cache lock is held would otherwise poison the mutex
+// permanently — recover the poisoned guard's data instead of letting every
+// later read/write panic for the rest of the session.
+pub fn invalidate_projects_cache() { *PROJECTS_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = None; }
 
 const EMOJI_BG: &[(&str, &str)] = &[
     ("⚡", "rgba(74,158,255,0.12)"), ("📁", "rgba(255,107,53,0.12)"),
@@ -83,14 +90,14 @@ fn unique_slug(base: &str, projects: &[Value]) -> String {
 pub fn read_all_projects(app: &AppHandle) -> Vec<Value> {
     // Return from cache if warm
     {
-        let c = PROJECTS_CACHE.lock().unwrap();
+        let c = PROJECTS_CACHE.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(ref ps) = *c { return ps.clone(); }
     }
 
     // SQLite backend
     if crate::is_sqlite_enabled(app) && crate::open_db(app).is_ok() {
         let ps = crate::db_get_all("projects");
-        *PROJECTS_CACHE.lock().unwrap() = Some(ps.clone());
+        *PROJECTS_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = Some(ps.clone());
         return ps;
     }
 
@@ -104,12 +111,13 @@ pub fn read_all_projects(app: &AppHandle) -> Vec<Value> {
                 fs::create_dir_all(&dir).ok();
                 for p in &ps {
                     if let Some(id) = p["id"].as_str() {
-                        fs::write(dir.join(format!("{}.json", id)),
-                            serde_json::to_string_pretty(p).unwrap()).ok();
+                        if let Ok(pretty) = serde_json::to_string_pretty(p) {
+                            fs::write(dir.join(format!("{}.json", id)), pretty).ok();
+                        }
                     }
                 }
                 fs::remove_file(&legacy).ok();
-                *PROJECTS_CACHE.lock().unwrap() = Some(ps.clone());
+                *PROJECTS_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = Some(ps.clone());
                 return ps;
             }
         }
@@ -127,7 +135,7 @@ pub fn read_all_projects(app: &AppHandle) -> Vec<Value> {
             }
         }
     }
-    *PROJECTS_CACHE.lock().unwrap() = Some(ps.clone());
+    *PROJECTS_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = Some(ps.clone());
     ps
 }
 
@@ -140,10 +148,10 @@ pub fn upsert_project(app: &AppHandle, p: Value) -> Result<(), String> {
     } else {
         let dir = crate::project_details_dir(app);
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-        fs::write(dir.join(format!("{}.json", id)),
-            serde_json::to_string_pretty(&p).unwrap()).map_err(|e| e.to_string())?;
+        let pretty = serde_json::to_string_pretty(&p).map_err(|e| e.to_string())?;
+        fs::write(dir.join(format!("{}.json", id)), pretty).map_err(|e| e.to_string())?;
     }
-    let mut cache = PROJECTS_CACHE.lock().unwrap();
+    let mut cache = PROJECTS_CACHE.lock().unwrap_or_else(PoisonError::into_inner);
     if let Some(ref mut ps) = *cache {
         match ps.iter().position(|q| q["id"].as_str() == Some(&id)) {
             Some(i) => ps[i] = p,
@@ -157,7 +165,7 @@ pub fn get_project(app: &AppHandle, id: &str) -> Option<Value> {
     // Check cache first — but on a cache miss fall through to disk/DB
     // (the cache may have been populated before this project existed)
     {
-        let c = PROJECTS_CACHE.lock().unwrap();
+        let c = PROJECTS_CACHE.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(ref ps) = *c {
             if let Some(p) = ps.iter().find(|p| p["id"].as_str() == Some(id)) {
                 return Some(p.clone());
@@ -656,7 +664,7 @@ pub fn projects_delete(app: AppHandle, id: String) -> Result<Value, String> {
         let path = crate::project_file(&app, &id);
         if path.exists() { fs::remove_file(&path).map_err(|e| e.to_string())?; }
     }
-    let mut cache = PROJECTS_CACHE.lock().unwrap();
+    let mut cache = PROJECTS_CACHE.lock().unwrap_or_else(PoisonError::into_inner);
     if let Some(ref mut ps) = *cache {
         ps.retain(|p| p["id"].as_str() != Some(id.as_str()));
     }

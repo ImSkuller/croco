@@ -7,10 +7,13 @@
 // fails — see *_with_auth_fallback below. Tokens are always scrubbed from
 // error strings before they reach the UI.
 
+use once_cell::sync::Lazy;
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
+use std::sync::{Mutex, PoisonError};
 use tauri::AppHandle;
 
 pub fn run_git(args: &[&str], cwd: &str) -> Result<String, String> {
@@ -39,9 +42,48 @@ fn latest_commit_iso(cwd: &str) -> Option<String> {
     run_git(&["log", "-1", "--format=%cI"], cwd).ok().filter(|s| !s.is_empty())
 }
 
+// git_status is event-driven on the frontend (initial load, after commit/
+// stage/unstage, manual refresh) rather than polled on an interval, but
+// several of those events can fire in a tight burst (e.g. switching
+// between projects quickly, or a commit immediately re-checking status) —
+// each one otherwise spawning a fresh `git log -1` subprocess. Throttle the
+// check itself (not just the write, which already only fires on an actual
+// change) to at most once per project per THROTTLE_WINDOW_MS.
+static LAST_COMMIT_SYNC_CHECK: Lazy<Mutex<HashMap<String, u128>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+const COMMIT_SYNC_THROTTLE_MS: u128 = 10_000;
+
+fn now_ms() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0)
+}
+
+// Pure decision extracted for testability (real time is hard to fake) —
+// `now_ms()` is the only caller that needs to touch the system clock.
+fn should_check_commit_sync(last_checked_ms: Option<u128>, now_ms: u128, window_ms: u128) -> bool {
+    match last_checked_ms {
+        Some(last) => now_ms.saturating_sub(last) >= window_ms,
+        None => true,
+    }
+}
+
 // Refreshes a single project's meta.lastCommitAt from its actual git log.
-// Cheap (one `git log -1`) and safe to call on every status check.
-fn sync_last_commit_date(app: &AppHandle, id: &str, cwd: &str) {
+// Throttled for `git_status`'s repeated/event-burst calls (see above); the
+// write itself only happens when the value actually changed. `force` skips
+// the throttle for callers that just made a real change themselves (e.g.
+// git_commit, right after a commit it made) — those must never show a
+// stale timestamp just because a check happened moments earlier.
+fn sync_last_commit_date(app: &AppHandle, id: &str, cwd: &str, force: bool) {
+    if !force {
+        let mut last = LAST_COMMIT_SYNC_CHECK.lock().unwrap_or_else(PoisonError::into_inner);
+        let now = now_ms();
+        if !should_check_commit_sync(last.get(id).copied(), now, COMMIT_SYNC_THROTTLE_MS) {
+            return;
+        }
+        last.insert(id.to_string(), now);
+    }
     if let Some(iso) = latest_commit_iso(cwd) {
         let current = crate::get_project(app, id)
             .and_then(|p| p["meta"]["lastCommitAt"].as_str().map(|s| s.to_string()));
@@ -49,12 +91,18 @@ fn sync_last_commit_date(app: &AppHandle, id: &str, cwd: &str) {
             let _ = crate::projects_edit(app.clone(), id.to_string(), json!({ "meta": { "lastCommitAt": iso } }));
         }
     }
+    // A forced (post-commit) check also resets the throttle window so a
+    // git_status call immediately after doesn't spawn a redundant `git log`.
+    if force {
+        let mut last = LAST_COMMIT_SYNC_CHECK.lock().unwrap_or_else(PoisonError::into_inner);
+        last.insert(id.to_string(), now_ms());
+    }
 }
 
 #[tauri::command]
 pub async fn git_status(app: AppHandle, id: String) -> Result<Value, String> {
     let cwd = project_root(&app, &id)?;
-    sync_last_commit_date(&app, &id, &cwd);
+    sync_last_commit_date(&app, &id, &cwd, false);
     let status_out = run_git(&["status", "--short"], &cwd)?;
     let branch = run_git(&["rev-parse", "--abbrev-ref", "HEAD"], &cwd)
         .unwrap_or_else(|_| "main".into());
@@ -276,7 +324,7 @@ pub async fn git_commit(app: AppHandle, id: String, msg: String) -> Result<Value
         run_git(&["add", "."], &cwd)?;
     }
     run_git(&["commit", "-m", &message], &cwd)?;
-    sync_last_commit_date(&app, &id, &cwd);
+    sync_last_commit_date(&app, &id, &cwd, true);
     let branch = status["branch"].as_str().unwrap_or("main").to_string();
     match push_with_auth_fallback(&app, &id, &cwd, &branch) {
         Ok(_) => {
@@ -654,7 +702,29 @@ pub async fn git_get_commit_dates(app: AppHandle, id: String, limit: Option<u32>
 
 #[cfg(test)]
 mod tests {
-    use super::parse_git_status_short;
+    use super::{parse_git_status_short, should_check_commit_sync};
+
+    #[test]
+    fn commit_sync_check_runs_on_first_call() {
+        assert!(should_check_commit_sync(None, 1_000, 10_000));
+    }
+
+    #[test]
+    fn commit_sync_check_is_throttled_within_the_window() {
+        assert!(!should_check_commit_sync(Some(1_000), 5_000, 10_000));
+    }
+
+    #[test]
+    fn commit_sync_check_runs_again_once_the_window_elapses() {
+        assert!(should_check_commit_sync(Some(1_000), 11_000, 10_000));
+    }
+
+    #[test]
+    fn commit_sync_check_boundary_is_inclusive() {
+        // Exactly window_ms elapsed should already count as due, not one ms short.
+        assert!(should_check_commit_sync(Some(1_000), 11_000, 10_000));
+        assert!(!should_check_commit_sync(Some(1_000), 10_999, 10_000));
+    }
 
     #[test]
     fn empty_output_is_clean() {
