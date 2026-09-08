@@ -69,7 +69,14 @@ pub fn default_settings() -> Value {
                 { "id": "low",  "label": "Low",     "color": "#4aff91" }
             ]
         },
-        "api": { "enabled": false, "port": 3131 },
+        // No "api" or "ai" block here — both were dead config with zero
+        // consumers anywhere in the codebase (Phase 5 item 7): "api" was a
+        // leftover from the REST server removed in v1.1.0, "ai" from the
+        // AI Assistant deleted in v1.9.0. Removed from defaults rather than
+        // reimplemented; see migrate_away_dead_ai_api_config below for how
+        // an existing install's settings.json gets the same fields
+        // stripped, and secrets.rs::migrate_secrets_to_keyring for where
+        // any legacy plaintext ai.keys.* value goes before that strip runs.
         "app": {
             "version": env!("CARGO_PKG_VERSION"),
             "onboarded": false,
@@ -81,20 +88,6 @@ pub fn default_settings() -> Value {
             // — safe to keep in plain settings.json, unlike anything in
             // secrets.rs. Generated lazily on first use, not here.
             "deviceId": ""
-        },
-        "ai": {
-            "tool": "", "keys": { "anthropic": "", "openai": "", "gemini": "" }, "ollamaModel": "llama3.2",
-            "mode": "cli", "provider": "anthropic", "activeModeId": "chat",
-            "autoConfigAttempted": false,
-            "direct": {
-                "models": {
-                    "anthropic": "claude-sonnet-4-5-20250929",
-                    "openai": "gpt-4.1",
-                    "gemini": "gemini-2.0-flash",
-                    "ollama": "llama3.2"
-                },
-                "ollamaBaseUrl": "http://localhost:11434"
-            }
         }
     })
 }
@@ -113,6 +106,29 @@ pub fn migrate_away_premium_stub(app: &AppHandle) {
     let Some(obj) = v.as_object_mut() else { return };
     if obj.remove("premium").is_none() {
         return; // already migrated (or a fresh install that never had it)
+    }
+    if let Ok(pretty) = serde_json::to_string_pretty(&v) {
+        let _ = fs::write(&path, pretty);
+    }
+}
+
+/// One-time migration removing the "api" and "ai" top-level blocks
+/// (Phase 5 item 7) — both dead config with zero consumers anywhere in the
+/// codebase, no longer in default_settings() for fresh installs, but an
+/// existing settings.json from before this change still has them until
+/// this runs. Idempotent — a no-op once both are gone. Must run *after*
+/// migrate_secrets_to_keyring so any legacy plaintext ai.keys.* value has
+/// already been swept into the keyring before this deletes the block it
+/// lived in.
+pub fn migrate_away_dead_ai_api_config(app: &AppHandle) {
+    let path = crate::settings_path(app);
+    let Ok(raw) = fs::read_to_string(&path) else { return };
+    let Ok(mut v) = serde_json::from_str::<Value>(&raw) else { return };
+    let Some(obj) = v.as_object_mut() else { return };
+    let removed_api = obj.remove("api").is_some();
+    let removed_ai = obj.remove("ai").is_some();
+    if !removed_api && !removed_ai {
+        return; // already migrated (or a fresh install that never had them)
     }
     if let Ok(pretty) = serde_json::to_string_pretty(&v) {
         let _ = fs::write(&path, pretty);

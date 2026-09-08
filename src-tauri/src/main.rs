@@ -153,6 +153,8 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     migrate_secrets_to_keyring(&handle);
     migrate_away_premium_stub(&handle);
     migrate_avatar_out_of_settings(&handle);
+    // Must run after migrate_secrets_to_keyring — see its own doc comment.
+    migrate_away_dead_ai_api_config(&handle);
 
     // Build tray menu
     let show  = MenuItem::with_id(app, "show",  "Show Window", true, None::<&str>)?;
