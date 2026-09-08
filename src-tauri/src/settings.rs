@@ -171,6 +171,23 @@ pub fn read_settings(app: &AppHandle) -> Value {
     if let Some(app_obj) = merged.get_mut("app").and_then(|a| a.as_object_mut()) {
         app_obj.insert("secretsFallbackActive".into(), Value::Bool(crate::fallback_in_use()));
     }
+    // user.avatar on disk is just a marker ("png"/"jpg" — see the Avatar
+    // storage section below); rebuild the data URI here so callers see the
+    // same shape they always have, without that image ever round-tripping
+    // through every other read_settings() call.
+    if let Some(marker) = merged.get("user").and_then(|u| u.get("avatar")).and_then(|a| a.as_str()) {
+        if AVATAR_EXTS.contains(&marker) {
+            let data_uri = fs::read(avatar_file_path(app, marker))
+                .ok()
+                .map(|bytes| format!("data:{};base64,{}", avatar_mime(marker), B64.encode(bytes)));
+            if let Some(user) = merged.get_mut("user").and_then(|u| u.as_object_mut()) {
+                match data_uri {
+                    Some(uri) => { user.insert("avatar".into(), Value::String(uri)); }
+                    None => { user.insert("avatar".into(), Value::Null); }
+                }
+            }
+        }
+    }
     merged
 }
 
@@ -191,9 +208,34 @@ fn write_json_atomic(path: &std::path::Path, v: &Value) -> Result<(), String> {
     fs::rename(&tmp_path, path).map_err(|e| e.to_string())
 }
 
+// read_settings() returns user.avatar as a full reconstructed data URI (see
+// its avatar-injection step) so every caller sees the shape it always has —
+// but that means a write built from a read_settings() base (settings_set,
+// settings_update merging in unrelated changes, etc.) would otherwise carry
+// that full data URI right back into the value being persisted, undoing the
+// whole point of storing it as a file. Collapse it back to the on-disk
+// marker before every write.
+fn sanitize_avatar_field(v: &mut Value) {
+    let marker = v.get("user").and_then(|u| u.get("avatar")).and_then(|a| a.as_str()).and_then(|s| {
+        if s.starts_with("data:image/png") { Some("png") }
+        else if s.starts_with("data:image/jpeg") { Some("jpg") }
+        else { None }
+    });
+    if let Some(marker) = marker {
+        if let Some(obj) = v.get_mut("user").and_then(|u| u.as_object_mut()) {
+            obj.insert("avatar".into(), Value::String(marker.to_string()));
+        }
+    }
+}
+
 pub fn write_settings(app: &AppHandle, v: &Value) -> Result<(), String> {
     let mut v = v.clone();
     strip_secrets(&mut v);
+    let was_cleared = v.get("user").and_then(|u| u.get("avatar")).map(|a| a.is_null()).unwrap_or(false);
+    sanitize_avatar_field(&mut v);
+    if was_cleared {
+        delete_stored_avatar(app);
+    }
     write_json_atomic(&crate::settings_path(app), &v)
 }
 
@@ -282,21 +324,76 @@ pub async fn settings_test_github(token: String) -> Result<Value, String> {
     }
 }
 
+// ─── Avatar storage ─────────────────────────────────────────────────────────
+//
+// The avatar image lives as a real file in the app data dir, not embedded
+// as a base64 data URI inside settings.json. read_settings() is called on
+// nearly every command (including from inside projects_data_dir), so an
+// embedded image meant every single one of those calls parsed the whole
+// image out of the JSON file whether or not the caller needed it. Only
+// `user.avatar`'s *marker* ("png"/"jpg" — which extension is on disk) lives
+// in settings.json; read_settings() reads the actual file and rebuilds the
+// data URI only when producing a value to return, never writing it back.
+
+const AVATAR_EXTS: [&str; 2] = ["png", "jpg"];
+
+fn avatar_mime(ext: &str) -> &'static str {
+    if ext == "jpg" || ext == "jpeg" { "image/jpeg" } else { "image/png" }
+}
+
+fn avatar_file_path(app: &AppHandle, ext: &str) -> std::path::PathBuf {
+    crate::app_data_dir(app).join(format!("avatar.{}", ext))
+}
+
+fn delete_stored_avatar(app: &AppHandle) {
+    for ext in AVATAR_EXTS {
+        fs::remove_file(avatar_file_path(app, ext)).ok();
+    }
+}
+
+/// One-time migration for installs that saved an avatar before this file-
+/// based storage existed (it was a full base64 data URI directly in
+/// settings.json). Extracts it to a file and replaces the field with the
+/// same small marker a fresh save would produce. Idempotent — a no-op once
+/// `user.avatar` is already a marker (or absent).
+pub fn migrate_avatar_out_of_settings(app: &AppHandle) {
+    let path = crate::settings_path(app);
+    let Ok(raw) = fs::read_to_string(&path) else { return };
+    let Ok(mut v) = serde_json::from_str::<Value>(&raw) else { return };
+    let Some(avatar) = v.get("user").and_then(|u| u.get("avatar")).and_then(|a| a.as_str()) else { return };
+    let Some(b64) = avatar.strip_prefix("data:image/png;base64,").map(|s| (s, "png"))
+        .or_else(|| avatar.strip_prefix("data:image/jpeg;base64,").map(|s| (s, "jpg"))) else { return };
+    let (b64, ext) = b64;
+    let Ok(data) = B64.decode(b64) else { return };
+    if fs::write(avatar_file_path(app, ext), data).is_err() { return; }
+    if let Some(obj) = v.get_mut("user").and_then(|u| u.as_object_mut()) {
+        obj.insert("avatar".into(), Value::String(ext.to_string()));
+    }
+    if let Ok(pretty) = serde_json::to_string_pretty(&v) {
+        let _ = fs::write(&path, pretty);
+    }
+}
+
 #[tauri::command]
 pub fn settings_save_avatar(app: AppHandle, file_path: String) -> Result<String, String> {
     let data = fs::read(&file_path).map_err(|e| e.to_string())?;
     let ext = Path::new(&file_path)
         .extension()
         .and_then(|e| e.to_str())
-        .unwrap_or("png")
-        .to_lowercase();
-    let mime = if ext == "jpg" || ext == "jpeg" { "image/jpeg" } else { "image/png" };
+        .map(|e| e.to_lowercase())
+        .filter(|e| e == "jpg" || e == "jpeg")
+        .map(|_| "jpg")
+        .unwrap_or("png");
+    let mime = avatar_mime(ext);
     let b64 = format!("data:{};base64,{}", mime, B64.encode(&data));
+
     let _guard = SETTINGS_WRITE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
+    delete_stored_avatar(&app);
+    fs::write(avatar_file_path(&app, ext), &data).map_err(|e| e.to_string())?;
     let mut s = read_settings(&app);
     if let Value::Object(ref mut m) = s {
         if let Some(Value::Object(ref mut u)) = m.get_mut("user") {
-            u.insert("avatar".to_string(), Value::String(b64.clone()));
+            u.insert("avatar".to_string(), Value::String(ext.to_string()));
         }
     }
     write_settings(&app, &s)?;
@@ -305,7 +402,7 @@ pub fn settings_save_avatar(app: AppHandle, file_path: String) -> Result<String,
 
 #[cfg(test)]
 mod tests {
-    use super::{deep_merge, set_nested, write_json_atomic, SETTINGS_WRITE_LOCK};
+    use super::{deep_merge, sanitize_avatar_field, set_nested, write_json_atomic, SETTINGS_WRITE_LOCK};
     use serde_json::json;
     use std::sync::PoisonError;
 
@@ -410,5 +507,35 @@ mod tests {
         let mut v = json!({ "a": 1 });
         set_nested(&mut v, &[], json!("ignored"));
         assert_eq!(v, json!({ "a": 1 }));
+    }
+
+    // Regression test for a real bug caught before it shipped: read_settings()
+    // reconstructs user.avatar as a full data: URI so callers see the shape
+    // they always have, but that means a value built from read_settings() and
+    // then written back (settings_set/settings_update merging in unrelated
+    // changes) would otherwise persist that full blob to disk again — exactly
+    // the "every read_settings call parses the whole image" problem this was
+    // meant to fix, just moved to write time instead. write_settings must
+    // collapse it back to the on-disk marker on every write.
+    #[test]
+    fn sanitize_avatar_field_collapses_a_reconstructed_data_uri_back_to_its_marker() {
+        let mut v = json!({ "user": { "avatar": "data:image/png;base64,aGVsbG8=" } });
+        sanitize_avatar_field(&mut v);
+        assert_eq!(v, json!({ "user": { "avatar": "png" } }));
+
+        let mut v = json!({ "user": { "avatar": "data:image/jpeg;base64,aGVsbG8=" } });
+        sanitize_avatar_field(&mut v);
+        assert_eq!(v, json!({ "user": { "avatar": "jpg" } }));
+    }
+
+    #[test]
+    fn sanitize_avatar_field_leaves_a_marker_or_null_untouched() {
+        let mut v = json!({ "user": { "avatar": "png" } });
+        sanitize_avatar_field(&mut v);
+        assert_eq!(v, json!({ "user": { "avatar": "png" } }));
+
+        let mut v = json!({ "user": { "avatar": null } });
+        sanitize_avatar_field(&mut v);
+        assert_eq!(v, json!({ "user": { "avatar": null } }));
     }
 }
