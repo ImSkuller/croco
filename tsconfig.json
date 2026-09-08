@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    // Global default is off — files opt in individually via a leading
+    // "// @ts-check" comment. This is the incremental, file-by-file JS
+    // type-checking path (Phase 5 item 6): no project-wide TS migration,
+    // just src/lib/api.js checked for now. Add more files' own @ts-check
+    // pragma as they get JSDoc'd, rather than flipping this to true and
+    // fixing everything else's errors at once.
+    "checkJs": false,
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "isolatedModules": true
+  },
+  "include": ["src/**/*.js", "src/**/*.jsx"]
+}
