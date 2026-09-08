@@ -31,7 +31,7 @@
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.10.1",
-    "commander": "^14.0.3",
+    "commander": "^15.0.0",
     "dompurify": "^3.4.11",
     "marked": "^18.0.5",
     "react": "^19.2.5",
