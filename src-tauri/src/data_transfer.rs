@@ -4,6 +4,10 @@
 // notes, and todos — settings are deliberately excluded from import since
 // they carry machine-specific paths/secrets).
 
+// Phase 5: this module was swept of every panic-on-error unwrap()/expect() —
+// deny any new one so the module can't silently regress.
+#![deny(clippy::unwrap_used)]
+
 use serde_json::{json, Value};
 use std::fs;
 use tauri::AppHandle;
@@ -231,7 +235,7 @@ pub async fn switch_storage_backend(app: AppHandle, backend: String) -> Result<V
                 let dir = crate::project_details_dir(&app);
                 fs::create_dir_all(&dir).ok();
                 let path = dir.join(format!("{}.json", id));
-                fs::write(&path, serde_json::to_string_pretty(p).unwrap()).ok();
+                if let Ok(pretty) = serde_json::to_string_pretty(p) { fs::write(&path, pretty).ok(); }
             }
         }
         let notes = crate::db_get_all("notes");
@@ -244,7 +248,9 @@ pub async fn switch_storage_backend(app: AppHandle, backend: String) -> Result<V
                     .and_then(|m| m.remove("_content"))
                     .and_then(|v| v.as_str().map(|s| s.to_string()))
                     .unwrap_or_default();
-                fs::write(dir.join(format!("{}.json", id)), serde_json::to_string_pretty(&meta).unwrap()).ok();
+                if let Ok(pretty) = serde_json::to_string_pretty(&meta) {
+                    fs::write(dir.join(format!("{}.json", id)), pretty).ok();
+                }
                 fs::write(dir.join(format!("{}.md", id)), content).ok();
             }
         }
@@ -253,7 +259,9 @@ pub async fn switch_storage_backend(app: AppHandle, backend: String) -> Result<V
             if let Some(id) = t["id"].as_str() {
                 let dir = crate::todos_dir(&app);
                 fs::create_dir_all(&dir).ok();
-                fs::write(dir.join(format!("{}.json", id)), serde_json::to_string_pretty(t).unwrap()).ok();
+                if let Ok(pretty) = serde_json::to_string_pretty(t) {
+                    fs::write(dir.join(format!("{}.json", id)), pretty).ok();
+                }
             }
         }
         let schedules = crate::db_get_all("schedules");
@@ -261,7 +269,9 @@ pub async fn switch_storage_backend(app: AppHandle, backend: String) -> Result<V
             if let Some(id) = s["id"].as_str() {
                 let dir = crate::schedules_dir(&app);
                 fs::create_dir_all(&dir).ok();
-                fs::write(dir.join(format!("{}.json", id)), serde_json::to_string_pretty(s).unwrap()).ok();
+                if let Ok(pretty) = serde_json::to_string_pretty(s) {
+                    fs::write(dir.join(format!("{}.json", id)), pretty).ok();
+                }
             }
         }
     }
@@ -302,8 +312,8 @@ pub async fn data_export_all(app: AppHandle, dest_path: String) -> Result<Value,
         "todos":         todos,
         "schedules":     schedules,
     });
-    fs::write(&dest_path, serde_json::to_string_pretty(&bundle).unwrap())
-        .map_err(|e| e.to_string())?;
+    let pretty = serde_json::to_string_pretty(&bundle).map_err(|e| e.to_string())?;
+    fs::write(&dest_path, pretty).map_err(|e| e.to_string())?;
     crate::activity_log(&app, "data.exported", json!({ "path": dest_path }));
     Ok(json!({ "ok": true, "projects": counts.0, "notes": counts.1, "todos": counts.2, "schedules": counts.3 }))
 }
@@ -343,8 +353,8 @@ pub async fn data_import_all(app: AppHandle, src_path: String) -> Result<Value, 
                     .and_then(|m| m.remove("_content"))
                     .and_then(|v| v.as_str().map(|s| s.to_string()))
                     .unwrap_or_default();
-                fs::write(dir.join(format!("{}.json", id)),
-                    serde_json::to_string_pretty(&meta).unwrap()).map_err(|e| e.to_string())?;
+                let pretty = serde_json::to_string_pretty(&meta).map_err(|e| e.to_string())?;
+                fs::write(dir.join(format!("{}.json", id)), pretty).map_err(|e| e.to_string())?;
                 fs::write(dir.join(format!("{}.md", id)), content).map_err(|e| e.to_string())?;
             }
             n_notes += 1;
@@ -359,8 +369,8 @@ pub async fn data_import_all(app: AppHandle, src_path: String) -> Result<Value, 
                 crate::db_upsert("todos", &id, t)?;
             } else {
                 crate::ensure_todos_dir(&app);
-                fs::write(crate::todos_dir(&app).join(format!("{}.json", id)),
-                    serde_json::to_string_pretty(t).unwrap()).map_err(|e| e.to_string())?;
+                let pretty = serde_json::to_string_pretty(t).map_err(|e| e.to_string())?;
+                fs::write(crate::todos_dir(&app).join(format!("{}.json", id)), pretty).map_err(|e| e.to_string())?;
             }
             n_todos += 1;
         }
@@ -374,8 +384,8 @@ pub async fn data_import_all(app: AppHandle, src_path: String) -> Result<Value, 
                 crate::db_upsert("schedules", &id, s)?;
             } else {
                 crate::ensure_schedules_dir(&app);
-                fs::write(crate::schedules_dir(&app).join(format!("{}.json", id)),
-                    serde_json::to_string_pretty(s).unwrap()).map_err(|e| e.to_string())?;
+                let pretty = serde_json::to_string_pretty(s).map_err(|e| e.to_string())?;
+                fs::write(crate::schedules_dir(&app).join(format!("{}.json", id)), pretty).map_err(|e| e.to_string())?;
             }
             n_schedules += 1;
         }
