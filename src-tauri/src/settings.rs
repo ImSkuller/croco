@@ -7,10 +7,19 @@
 // projects/notes/todos).
 
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
+use once_cell::sync::Lazy;
 use serde_json::{json, Value};
 use std::fs;
 use std::path::Path;
+use std::sync::{Mutex, PoisonError};
 use tauri::AppHandle;
+
+// settings_set/settings_update/settings_reset/settings_save_avatar each do a
+// full read-modify-write of settings.json. Without a lock, two overlapping
+// calls (e.g. two rapid frontend actions) can both read the same old value
+// and the second write silently clobbers the first's change. This mutex
+// serializes the whole read+merge+write sequence, not just the write.
+static SETTINGS_WRITE_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
 pub fn default_settings() -> Value {
     let home = dirs::home_dir().unwrap_or_default();
@@ -165,12 +174,27 @@ pub fn read_settings(app: &AppHandle) -> Value {
     merged
 }
 
+// Writes to a temp file in the same directory then renames it over the real
+// path — a crash/power-loss mid-write leaves either the old file intact or
+// the new one fully written, never a half-written settings.json. Same-
+// filesystem rename is atomic on both Windows (MoveFileExW with
+// MOVEFILE_REPLACE_EXISTING, which is what std::fs::rename uses) and Unix.
+// Pulled out of write_settings() (which additionally strips secrets and
+// resolves the AppHandle-specific path) so the atomic-write mechanics can be
+// stress-tested directly against a plain path, without a Tauri AppHandle.
+fn write_json_atomic(path: &std::path::Path, v: &Value) -> Result<(), String> {
+    let parent = path.parent().ok_or("Invalid settings path")?;
+    fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    let pretty = serde_json::to_string_pretty(v).map_err(|e| e.to_string())?;
+    let tmp_path = parent.join("settings.json.tmp");
+    fs::write(&tmp_path, pretty).map_err(|e| e.to_string())?;
+    fs::rename(&tmp_path, path).map_err(|e| e.to_string())
+}
+
 pub fn write_settings(app: &AppHandle, v: &Value) -> Result<(), String> {
     let mut v = v.clone();
     strip_secrets(&mut v);
-    let path = crate::settings_path(app);
-    fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
-    fs::write(&path, serde_json::to_string_pretty(&v).unwrap()).map_err(|e| e.to_string())
+    write_json_atomic(&crate::settings_path(app), &v)
 }
 
 pub fn set_nested(obj: &mut Value, keys: &[&str], val: Value) {
@@ -190,6 +214,7 @@ pub fn settings_get(app: AppHandle) -> Value { read_settings(&app) }
 
 #[tauri::command]
 pub fn settings_set(app: AppHandle, key: String, value: Value) -> Result<Value, String> {
+    let _guard = SETTINGS_WRITE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let mut s = read_settings(&app);
     let keys: Vec<&str> = key.split('.').collect();
     set_nested(&mut s, &keys, value);
@@ -199,6 +224,7 @@ pub fn settings_set(app: AppHandle, key: String, value: Value) -> Result<Value, 
 
 #[tauri::command]
 pub fn settings_update(app: AppHandle, changes: Value) -> Result<Value, String> {
+    let _guard = SETTINGS_WRITE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let merged = deep_merge(read_settings(&app), changes.clone());
     write_settings(&app, &merged)?;
     // Log only meaningful changes — skip appearance (theme, font, accent, etc.)
@@ -216,6 +242,7 @@ pub fn settings_update(app: AppHandle, changes: Value) -> Result<Value, String> 
 
 #[tauri::command]
 pub fn settings_reset(app: AppHandle) -> Result<Value, String> {
+    let _guard = SETTINGS_WRITE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let d = default_settings();
     write_settings(&app, &d)?;
     Ok(d)
@@ -265,6 +292,7 @@ pub fn settings_save_avatar(app: AppHandle, file_path: String) -> Result<String,
         .to_lowercase();
     let mime = if ext == "jpg" || ext == "jpeg" { "image/jpeg" } else { "image/png" };
     let b64 = format!("data:{};base64,{}", mime, B64.encode(&data));
+    let _guard = SETTINGS_WRITE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let mut s = read_settings(&app);
     if let Value::Object(ref mut m) = s {
         if let Some(Value::Object(ref mut u)) = m.get_mut("user") {
@@ -277,8 +305,51 @@ pub fn settings_save_avatar(app: AppHandle, file_path: String) -> Result<String,
 
 #[cfg(test)]
 mod tests {
-    use super::{deep_merge, set_nested};
+    use super::{deep_merge, set_nested, write_json_atomic, SETTINGS_WRITE_LOCK};
     use serde_json::json;
+    use std::sync::PoisonError;
+
+    // Phase 5 gate: "a stress test doing 100 rapid settings writes loses
+    // none." Mimics settings_set's exact pattern (hold SETTINGS_WRITE_LOCK
+    // across a full read-modify-write-via-write_json_atomic cycle) from 100
+    // concurrent threads writing to the same file, and asserts every
+    // thread's change survived — this is exactly the lost-update race the
+    // unlocked read-modify-write used to allow.
+    #[test]
+    fn concurrent_settings_writes_lose_no_updates() {
+        let dir = std::env::temp_dir().join(format!(
+            "croco-settings-race-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        std::fs::write(&path, "{}").unwrap();
+
+        let handles: Vec<_> = (0..100)
+            .map(|i| {
+                let path = path.clone();
+                std::thread::spawn(move || {
+                    let _guard = SETTINGS_WRITE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
+                    let raw = std::fs::read_to_string(&path).unwrap();
+                    let mut v: serde_json::Value = serde_json::from_str(&raw).unwrap();
+                    set_nested(&mut v, &[&format!("key_{}", i)], json!(true));
+                    write_json_atomic(&path, &v).unwrap();
+                })
+            })
+            .collect();
+        for h in handles { h.join().unwrap(); }
+
+        let raw = std::fs::read_to_string(&path).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&raw).unwrap();
+        let obj = v.as_object().unwrap();
+        for i in 0..100 {
+            assert_eq!(obj.get(&format!("key_{}", i)), Some(&json!(true)), "write {} was lost", i);
+        }
+        assert_eq!(obj.len(), 100);
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
 
     #[test]
     fn deep_merge_overwrites_scalar_leaves() {
