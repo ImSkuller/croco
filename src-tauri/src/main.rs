@@ -58,6 +58,56 @@ pub(crate) use projects::*;
 // User-Agent for all GitHub API calls — always matches the app version.
 const UA: &str = concat!("Croco-DevManager/", env!("CARGO_PKG_VERSION"));
 
+// How long a trashed project/note/todo (Phase 6 undo/trash) stays
+// recoverable before purge_expired_trash permanently removes it.
+const TRASH_RETENTION_DAYS: i64 = 30;
+
+/// True if `trashed_at` (an RFC3339 timestamp, or None/unparseable meaning
+/// "not trashed") is older than TRASH_RETENTION_DAYS relative to `now`.
+/// Takes `now` explicitly (clock injection) so the boundary is testable
+/// without depending on the real wall clock.
+fn is_trash_expired(trashed_at: Option<&str>, now: chrono::DateTime<chrono::Utc>) -> bool {
+    let Some(trashed_at) = trashed_at else { return false };
+    let Ok(trashed_at) = chrono::DateTime::parse_from_rfc3339(trashed_at) else { return false };
+    now.signed_duration_since(trashed_at) > chrono::Duration::days(TRASH_RETENTION_DAYS)
+}
+
+#[cfg(test)]
+mod trash_tests {
+    use super::*;
+
+    #[test]
+    fn not_trashed_never_expires() {
+        assert!(!is_trash_expired(None, chrono::Utc::now()));
+    }
+
+    #[test]
+    fn unparseable_timestamp_is_treated_as_not_expired() {
+        assert!(!is_trash_expired(Some("not-a-date"), chrono::Utc::now()));
+    }
+
+    #[test]
+    fn within_retention_window_is_not_expired() {
+        let now = chrono::DateTime::parse_from_rfc3339("2026-02-01T00:00:00Z").unwrap().to_utc();
+        let trashed_at = "2026-01-15T00:00:00Z"; // 17 days ago
+        assert!(!is_trash_expired(Some(trashed_at), now));
+    }
+
+    #[test]
+    fn past_retention_window_is_expired() {
+        let now = chrono::DateTime::parse_from_rfc3339("2026-02-01T00:00:00Z").unwrap().to_utc();
+        let trashed_at = "2025-12-01T00:00:00Z"; // 62 days ago
+        assert!(is_trash_expired(Some(trashed_at), now));
+    }
+
+    #[test]
+    fn exactly_at_the_boundary_is_not_yet_expired() {
+        let now = chrono::DateTime::parse_from_rfc3339("2026-02-01T00:00:00Z").unwrap().to_utc();
+        let trashed_at = "2026-01-02T00:00:00Z"; // exactly 30 days ago
+        assert!(!is_trash_expired(Some(trashed_at), now));
+    }
+}
+
 // ─── Suppress console window on Windows for all child processes ───────────────
 
 #[cfg(windows)]
@@ -156,6 +206,11 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     // Must run after migrate_secrets_to_keyring — see its own doc comment.
     migrate_away_dead_ai_api_config(&handle);
 
+    // Undo/trash (Phase 6): permanently remove anything past its retention
+    // window. Safe to run on every launch — a no-op when nothing has aged out.
+    purge_expired_project_trash(&handle);
+    purge_expired_notes_todos_trash(&handle);
+
     // Build tray menu
     let show  = MenuItem::with_id(app, "show",  "Show Window", true, None::<&str>)?;
     let sep   = PredefinedMenuItem::separator(app)?;
@@ -221,7 +276,8 @@ fn main() {
             settings_test_github, settings_save_avatar, settings_set_github_token,
             // projects
             projects_get_all, projects_get_by_id, projects_create, projects_import,
-            projects_edit, projects_delete, projects_open_in_ide, projects_open_folder,
+            projects_edit, projects_delete, projects_restore, projects_delete_permanently,
+            projects_open_in_ide, projects_open_folder,
             projects_toggle_favorite, projects_get_recents, projects_detect_languages,
             projects_auto_detect_commands, projects_remove_local_files, projects_delete_github_repo,
             projects_get_dependencies, projects_install_dependencies, projects_update_dependencies,
@@ -241,8 +297,10 @@ fn main() {
             run_start, run_stop, run_get_running, run_is_running,
             // notes
             notes_get_all, notes_get_by_id, notes_create, notes_update, notes_delete,
+            notes_restore, notes_delete_permanently,
             // todos
             todos_get_all, todos_create, todos_toggle, todos_update, todos_delete,
+            todos_restore, todos_delete_permanently,
             // schedules & deadlines
             schedules_get_all, schedules_get_by_id, schedules_create, schedules_update,
             schedules_toggle, schedules_delete,

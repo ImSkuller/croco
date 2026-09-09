@@ -49,9 +49,13 @@ export default function Notes() {
       .catch(err => { console.error(err); refreshData('notes') })
   }
 
+  // Soft delete (Phase 6 trash) — patch trashedAt rather than filtering the
+  // note out of the cache entirely, so Trash.jsx (reading the same cache)
+  // sees it immediately instead of waiting on a refetch.
   const deleteNote = async (id) => {
     if (!window.api) return
-    patchData('notes', prev => (prev || []).filter(n => n.id !== id))
+    const trashedAt = new Date().toISOString()
+    patchData('notes', prev => (prev || []).map(n => n.id === id ? { ...n, trashedAt } : n))
     await window.api.notes.delete(id).catch(err => { console.error(err); refreshData('notes') })
   }
 
@@ -76,7 +80,11 @@ export default function Notes() {
 
   const projectOptions = [{ id: 'All', name: 'All Projects' }, ...projects.map(p => ({ id: p.id, name: p.name }))]
 
-  const filtered = useMemo(() => notes.filter(n => {
+  // Trashed notes are excluded everywhere on this page — Trash.jsx is the
+  // only place that shows them.
+  const liveNotes = useMemo(() => notes.filter(n => !n.trashedAt), [notes])
+
+  const filtered = useMemo(() => liveNotes.filter(n => {
     const matchSearch  = n.title.toLowerCase().includes(search.toLowerCase()) ||
                          (n.preview || '').toLowerCase().includes(search.toLowerCase()) ||
                          (n.tags || []).some(t => t.toLowerCase().includes(search.toLowerCase()))
@@ -87,13 +95,13 @@ export default function Notes() {
         : !n.archived
     const matchProject = project === 'All' ? true : n.projectId === project
     return matchSearch && matchFilter && matchProject
-  }), [notes, search, filter, project])
+  }), [liveNotes, search, filter, project])
 
   const counts = useMemo(() => ({
-    All:      notes.filter(n => !n.archived).length,
-    Starred:  notes.filter(n => n.starred && !n.archived).length,
-    Archived: notes.filter(n => n.archived).length,
-  }), [notes])
+    All:      liveNotes.filter(n => !n.archived).length,
+    Starred:  liveNotes.filter(n => n.starred && !n.archived).length,
+    Archived: liveNotes.filter(n => n.archived).length,
+  }), [liveNotes])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -267,7 +275,7 @@ export default function Notes() {
         </span>
         <span style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
           <span style={{ color: 'var(--text)', fontWeight: 600 }}>
-            {notes.filter(n => !n.archived).reduce((acc, n) => acc + (n.wordCount || 0), 0).toLocaleString()}
+            {liveNotes.filter(n => !n.archived).reduce((acc, n) => acc + (n.wordCount || 0), 0).toLocaleString()}
           </span> words total
         </span>
       </div>

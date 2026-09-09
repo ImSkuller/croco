@@ -651,8 +651,35 @@ pub fn projects_edit(app: AppHandle, id: String, changes: Value) -> Result<Value
     Ok(to_ui(updated))
 }
 
+// Soft delete: marks the project trashed (top-level trashedAt, matching
+// `archived`'s existing convention of living at the top level rather than
+// under meta, and matching notes/todos' trashedAt) rather than removing
+// its tracking record. The project's actual files on disk were never
+// touched by this command anyway (that's projects_remove_local_files, a
+// separate, explicit action) — so trashing the tracking record is low
+// risk and easily reversible. purge_expired_project_trash sweeps anything
+// past TRASH_RETENTION_DAYS at startup; projects_delete_permanently skips
+// the trash entirely for a caller that explicitly wants that.
 #[tauri::command]
 pub fn projects_delete(app: AppHandle, id: String) -> Result<Value, String> {
+    crate::validate_safe_id(&id)?;
+    let project_name = get_project(&app, &id).and_then(|p| p["name"].as_str().map(|s| s.to_string())).unwrap_or_default();
+    projects_edit(app.clone(), id.clone(), json!({ "trashedAt": chrono::Utc::now().to_rfc3339() }))?;
+    crate::activity_log(&app, "project.trashed", json!({ "projectId": id, "projectName": project_name }));
+    Ok(json!({ "ok": true }))
+}
+
+#[tauri::command]
+pub fn projects_restore(app: AppHandle, id: String) -> Result<Value, String> {
+    crate::validate_safe_id(&id)?;
+    let project_name = get_project(&app, &id).and_then(|p| p["name"].as_str().map(|s| s.to_string())).unwrap_or_default();
+    projects_edit(app.clone(), id.clone(), json!({ "trashedAt": null }))?;
+    crate::activity_log(&app, "project.restored", json!({ "projectId": id, "projectName": project_name }));
+    Ok(json!({ "ok": true }))
+}
+
+#[tauri::command]
+pub fn projects_delete_permanently(app: AppHandle, id: String) -> Result<Value, String> {
     crate::validate_safe_id(&id)?;
     let project_name = get_project(&app, &id)
         .and_then(|p| p["name"].as_str().map(|s| s.to_string()))
@@ -671,6 +698,20 @@ pub fn projects_delete(app: AppHandle, id: String) -> Result<Value, String> {
     drop(cache);
     crate::activity_log(&app, "project.deleted", json!({ "projectId": id, "projectName": project_name }));
     Ok(json!({ "ok": true }))
+}
+
+/// Startup sweep: permanently removes any project trashed more than
+/// TRASH_RETENTION_DAYS ago. Called once at launch alongside the other
+/// migrate_*/purge_* startup passes — see main.rs's setup_app().
+pub fn purge_expired_project_trash(app: &AppHandle) {
+    let now = chrono::Utc::now();
+    let expired: Vec<String> = read_all_projects(app).into_iter()
+        .filter(|p| crate::is_trash_expired(p["trashedAt"].as_str(), now))
+        .filter_map(|p| p["id"].as_str().map(|s| s.to_string()))
+        .collect();
+    for id in expired {
+        let _ = projects_delete_permanently(app.clone(), id);
+    }
 }
 
 #[tauri::command]

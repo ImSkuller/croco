@@ -18,6 +18,7 @@ import ProjectDetail from './pages/ProjectDetail'
 import ProjectForm from './pages/ProjectForm'
 import Ideas from './pages/Ideas'
 import EasterEggs from './pages/EasterEggs'
+import Trash from './pages/Trash'
 
 export default function App() {
   useEffect(() => {
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="patterns" element={<Patterns />} />
           <Route path="github" element={<GitHubPage />} />
           <Route path="ideas" element={<Ideas />} />
+          <Route path="trash" element={<Trash />} />
           <Route path="easter-eggs" element={<EasterEggs />} />
           <Route path="note-editor" element={<NoteEditor />} />
           <Route path="note-editor/:noteId" element={<NoteEditor />} />

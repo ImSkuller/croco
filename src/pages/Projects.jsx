@@ -99,8 +99,13 @@ export default function Projects() {
 
   const allTags = [...new Set(projects.flatMap(p => p.tags || []))].sort()
 
+  // Trashed projects are excluded everywhere on this page (Trash.jsx is
+  // the only place that shows them) — filtered once here rather than
+  // threaded into every predicate below.
+  const liveProjects = useMemo(() => projects.filter(p => !p.trashedAt), [projects])
+
   const filtered = useMemo(() => sortProjects(
-    projects.filter(p => {
+    liveProjects.filter(p => {
       const q = search.toLowerCase()
       const matchSearch = !q
         || p.name.toLowerCase().includes(q)
@@ -117,12 +122,12 @@ export default function Projects() {
       return matchSearch && matchFilter && matchTag
     }),
     sort
-  ), [projects, search, filter, sort, selectedTag, runningIds])
+  ), [liveProjects, search, filter, sort, selectedTag, runningIds])
 
   // Archived projects, shown as a collapsible dropdown under the "All" tab
   // instead of forcing a separate tab switch to find them.
   const archivedProjects = useMemo(() => sortProjects(
-    projects.filter(p => {
+    liveProjects.filter(p => {
       if (!p.archived) return false
       const q = search.toLowerCase()
       const matchSearch = !q
@@ -133,16 +138,16 @@ export default function Projects() {
       return matchSearch && matchTag
     }),
     sort
-  ), [projects, search, sort, selectedTag])
+  ), [liveProjects, search, sort, selectedTag])
 
   const counts = useMemo(() => ({
-    All:        projects.filter(p => !p.archived).length,
-    Public:     projects.filter(p => !p.archived && p.visibility === 'public').length,
-    Hidden:     projects.filter(p => !p.archived && p.visibility === 'hidden').length,
-    Favourites: projects.filter(p => !p.archived && p.favourite).length,
-    Running:    projects.filter(p => !p.archived && runningIds.has(p.id)).length,
-    Archived:   projects.filter(p => p.archived).length,
-  }), [projects, runningIds])
+    All:        liveProjects.filter(p => !p.archived).length,
+    Public:     liveProjects.filter(p => !p.archived && p.visibility === 'public').length,
+    Hidden:     liveProjects.filter(p => !p.archived && p.visibility === 'hidden').length,
+    Favourites: liveProjects.filter(p => !p.archived && p.favourite).length,
+    Running:    liveProjects.filter(p => !p.archived && runningIds.has(p.id)).length,
+    Archived:   liveProjects.filter(p => p.archived).length,
+  }), [liveProjects, runningIds])
 
   const projectLabel = filter === 'Favourites' ? '' : 'Projects'
 

@@ -19,7 +19,7 @@ export default function Favourites() {
   const projects = useData('projects')
   const loading  = projects === null
   const favourites = useMemo(() => {
-    const favs = (projects || []).filter(p => p.favourite)
+    const favs = (projects || []).filter(p => p.favourite && !p.trashedAt)
     // stable sort: ranked favourites first (by favouriteRank), unranked keep their incoming order
     return [...favs].sort((a, b) => {
       const ra = a.favouriteRank ?? Number.MAX_SAFE_INTEGER

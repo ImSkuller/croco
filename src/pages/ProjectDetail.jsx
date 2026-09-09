@@ -1551,7 +1551,32 @@ export default function ProjectDetail() {
                 })}
               />
 
-              {/* Remove everywhere — nuclear */}
+              {/* Remove from Croco — moves to Trash, fully reversible. Files
+                  and any linked GitHub repo are never touched by this
+                  action, so unlike "Remove Everywhere" below there's
+                  something real to restore. */}
+              <DangerRow
+                title="Remove from Croco"
+                desc="Moves this project to Trash. Local files and any linked GitHub repository are left untouched — restore it from Trash within 30 days, or it's removed automatically after that."
+                action="Move to Trash"
+                color="var(--orange)"
+                onClick={() => openModal({
+                  title: 'Move to Trash?',
+                  desc: 'This removes the project from your active list. Local files and any GitHub repository are not touched. You can restore it from Trash within 30 days.',
+                  confirmLabel: 'Move to Trash',
+                  confirmRed: true,
+                  onConfirm: async () => {
+                    await window.api.projects.delete(project.id)
+                    window.dispatchEvent(new CustomEvent('croco:data-changed'))
+                    navigate('/projects')
+                  },
+                })}
+              />
+
+              {/* Remove everywhere — nuclear. Deletes local files and the
+                  GitHub repo first, so by the time the tracking entry goes
+                  too there is nothing left to undo — deletePermanently,
+                  not the trash-based delete above. */}
               <DangerRow
                 title="Remove Everywhere"
                 desc="Permanently deletes local project files, the GitHub repository (if linked), and this project entry from Croco. This cannot be undone."
@@ -1568,7 +1593,7 @@ export default function ProjectDetail() {
                   onConfirm: async () => {
                     if (project.github) await window.api.projects.deleteGithubRepo(project.id).catch(() => {})
                     await window.api.projects.removeLocalFiles(project.id).catch(() => {})
-                    await window.api.projects.delete(project.id)
+                    await window.api.projects.deletePermanently(project.id)
                     window.dispatchEvent(new CustomEvent('croco:data-changed'))
                     navigate('/projects')
                   },
