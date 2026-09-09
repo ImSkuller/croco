@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { GridIcon, ListIcon, Logo, NoteIcon, SearchIcon, SettingsIcon, TodoIcon } from '../../constants/SvgExports.jsx'
-import { StarIcon, ActivityIcon, TrendIcon, GithubIcon } from '../../constants/SimpleSvgExports.jsx'
+import { StarIcon, ActivityIcon, TrendIcon, GithubIcon, TrashIcon } from '../../constants/SimpleSvgExports.jsx'
 import ManagerVersion from '../../constants/versionManager.jsx'
 import { useToast } from '../Toast/useToast.js'
-import { useData, useDataStore, EMPTY_LIST } from '../../lib/store'
+import { useData, useDataStore, EMPTY_LIST, refreshData } from '../../lib/store'
 import { modKeyHint } from '../../lib/platform'
 import { refreshCapabilitiesOnLaunch } from '../../lib/capabilities'
+import { applyTheme, THEMES, getThemeAccentSwatch } from '../../lib/theme'
 import CrocoGame from '../CrocoGame/CrocoGame.jsx'
 
 const TYPE_COLOR = {
@@ -14,14 +15,20 @@ const TYPE_COLOR = {
   note:    'var(--orange)',
   todo:    'var(--green)',
   page:    'var(--dimmer)',
+  action:  'var(--accent)',
 }
 
 const STATIC_PAGES = [
   { type: 'page', label: 'Dashboard',  sub: 'page', to: '/',           emoji: '🏠' },
+  { type: 'page', label: 'Notes',      sub: 'page', to: '/notes',      emoji: '📝' },
+  { type: 'page', label: 'Todo',       sub: 'page', to: '/todos',      emoji: '✅' },
+  { type: 'page', label: 'Activity',   sub: 'page', to: '/activity',   emoji: '📊' },
+  { type: 'page', label: 'Patterns',   sub: 'page', to: '/patterns',   emoji: '📈' },
   { type: 'page', label: 'Settings',   sub: 'page', to: '/settings',   emoji: '⚙️' },
   { type: 'page', label: 'Favourites', sub: 'page', to: '/favourites', emoji: '⭐' },
   { type: 'page', label: 'Ideas',      sub: 'page', to: '/ideas',      emoji: '💡' },
   { type: 'page', label: 'GitHub',     sub: 'page', to: '/github',     emoji: '🐙' },
+  { type: 'page', label: 'Trash',      sub: 'page', to: '/trash',      emoji: '🗑️' },
 ]
 
 function playBabum() {
@@ -104,9 +111,12 @@ export default function Sidebar() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const openTodosCount    = useMemo(() => todos.filter(t => !t.completed).length, [todos])
-  const unarchivedNotes   = useMemo(() => notes.filter(n => !n.archived).length, [notes])
-  const activeProjects    = useMemo(() => projects.filter(p => !p.archived).length, [projects])
+  const openTodosCount    = useMemo(() => todos.filter(t => !t.completed && !t.trashedAt).length, [todos])
+  const unarchivedNotes   = useMemo(() => notes.filter(n => !n.archived && !n.trashedAt).length, [notes])
+  const activeProjects    = useMemo(() => projects.filter(p => !p.archived && !p.trashedAt).length, [projects])
+  const trashedCount      = useMemo(() =>
+    projects.filter(p => p.trashedAt).length + notes.filter(n => n.trashedAt).length + todos.filter(t => t.trashedAt).length,
+    [projects, notes, todos])
   const initials          = userName ? userName.slice(0, 2).toUpperCase() : '??'
 
   const NAV = useMemo(() => [
@@ -126,27 +136,83 @@ export default function Sidebar() {
     {
       label: 'System',
       items: [
-        { to: '/settings', label: 'Settings', badge: hasUpdate ? '↑' : null, icon: <SettingsIcon />, badgeStyle: hasUpdate ? 'accent' : undefined },
+        { to: '/trash',     label: 'Trash',    badge: trashedCount || null,   icon: <TrashIcon /> },
+        { to: '/settings',  label: 'Settings', badge: hasUpdate ? '↑' : null, icon: <SettingsIcon />, badgeStyle: hasUpdate ? 'accent' : undefined },
       ],
     },
-  ], [activeProjects, unarchivedNotes, openTodosCount, hasUpdate])
+  ], [activeProjects, unarchivedNotes, openTodosCount, trashedCount, hasUpdate])
+
+  // Command-palette actions — the part that makes Ctrl/Cmd+K an actual
+  // command palette rather than just an entity/page search. Each calls the
+  // exact same window.api sequence as its "real" button elsewhere in the
+  // app, so there's one behavior to reason about, not a second copy.
+  const handleImportFolder = async () => {
+    if (!window.api) return
+    const folderPath = await window.api.system.showFolderPicker()
+    if (!folderPath) return
+    try {
+      const project = await window.api.projects.import(folderPath)
+      refreshData('projects')
+      navigate(`/projects/${project.id}`)
+    } catch (e) { toast.error('Import failed', e.message) }
+  }
+
+  const handleCycleTheme = () => {
+    if (!window.api || !settings) return
+    const currentId = settings.appearance?.theme || 'default'
+    const idx = THEMES.findIndex(t => t.id === currentId)
+    const next = THEMES[(idx + 1) % THEMES.length]
+    const [, nativeAccent] = getThemeAccentSwatch(next.id)
+    const glass      = settings.appearance?.glass || false
+    const fontBody   = settings.appearance?.fontBody || 'Geist'
+    const fontDisplay = settings.appearance?.fontDisplay || 'Lora'
+    const logoBg     = settings.appearance?.logoBg
+    applyTheme(next.id, glass, { accentColor: nativeAccent, fontBody, fontDisplay, logoBg })
+    window.api.settings.update({ appearance: { theme: next.id, accentColor: nativeAccent } }).catch(() => {})
+    toast.info(`Theme: ${next.label}`, '')
+  }
+
+  const handleExportBackup = async () => {
+    if (!window.api) return
+    const stamp = new Date().toISOString().slice(0, 10)
+    const dest = await window.api.system.showSavePicker(`croco-backup-${stamp}.json`, [{ name: 'Croco Backup', extensions: ['json'] }])
+    if (!dest) return
+    try {
+      const r = await window.api.data.exportAll(dest)
+      toast.success('Backup exported', `${r.projects} projects, ${r.notes} notes, ${r.todos} todos.`)
+    } catch (e) { toast.error('Export failed', e.message) }
+  }
+
+  const actionItems = useMemo(() => [
+    { type: 'action', label: 'New Project',   sub: 'action', emoji: '➕', action: () => navigate('/projects/new') },
+    { type: 'action', label: 'Import Folder', sub: 'action', emoji: '📂', action: handleImportFolder },
+    { type: 'action', label: 'New Note',      sub: 'action', emoji: '📝', action: () => navigate('/note-editor') },
+    { type: 'action', label: 'New Todo',      sub: 'action', emoji: '✅', action: () => navigate('/todos') },
+    { type: 'action', label: 'Switch Theme',  sub: 'action', emoji: '🎨', action: handleCycleTheme },
+    { type: 'action', label: 'Export Backup', sub: 'action', emoji: '💾', action: handleExportBackup },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [settings])
 
   const searchItems = useMemo(() => [
-    ...projects.map(p => ({
+    ...actionItems,
+    // Trashed items are deliberately excluded from search/command palette
+    // results — Trash is a dedicated recovery view, not something you
+    // stumble into via Ctrl/Cmd+K.
+    ...projects.filter(p => !p.trashedAt).map(p => ({
       type:  'project',
       label: p.name,
       sub:   p.tags?.join(' · ') || p.ide || 'project',
       to:    `/projects/${p.id}`,
       emoji: p.emoji || '📁',
     })),
-    ...notes.map(n => ({
+    ...notes.filter(n => !n.trashedAt).map(n => ({
       type:  'note',
       label: n.title,
       sub:   n.project || 'no project',
       to:    `/note-editor/${n.id}`,
       emoji: n.emoji || '📝',
     })),
-    ...todos.filter(t => !t.completed).map(t => ({
+    ...todos.filter(t => !t.completed && !t.trashedAt).map(t => ({
       type:  'todo',
       label: t.title,
       sub:   `${t.priority || 'med'} priority`,
@@ -154,7 +220,7 @@ export default function Sidebar() {
       emoji: t.emoji || '✅',
     })),
     ...STATIC_PAGES,
-  ], [projects, notes, todos])
+  ], [actionItems, projects, notes, todos])
 
   return (
     <>
@@ -346,7 +412,11 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
   useEffect(() => { Promise.resolve().then(() => setSelected(0)) }, [query])
   useEffect(() => { inputRef.current?.focus() }, [])
 
-  const go = (item) => { navigate(item.to); onClose() }
+  const go = (item) => {
+    onClose()
+    if (item.action) item.action()
+    else navigate(item.to)
+  }
 
   const onKey = (e) => {
     if (e.key === 'ArrowDown') {
@@ -456,7 +526,7 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
             </div>
           ) : results.map((item, i) => (
             <div
-              key={item.to + item.label}
+              key={item.type + item.label + (item.to || '')}
               onClick={() => go(item)}
               onMouseEnter={() => setSelected(i)}
               style={{
