@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeftIcon, FolderIcon, GithubIcon, CheckCircleIcon, EyeIcon, EyeOffIcon, AlertTriangleIcon } from '../constants/SimpleSvgExports'
+import { ArrowLeftIcon, FolderIcon, GithubIcon, CheckCircleIcon, EyeIcon, EyeOffIcon, AlertTriangleIcon, WindowIcon, DatabaseIcon, TerminalIcon, PackageIcon, GameIcon } from '../constants/SimpleSvgExports'
+
+// Templates carry an `icon` key (from templates_list() in system.rs) rather
+// than a hand-drawn brand logo per language/framework — keeps the picker
+// visually differentiated (icon shape + per-template color) without ~26
+// bespoke logo SVGs to draw and maintain.
+const TEMPLATE_ICONS = {
+  folder: FolderIcon, window: WindowIcon, database: DatabaseIcon,
+  terminal: TerminalIcon, package: PackageIcon, game: GameIcon,
+}
+const TemplateIcon = ({ icon, color, size = 17 }) => {
+  const Ico = TEMPLATE_ICONS[icon] || PackageIcon
+  return <span style={{ display: 'flex', color: color || 'var(--dim)' }}><Ico size={size} /></span>
+}
 
 const IDE_OPTIONS = [
   { value: 'vscode',    label: 'VS Code'   },
@@ -356,7 +369,7 @@ export default function ProjectForm() {
           {/* Selected template preview */}
           {selectedTemplate && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border-bright)', borderRadius: 10 }}>
-              <span style={{ fontSize: 22 }}>{selectedTemplate.emoji}</span>
+              <TemplateIcon icon={selectedTemplate.icon} color={selectedTemplate.color} size={22} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{selectedTemplate.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 2 }}>{selectedTemplate.desc}</div>
@@ -393,7 +406,7 @@ export default function ProjectForm() {
                   onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--card)' } }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: 17 }}>{t.emoji}</span>
+                    <TemplateIcon icon={t.icon} color={t.color} />
                     {selected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: catColor, flexShrink: 0 }} />}
                   </div>
                   <div style={{ fontSize: 11, fontWeight: 500, color: selected ? 'var(--text)' : 'var(--dim)', lineHeight: 1.3 }}>{t.name}</div>
