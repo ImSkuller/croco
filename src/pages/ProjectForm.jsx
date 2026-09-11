@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeftIcon, FolderIcon, GithubIcon } from '../constants/SimpleSvgExports'
+import { ArrowLeftIcon, FolderIcon, GithubIcon, CheckCircleIcon, EyeIcon, EyeOffIcon } from '../constants/SimpleSvgExports'
 
 const IDE_OPTIONS = [
   { value: 'vscode',    label: 'VS Code'   },
@@ -130,7 +130,7 @@ export default function ProjectForm() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '28px 28px 22px', maxWidth: 440, width: '90%' }}>
-          <div style={{ fontSize: 28, marginBottom: 12 }}>✅</div>
+          <div style={{ display: 'flex', color: '#4aff91', marginBottom: 12 }}><CheckCircleIcon size={28} /></div>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Project Created</div>
           {setupDone.warnings.length > 0 && (
             <div style={{ background: 'rgba(255,170,85,0.07)', border: '1px solid rgba(255,170,85,0.2)', borderRadius: 8, padding: '10px 12px', marginBottom: 16 }}>
@@ -231,10 +231,10 @@ export default function ProjectForm() {
           <div style={{ marginBottom: 14 }}>
             <Label>Visibility</Label>
             <div style={{ display: 'flex', gap: 6 }}>
-              {[['public', '🌐 Public', '#4a9eff'], ['hidden', '🔒 Private', '#a855f7']].map(([v, lbl, col]) => (
+              {[['public', 'Public', <EyeIcon size={12} />, '#4a9eff'], ['hidden', 'Private', <EyeOffIcon size={12} />, '#a855f7']].map(([v, lbl, icon, col]) => (
                 <button key={v} onClick={() => setVisibility(v)}
-                  style={{ flex: 1, padding: '6px 10px', borderRadius: 7, cursor: 'pointer', fontSize: 11, fontFamily: 'Geist, sans-serif', transition: 'all 0.12s', border: `1px solid ${visibility === v ? col : 'var(--border)'}`, background: visibility === v ? `${col}14` : 'var(--card)', color: visibility === v ? col : 'var(--dim)' }}>
-                  {lbl}
+                  style={{ flex: 1, padding: '6px 10px', borderRadius: 7, cursor: 'pointer', fontSize: 11, fontFamily: 'Geist, sans-serif', transition: 'all 0.12s', border: `1px solid ${visibility === v ? col : 'var(--border)'}`, background: visibility === v ? `${col}14` : 'var(--card)', color: visibility === v ? col : 'var(--dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  {icon} {lbl}
                 </button>
               ))}
             </div>

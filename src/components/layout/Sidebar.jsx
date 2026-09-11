@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { GridIcon, ListIcon, Logo, NoteIcon, SearchIcon, SettingsIcon, TodoIcon } from '../../constants/SvgExports.jsx'
-import { StarIcon, ActivityIcon, TrendIcon, GithubIcon, TrashIcon } from '../../constants/SimpleSvgExports.jsx'
+import {
+  StarIcon, ActivityIcon, TrendIcon, GithubIcon, TrashIcon, HomeIcon, BulbIcon,
+  PlusCircleIcon, ImportIcon, PaletteIcon, SaveIcon, FolderIcon, NoteIcon2, CheckCircleIcon,
+  GameIcon, GiftIcon, MusicNoteIcon, PuzzleIcon,
+} from '../../constants/SimpleSvgExports.jsx'
 import ManagerVersion from '../../constants/versionManager.jsx'
 import { useToast } from '../Toast/useToast.js'
 import { useData, useDataStore, EMPTY_LIST, refreshData } from '../../lib/store'
@@ -19,16 +23,16 @@ const TYPE_COLOR = {
 }
 
 const STATIC_PAGES = [
-  { type: 'page', label: 'Dashboard',  sub: 'page', to: '/',           emoji: '🏠' },
-  { type: 'page', label: 'Notes',      sub: 'page', to: '/notes',      emoji: '📝' },
-  { type: 'page', label: 'Todo',       sub: 'page', to: '/todos',      emoji: '✅' },
-  { type: 'page', label: 'Activity',   sub: 'page', to: '/activity',   emoji: '📊' },
-  { type: 'page', label: 'Patterns',   sub: 'page', to: '/patterns',   emoji: '📈' },
-  { type: 'page', label: 'Settings',   sub: 'page', to: '/settings',   emoji: '⚙️' },
-  { type: 'page', label: 'Favourites', sub: 'page', to: '/favourites', emoji: '⭐' },
-  { type: 'page', label: 'Ideas',      sub: 'page', to: '/ideas',      emoji: '💡' },
-  { type: 'page', label: 'GitHub',     sub: 'page', to: '/github',     emoji: '🐙' },
-  { type: 'page', label: 'Trash',      sub: 'page', to: '/trash',      emoji: '🗑️' },
+  { type: 'page', label: 'Dashboard',  sub: 'page', to: '/',           icon: <HomeIcon /> },
+  { type: 'page', label: 'Notes',      sub: 'page', to: '/notes',      icon: <NoteIcon /> },
+  { type: 'page', label: 'Todo',       sub: 'page', to: '/todos',      icon: <TodoIcon /> },
+  { type: 'page', label: 'Activity',   sub: 'page', to: '/activity',   icon: <ActivityIcon /> },
+  { type: 'page', label: 'Patterns',   sub: 'page', to: '/patterns',   icon: <TrendIcon /> },
+  { type: 'page', label: 'Settings',   sub: 'page', to: '/settings',   icon: <SettingsIcon /> },
+  { type: 'page', label: 'Favourites', sub: 'page', to: '/favourites', icon: <StarIcon filled /> },
+  { type: 'page', label: 'Ideas',      sub: 'page', to: '/ideas',      icon: <BulbIcon /> },
+  { type: 'page', label: 'GitHub',     sub: 'page', to: '/github',     icon: <GithubIcon /> },
+  { type: 'page', label: 'Trash',      sub: 'page', to: '/trash',      icon: <TrashIcon /> },
 ]
 
 function playBabum() {
@@ -184,12 +188,12 @@ export default function Sidebar() {
   }
 
   const actionItems = useMemo(() => [
-    { type: 'action', label: 'New Project',   sub: 'action', emoji: '➕', action: () => navigate('/projects/new') },
-    { type: 'action', label: 'Import Folder', sub: 'action', emoji: '📂', action: handleImportFolder },
-    { type: 'action', label: 'New Note',      sub: 'action', emoji: '📝', action: () => navigate('/note-editor') },
-    { type: 'action', label: 'New Todo',      sub: 'action', emoji: '✅', action: () => navigate('/todos') },
-    { type: 'action', label: 'Switch Theme',  sub: 'action', emoji: '🎨', action: handleCycleTheme },
-    { type: 'action', label: 'Export Backup', sub: 'action', emoji: '💾', action: handleExportBackup },
+    { type: 'action', label: 'New Project',   sub: 'action', icon: <PlusCircleIcon />, action: () => navigate('/projects/new') },
+    { type: 'action', label: 'Import Folder', sub: 'action', icon: <ImportIcon />,     action: handleImportFolder },
+    { type: 'action', label: 'New Note',      sub: 'action', icon: <NoteIcon2 />,      action: () => navigate('/note-editor') },
+    { type: 'action', label: 'New Todo',      sub: 'action', icon: <CheckCircleIcon />, action: () => navigate('/todos') },
+    { type: 'action', label: 'Switch Theme',  sub: 'action', icon: <PaletteIcon />,    action: handleCycleTheme },
+    { type: 'action', label: 'Export Backup', sub: 'action', icon: <SaveIcon />,       action: handleExportBackup },
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [settings])
 
@@ -203,21 +207,24 @@ export default function Sidebar() {
       label: p.name,
       sub:   p.tags?.join(' · ') || p.ide || 'project',
       to:    `/projects/${p.id}`,
-      emoji: p.emoji || '📁',
+      // A project's own chosen emoji (if any) is real user content, not app
+      // chrome — kept as-is; only the fallback (no custom emoji set) uses
+      // an SVG icon.
+      icon:  p.emoji || <FolderIcon />,
     })),
     ...notes.filter(n => !n.trashedAt).map(n => ({
       type:  'note',
       label: n.title,
       sub:   n.project || 'no project',
       to:    `/note-editor/${n.id}`,
-      emoji: n.emoji || '📝',
+      icon:  n.emoji || <NoteIcon2 />,
     })),
     ...todos.filter(t => !t.completed && !t.trashedAt).map(t => ({
       type:  'todo',
       label: t.title,
       sub:   `${t.priority || 'med'} priority`,
       to:    '/todos',
-      emoji: t.emoji || '✅',
+      icon:  t.emoji || <CheckCircleIcon />,
     })),
     ...STATIC_PAGES,
   ], [actionItems, projects, notes, todos])
@@ -489,7 +496,7 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
               onClick={onGame}
               style={{ padding: '20px 18px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
             >
-              <span style={{ fontSize: 28 }}>🐊</span>
+              <span style={{ fontSize: 28, display: 'flex', color: 'var(--accent)' }}><GameIcon size={28} /></span>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Croco Run</div>
               <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Press Enter or click to play</div>
             </div>
@@ -498,7 +505,7 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
               onClick={onEasterEggs}
               style={{ padding: '20px 18px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
             >
-              <span style={{ fontSize: 28 }}>🥚</span>
+              <span style={{ fontSize: 28, display: 'flex', color: 'var(--accent)' }}><GiftIcon size={28} /></span>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Easter Eggs</div>
               <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Press Enter to see all hidden features</div>
             </div>
@@ -507,7 +514,7 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
               onClick={onBabum}
               style={{ padding: '20px 18px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
             >
-              <span style={{ fontSize: 28 }}>🎵</span>
+              <span style={{ fontSize: 28, display: 'flex', color: 'var(--accent)' }}><MusicNoteIcon size={28} /></span>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>ba bum ba bum</div>
               <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Press Enter to play</div>
             </div>
@@ -516,7 +523,7 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
               onClick={onLeetcode}
               style={{ padding: '20px 18px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
             >
-              <span style={{ fontSize: 28 }}>🧩</span>
+              <span style={{ fontSize: 28, display: 'flex', color: 'var(--accent)' }}><PuzzleIcon size={28} /></span>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>LeetCode</div>
               <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Press Enter to open the problem set</div>
             </div>
@@ -537,7 +544,7 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
                 transition: 'background 0.08s',
               }}
             >
-              <span style={{ fontSize: 16, flexShrink: 0 }}>{item.emoji}</span>
+              <span style={{ fontSize: 16, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, flexShrink: 0, color: 'var(--dim)' }}>{item.icon}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, color: selected === i ? 'var(--text)' : 'var(--dim)', fontWeight: selected === i ? 500 : 400 }}>
                   {item.label}

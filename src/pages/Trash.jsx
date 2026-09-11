@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { TrashIcon, AlertTriangleIcon } from '../constants/SimpleSvgExports'
+import { TrashIcon, AlertTriangleIcon, FolderIcon, NoteIcon2, CheckCircleIcon } from '../constants/SimpleSvgExports'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
 import { EmptyState } from '../components/ui/EmptyState.jsx'
 import { Button } from '../components/ui/Button.jsx'
@@ -12,9 +12,9 @@ import ConfirmModal from '../components/ProjectDetail/ConfirmModal'
 const TRASH_RETENTION_DAYS = 30
 
 const TYPE_META = {
-  project: { label: 'Project', emoji: '📁', restore: 'projects', navigateTo: id => `/projects/${id}` },
-  note:    { label: 'Note',    emoji: '📝', restore: 'notes',    navigateTo: null },
-  todo:    { label: 'Todo',    emoji: '✅', restore: 'todos',    navigateTo: null },
+  project: { label: 'Project', icon: <FolderIcon />,      restore: 'projects', navigateTo: id => `/projects/${id}` },
+  note:    { label: 'Note',    icon: <NoteIcon2 />,       restore: 'notes',    navigateTo: null },
+  todo:    { label: 'Todo',    icon: <CheckCircleIcon />, restore: 'todos',    navigateTo: null },
 }
 
 function daysLeft(trashedAt) {
@@ -107,7 +107,7 @@ export default function Trash() {
 
           {!loading && items.length === 0 && (
             <EmptyState
-              icon="🗑️"
+              icon={<TrashIcon size={32} />}
               title="Trash is empty"
               body={`Projects, notes, and todos you delete stay recoverable here for ${TRASH_RETENTION_DAYS} days before they're removed automatically.`}
             />
@@ -178,8 +178,8 @@ function TrashRow({ item, index, onRestore, onDeleteForever, onOpen }) {
         cursor: canOpen ? 'pointer' : 'default', transition: 'all 0.12s',
       }}
     >
-      <div style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-        {meta.emoji}
+      <div style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--dim)', flexShrink: 0 }}>
+        {meta.icon}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>

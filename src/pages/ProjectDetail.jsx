@@ -4,6 +4,8 @@ import {
   ArrowLeftIcon, StarIcon, IdeLogoIcon, FolderOpenIcon, GithubIcon,
   PlayIcon, StopIcon,
   DownloadIcon, RefreshIcon, AlertTriangleIcon, ExternalLinkIcon,
+  ClockIcon, CommitIcon, CalendarIcon, TagIcon, SearchIcon, PackageIcon,
+  CheckCircleIcon, NoteIcon2, FileIcon, PinIcon, LinkIcon, CheckIcon,
 } from '../constants/SimpleSvgExports'
 import { CardBtn } from '../components/Projects/Exports'
 import { useToast } from '../components/Toast/useToast.js'
@@ -442,7 +444,7 @@ export default function ProjectDetail() {
 
   if (!project) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12 }}>
-      <div style={{ fontSize: 32 }}>🔍</div>
+      <div style={{ display: 'flex', color: 'var(--dimmer)' }}><SearchIcon size={32} /></div>
       <div style={{ fontSize: 14, color: 'var(--dim)' }}>Project not found</div>
       <button onClick={() => navigate('/projects')} style={{ padding: '8px 16px', borderRadius: 8, background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--dim)', cursor: 'pointer', fontSize: 12, fontFamily: 'Geist, sans-serif' }}>
         Back to Projects
@@ -677,10 +679,10 @@ export default function ProjectDetail() {
                     const fresh = await window.api.projects.detectLanguages(project.id).catch(() => [])
                     setLanguages(fresh || [])
                   }} title="Rescan languages"
-                    style={{ fontSize: 10, color: 'var(--dimmer)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', opacity: 0.5, transition: 'opacity 0.12s' }}
+                    style={{ display: 'flex', color: 'var(--dimmer)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', opacity: 0.5, transition: 'opacity 0.12s' }}
                     onMouseEnter={e => e.currentTarget.style.opacity = 1}
                     onMouseLeave={e => e.currentTarget.style.opacity = 0.5}>
-                    ↻
+                    <RefreshIcon size={10} />
                   </button>
                 </div>
               </div>
@@ -756,13 +758,13 @@ export default function ProjectDetail() {
               <InfoSection label="Activity">
                 <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
                   {[
-                    { icon: '🕐', label: 'Last opened',  value: project.time || 'never'       },
-                    { icon: '📦', label: 'Last commit',  value: project.lastCommit || 'never'  },
-                    { icon: '📅', label: 'Created',      value: project.meta?.createdAt ? new Date(project.meta.createdAt).toLocaleDateString() : '—' },
-                    { icon: '🗂️', label: 'Slug',        value: project.slug, mono: true        },
+                    { icon: <ClockIcon />,    label: 'Last opened',  value: project.time || 'never'       },
+                    { icon: <CommitIcon />,   label: 'Last commit',  value: project.lastCommit || 'never'  },
+                    { icon: <CalendarIcon />, label: 'Created',      value: project.meta?.createdAt ? new Date(project.meta.createdAt).toLocaleDateString() : '—' },
+                    { icon: <TagIcon />,      label: 'Slug',        value: project.slug, mono: true        },
                   ].map((row, i, arr) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                      <span style={{ fontSize: 14, flexShrink: 0 }}>{row.icon}</span>
+                      <span style={{ display: 'flex', color: 'var(--dimmer)', flexShrink: 0 }}>{row.icon}</span>
                       <span style={{ fontSize: 11, color: 'var(--dimmer)', width: 110, flexShrink: 0 }}>{row.label}</span>
                       <span style={{ fontSize: 12, color: 'var(--dim)', fontFamily: row.mono ? 'Geist Mono, monospace' : 'Geist, sans-serif' }}>{row.value}</span>
                     </div>
@@ -833,7 +835,7 @@ export default function ProjectDetail() {
                 </div>
               ) : !deps || deps.type === 'unknown' ? (
                 <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <div style={{ fontSize: 28, marginBottom: 10 }}>📦</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><PackageIcon size={28} /></div>
                   <div style={{ fontSize: 13, color: 'var(--dim)', marginBottom: 4 }}>No dependency file found</div>
                   <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
                     Expected package.json, requirements.txt, go.mod, or Cargo.toml
@@ -970,7 +972,7 @@ export default function ProjectDetail() {
                 </div>
               ) : !fileTree || fileTree.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <div style={{ fontSize: 28, marginBottom: 10 }}>📂</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><FolderOpenIcon size={28} /></div>
                   <div style={{ fontSize: 13, color: 'var(--dim)' }}>Project folder is empty</div>
                   <div style={{ fontSize: 11, color: 'var(--dimmer)', marginTop: 4, fontFamily: 'Geist Mono, monospace' }}>{project.paths?.projectRoot}</div>
                   <button onClick={loadFiles} style={{ marginTop: 14, padding: '7px 16px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>Refresh</button>
@@ -1018,8 +1020,8 @@ export default function ProjectDetail() {
                     {/* Emoji picker */}
                     <div style={{ position: 'relative' }}>
                       <button onClick={() => setEmojiPickerOpen(o => !o)} title="Add icon"
-                        style={{ width: 22, height: 22, borderRadius: 5, border: `1px solid ${todoEmoji ? 'var(--border-bright)' : 'transparent'}`, background: todoEmoji ? 'var(--border)' : 'transparent', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
-                        {todoEmoji || '🏷️'}
+                        style={{ width: 22, height: 22, borderRadius: 5, border: `1px solid ${todoEmoji ? 'var(--border-bright)' : 'transparent'}`, background: todoEmoji ? 'var(--border)' : 'transparent', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, color: 'var(--dimmer)' }}>
+                        {todoEmoji || <TagIcon size={13} />}
                       </button>
                       {emojiPickerOpen && (
                         <div style={{ position: 'absolute', right: 0, top: '120%', zIndex: 60, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 9, padding: 8, display: 'flex', flexWrap: 'wrap', gap: 3, width: 184, boxShadow: '0 8px 28px rgba(0,0,0,0.45)' }}>
@@ -1032,10 +1034,10 @@ export default function ProjectDetail() {
                         </div>
                       )}
                     </div>
-                    {[['high','🔴'],['med','🟡'],['low','🟢']].map(([p, icon]) => (
+                    {[['high','#ff4444'],['med','#ffd700'],['low','#4aff91']].map(([p, color]) => (
                       <button key={p} onClick={() => setTodoPriority(p)} title={p}
-                        style={{ width: 22, height: 22, borderRadius: 5, border: `1px solid ${todoPriority === p ? 'var(--border-bright)' : 'transparent'}`, background: todoPriority === p ? 'var(--border)' : 'transparent', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
-                        {icon}
+                        style={{ width: 22, height: 22, borderRadius: 5, border: `1px solid ${todoPriority === p ? 'var(--border-bright)' : 'transparent'}`, background: todoPriority === p ? 'var(--border)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
                       </button>
                     ))}
                     {/* Note link picker */}
@@ -1043,8 +1045,8 @@ export default function ProjectDetail() {
                       <button
                         title={todoNoteId ? `Linked: ${projectNotes.find(n => n.id === todoNoteId)?.title}` : 'Link to a note'}
                         onClick={() => setTodoNotePicker(p => !p)}
-                        style={{ padding: '2px 7px', borderRadius: 5, border: `1px solid ${todoNoteId ? 'rgba(74,158,255,0.4)' : 'transparent'}`, background: todoNoteId ? 'rgba(74,158,255,0.1)' : 'transparent', cursor: 'pointer', fontSize: 12, color: todoNoteId ? '#4a9eff' : 'var(--dimmer)' }}
-                      >🔗</button>
+                        style={{ padding: '2px 7px', borderRadius: 5, border: `1px solid ${todoNoteId ? 'rgba(74,158,255,0.4)' : 'transparent'}`, background: todoNoteId ? 'rgba(74,158,255,0.1)' : 'transparent', cursor: 'pointer', display: 'flex', color: todoNoteId ? '#4a9eff' : 'var(--dimmer)' }}
+                      ><LinkIcon size={12} /></button>
                       {todoNotePicker && (
                         <div style={{ position: 'absolute', right: 0, top: '120%', zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 9, padding: 6, minWidth: 200, boxShadow: '0 8px 28px rgba(0,0,0,0.45)' }}>
                           {[{ id: null, title: '— None', emoji: '' }, ...projectNotes].map(n => (
@@ -1078,7 +1080,7 @@ export default function ProjectDetail() {
 
               {projectTodos.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '50px 0' }}>
-                  <div style={{ fontSize: 30, marginBottom: 10 }}>✅</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><CheckCircleIcon size={30} /></div>
                   <div style={{ fontSize: 13, color: 'var(--dim)' }}>No tasks for this project yet</div>
                   <div style={{ fontSize: 11, color: 'var(--dimmer)', marginTop: 4 }}>Type above to add one</div>
                 </div>
@@ -1103,7 +1105,7 @@ export default function ProjectDetail() {
                         title={locked ? 'Completed more than 6 days ago — cannot be reversed' : undefined}
                         style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, border: todo.completed ? 'none' : '1px solid var(--border-bright)', background: todo.completed ? '#4aff91' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: locked ? 'not-allowed' : 'pointer', opacity: locked ? 0.65 : 1, fontSize: 9, color: '#000', transition: 'all 0.15s' }}
                       >
-                        {todo.completed ? '✓' : ''}
+                        {todo.completed && <CheckIcon />}
                       </button>
                       <span style={{ flex: 1, fontSize: 12, color: todo.completed ? 'var(--dimmer)' : 'var(--text)', textDecoration: todo.completed ? 'line-through' : 'none', display: 'flex', alignItems: 'center', gap: 5 }}>
                         {todo.emoji && <span style={{ fontSize: 13, flexShrink: 0 }}>{todo.emoji}</span>}
@@ -1116,8 +1118,8 @@ export default function ProjectDetail() {
                           <button
                             onClick={() => navigate(`/note-editor/${ln.id}`)}
                             title={`Linked note: ${ln.title}`}
-                            style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', padding: '2px 7px', borderRadius: 4, background: 'rgba(74,158,255,0.1)', color: '#4a9eff', border: '1px solid rgba(74,158,255,0.2)', cursor: 'pointer', flexShrink: 0, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            🔗 {ln.title}
+                            style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', padding: '2px 7px', borderRadius: 4, background: 'rgba(74,158,255,0.1)', color: '#4a9eff', border: '1px solid rgba(74,158,255,0.2)', cursor: 'pointer', flexShrink: 0, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <LinkIcon size={9} /> {ln.title}
                           </button>
                         ) : null
                       })()}
@@ -1127,10 +1129,10 @@ export default function ProjectDetail() {
                         <button
                           title="Link to a note"
                           onClick={() => setLinkingTodoId(linkingTodoId === todo.id ? null : todo.id)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: todo.linkedNoteId ? '#4a9eff' : 'var(--dimmer)', fontSize: 12, padding: '0 2px', opacity: 0.7, transition: 'opacity 0.12s' }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: todo.linkedNoteId ? '#4a9eff' : 'var(--dimmer)', display: 'flex', padding: '0 2px', opacity: 0.7, transition: 'opacity 0.12s' }}
                           onMouseEnter={e => e.currentTarget.style.opacity = 1}
                           onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
-                        >🔗</button>
+                        ><LinkIcon size={12} /></button>
                         {linkingTodoId === todo.id && (
                           <div style={{ position: 'absolute', right: 0, top: '120%', zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 9, padding: 6, minWidth: 200, boxShadow: '0 8px 28px rgba(0,0,0,0.45)' }}>
                             <div style={{ fontSize: 10, color: 'var(--dimmer)', padding: '2px 6px 6px', fontFamily: 'Geist Mono, monospace' }}>Link to note</div>
@@ -1190,7 +1192,7 @@ export default function ProjectDetail() {
 
               {projectNotes.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '50px 0' }}>
-                  <div style={{ fontSize: 30, marginBottom: 10 }}>📝</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><NoteIcon2 size={30} /></div>
                   <div style={{ fontSize: 13, color: 'var(--dim)' }}>No notes for this project yet</div>
                   <div style={{ fontSize: 11, color: 'var(--dimmer)', marginTop: 4 }}>Click above to create one</div>
                 </div>
@@ -1214,16 +1216,16 @@ export default function ProjectDetail() {
                           onMouseLeave={e => { e.currentTarget.style.borderColor = pinned ? 'rgba(74,158,255,0.2)' : 'var(--border)'; e.currentTarget.style.background = pinned ? 'rgba(74,158,255,0.05)' : 'var(--card)' }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            <span style={{ fontSize: 14 }}>{note.emoji || '📝'}</span>
+                            <span style={{ fontSize: 14, display: 'flex', color: 'var(--dimmer)' }}>{note.emoji || <NoteIcon2 size={14} />}</span>
                             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.title}</span>
                             {pinned && <span style={{ fontSize: 9, color: 'var(--accent)', fontFamily: 'Geist Mono, monospace' }}>PINNED</span>}
                             <button
                               onClick={e => { e.stopPropagation(); togglePinNote(note.id) }}
                               title={pinned ? 'Unpin' : 'Pin to top'}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, opacity: pinned ? 1 : 0, padding: '0 2px', color: pinned ? 'var(--accent)' : 'var(--dimmer)', flexShrink: 0, transition: 'opacity 0.1s' }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', opacity: pinned ? 1 : 0, padding: '0 2px', color: pinned ? 'var(--accent)' : 'var(--dimmer)', flexShrink: 0, transition: 'opacity 0.1s' }}
                               className="note-pin-btn"
                             >
-                              📌
+                              <PinIcon size={12} />
                             </button>
                             <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', color: 'var(--dimmer)', flexShrink: 0 }}>{note.time}</span>
                           </div>
@@ -1249,7 +1251,7 @@ export default function ProjectDetail() {
                 </div>
               ) : readme === false || !readme ? (
                 <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <div style={{ fontSize: 28, marginBottom: 10 }}>📄</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><FileIcon size={28} /></div>
                   <div style={{ fontSize: 13, color: 'var(--dim)' }}>No README found</div>
                   <div style={{ fontSize: 11, color: 'var(--dimmer)', marginTop: 4, fontFamily: 'Geist Mono, monospace' }}>Add a README.md to your project root</div>
                 </div>
