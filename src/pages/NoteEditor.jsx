@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { marked } from 'marked'
-import { ArrowLeftIcon, StarIcon, TagIcon, FolderIcon } from '../constants/SimpleSvgExports'
+import { ArrowLeftIcon, StarIcon, TagIcon, FolderIcon, CheckIcon } from '../constants/SimpleSvgExports'
 import { modKeyHint } from '../lib/platform'
 
 marked.setOptions({ gfm: true, breaks: true })
@@ -340,7 +340,7 @@ export default function NoteEditor() {
             opacity: saving ? 0.7 : 1,
           }}
         >
-          {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save .md'}
+          {saving ? 'Saving…' : saved ? <><CheckIcon /> Saved</> : 'Save .md'}
         </button>
       </div>
 
