@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { CrocoIcon, StarIcon } from '../../constants/SimpleSvgExports'
 
 const W = 600
 const H = 200
@@ -218,7 +219,7 @@ export default function CrocoGame({ onClose }) {
 
         {phase === 'idle' && (
           <Overlay>
-            <div style={{ fontSize: 22, marginBottom: 4 }}>🐊</div>
+            <div style={{ display: 'flex', color: '#4aff91', marginBottom: 4 }}><CrocoIcon size={22} /></div>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Croco Run</div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontFamily: 'Geist Mono, monospace' }}>SPACE or tap to start</div>
           </Overlay>
@@ -227,8 +228,8 @@ export default function CrocoGame({ onClose }) {
         {phase === 'dead' && (
           <Overlay>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginBottom: 3 }}>GAME OVER</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontFamily: 'Geist Mono, monospace', marginBottom: 10 }}>
-              {score >= highScore ? '🏆 New high score!' : `Score: ${score}`}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, color: 'rgba(255,255,255,0.4)', fontFamily: 'Geist Mono, monospace', marginBottom: 10 }}>
+              {score >= highScore ? <><StarIcon filled size={11} /> New high score!</> : `Score: ${score}`}
             </div>
             <button
               onClick={start}

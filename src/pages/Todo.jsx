@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { PlusIcon, ClockIcon } from '../constants/SimpleSvgExports'
+import { PlusIcon, ClockIcon, CheckCircleIcon, ListViewIcon } from '../constants/SimpleSvgExports'
+import { SettingsIcon } from '../constants/SvgExports.jsx'
 import { TodoRow, TodoGroup, TopBtn, SearchBox, FilterTab, PriorityTab } from '../components/Todo/Exports'
 import PriorityManagerModal from '../components/Todo/PriorityManagerModal'
 import { ScheduleRow, ScheduleModal } from '../components/Schedules/Exports'
@@ -339,7 +340,7 @@ export default function Todo() {
               color: 'var(--dimmer)', cursor: 'pointer', fontSize: 13,
             }}
           >
-            ⚙
+            <SettingsIcon />
           </button>
 
           <select
@@ -465,9 +466,9 @@ export default function Todo() {
                 background: 'var(--card)',
                 border: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28, marginBottom: 4,
+                color: 'var(--dimmer)', marginBottom: 4,
               }}>
-                {filter === 'Completed' ? '📋' : '✅'}
+                {filter === 'Completed' ? <ListViewIcon size={28} /> : <CheckCircleIcon size={28} />}
               </div>
               <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', letterSpacing: -0.3 }}>
                 {filter === 'Completed' ? 'No completed tasks yet' : search ? 'No tasks found' : 'All clear!'}
@@ -546,9 +547,9 @@ export default function Todo() {
                 background: 'var(--card)',
                 border: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28, marginBottom: 4,
+                color: 'var(--dimmer)', marginBottom: 4,
               }}>
-                🕐
+                <ClockIcon size={28} />
               </div>
               <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', letterSpacing: -0.3 }}>
                 {search ? 'No schedules found' : 'Nothing scheduled'}

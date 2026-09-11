@@ -28,6 +28,7 @@ const APIIcon         = ({ size }) => <Icon size={size}><path d="M3 8h10M8 3v10"
 const PaletteIcon     = ({ size }) => <Icon size={size}><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2"/></Icon>
 const ShieldIcon      = ({ size }) => <Icon size={size}><path d="M8 1l6 3v5c0 3-2.5 5.5-6 7-3.5-1.5-6-4-6-7V4z"/></Icon>
 const LockIcon        = ({ size }) => <Icon size={size}><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V4.5a2.5 2.5 0 0 1 5 0V7"/></Icon>
+const InfoIcon         = ({ size }) => <Icon size={size}><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 5v.01"/></Icon>
 const EyeIcon         = ({ size }) => <Icon size={size}><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></Icon>
 const EyeOffIcon      = ({ size }) => <Icon size={size}><path d="M14 4L2 12M1 8s2.5-5 7-5M15 8s-2.5 5-7 5M6.5 6.5L9.5 9.5"/></Icon>
 const SaveIcon        = ({ size }) => <Icon size={size}><path d="M13 1H3L1 3v10l2 2h10l2-2V3z"/><path d="M5 1v4h6V1M5 10h6"/></Icon>
@@ -122,5 +123,5 @@ export {
   TerminalIcon, ActivityIcon, CopyIcon, AIIcon, KeyboardIcon, DatabaseIcon, GitInitIcon, UploadCloudIcon,
   VaultIcon, HomeIcon, BulbIcon, ImportIcon, PlusCircleIcon, GameIcon, GiftIcon, MusicNoteIcon,
   PuzzleIcon, CrocoIcon, CalendarIcon, PinIcon, PackageIcon, FileIcon, BellIcon, WindowIcon,
-  EraserIcon, UndoIcon, LockIcon,
+  EraserIcon, UndoIcon, LockIcon, InfoIcon,
 }

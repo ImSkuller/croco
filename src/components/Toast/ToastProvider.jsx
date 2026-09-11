@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ToastContext } from './useToast.js'
+import { CheckIcon, XCircleIcon, AlertTriangleIcon, InfoIcon } from '../../constants/SimpleSvgExports'
 
 let _id = 0
 
 const TYPE_STYLE = {
-  success: { border: '#4aff91', icon: '✓', bg: 'rgba(74,255,145,0.06)' },
-  error:   { border: '#ff4444', icon: '✕', bg: 'rgba(255,68,68,0.06)'  },
-  warning: { border: '#ffd700', icon: '⚠', bg: 'rgba(255,215,0,0.06)'  },
-  info:    { border: '#4a9eff', icon: 'i', bg: 'rgba(74,158,255,0.06)' },
+  success: { border: '#4aff91', icon: <CheckIcon size={11} />,         bg: 'rgba(74,255,145,0.06)' },
+  error:   { border: '#ff4444', icon: <XCircleIcon size={11} />,       bg: 'rgba(255,68,68,0.06)'  },
+  warning: { border: '#ffd700', icon: <AlertTriangleIcon size={11} />, bg: 'rgba(255,215,0,0.06)'  },
+  info:    { border: '#4a9eff', icon: <InfoIcon size={11} />,          bg: 'rgba(74,158,255,0.06)' },
 }
 
 const DURATION = { success: 3500, error: 6000, warning: 5000, info: 3500 }
