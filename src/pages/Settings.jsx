@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon } from '../constants/SimpleSvgExports'
+import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, LockIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon } from '../constants/SimpleSvgExports'
 import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, PathInput, IDEOption, ToggleChip, Toggle, InfoBox, SmallBtn, SaveBtn } from '../components/Settings/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { THEMES, applyTheme, getThemeAccentSwatch, normalizeThemeId } from '../lib/theme.js'
@@ -633,7 +633,7 @@ export default function Settings() {
                         background: 'var(--accent-dim)', border: '1px solid var(--accent)',
                         borderRadius: 20, padding: '6px 14px',
                       }}>
-                        <span style={{ fontSize: 14 }}>🔒</span>
+                        <span style={{ display: 'flex', color: 'var(--accent)' }}><LockIcon size={14} /></span>
                         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{userTag}</span>
                       </div>
                       <span style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
@@ -862,8 +862,10 @@ export default function Settings() {
                     )}
                   </div>
                   {ghTestStatus && ghTestStatus !== 'testing' && (
-                    <div style={{ marginTop: 10, fontSize: 12, color: ghTestStatus.ok ? 'var(--green)' : 'var(--red)', fontFamily: 'Geist Mono, monospace' }}>
-                      {ghTestStatus.ok ? `✓ Connected as @${ghTestStatus.login}` : `✗ ${ghTestStatus.message}`}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, fontSize: 12, color: ghTestStatus.ok ? 'var(--green)' : 'var(--red)', fontFamily: 'Geist Mono, monospace' }}>
+                      {ghTestStatus.ok
+                        ? <><CheckIcon size={12} /> Connected as @{ghTestStatus.login}</>
+                        : <><XCircleIcon size={12} /> {ghTestStatus.message}</>}
                     </div>
                   )}
                 </SettingsCard>
@@ -1132,8 +1134,8 @@ export default function Settings() {
                   <FieldDesc>Controls what happens when you click the X on the title bar.</FieldDesc>
                   <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     {[
-                      { id: 'tray', label: '🔔  Minimize to Tray' },
-                      { id: 'quit', label: '❌  Quit App'         },
+                      { id: 'tray', label: <><BellIcon size={12} /> Minimize to Tray</> },
+                      { id: 'quit', label: <><XCircleIcon size={12} /> Quit App</> },
                     ].map(opt => (
                       <ToggleChip
                         key={opt.id}
@@ -1155,8 +1157,8 @@ export default function Settings() {
                   <FieldDesc>Launch Croco automatically when you log in.</FieldDesc>
                   <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     {[
-                      { id: true,  label: '🚀  Enabled'  },
-                      { id: false, label: '🚫  Disabled' },
+                      { id: true,  label: <><CheckCircleIcon size={12} /> Enabled</> },
+                      { id: false, label: <><XCircleIcon size={12} /> Disabled</> },
                     ].map(opt => (
                       <ToggleChip
                         key={String(opt.id)}
