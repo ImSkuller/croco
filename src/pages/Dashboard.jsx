@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, NavLink } from 'react-router-dom'
-import { PlusIcon } from '../constants/SimpleSvgExports.jsx'
+import { PlusIcon, FolderIcon, CheckCircleIcon, NoteIcon2 } from '../constants/SimpleSvgExports.jsx'
 import { StatCard, SectionHeader, ProjectCard, TodoItem, NoteItem, TopBtn, FavChip, SuggestionsCard } from '../components/Dashboard/Exports.jsx'
 import { useToast } from '../components/Toast/useToast.js'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
@@ -210,8 +210,8 @@ export default function Dashboard() {
               flexShrink: 0,
               boxShadow: 'var(--shadow-sm)',
             }}>
-              <div style={{ width: 36, height: 36, background: 'var(--accent-dim)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-                📁
+              <div style={{ width: 36, height: 36, background: 'var(--accent-dim)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
+                <FolderIcon size={16} />
               </div>
               <div>
                 <div style={{ fontSize: 30, fontWeight: 700, color: 'var(--accent)', fontFamily: 'Geist Mono, monospace', lineHeight: 1, letterSpacing: -1 }}>{liveProjects.length}</div>
@@ -288,7 +288,7 @@ export default function Dashboard() {
               </div>
               {openTodos.length === 0 ? (
                 <div style={{ padding: '32px 18px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>✅</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 8 }}><CheckCircleIcon size={24} /></div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--dim)', marginBottom: 4 }}>{loading ? 'Loading…' : 'All clear!'}</div>
                   {!loading && <div style={{ fontSize: 11, color: 'var(--dimmer)' }}>No open tasks</div>}
                 </div>
@@ -304,7 +304,7 @@ export default function Dashboard() {
               </div>
               {recentNotes.length === 0 ? (
                 <div style={{ padding: '32px 18px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>📝</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 8 }}><NoteIcon2 size={24} /></div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--dim)', marginBottom: 4 }}>{loading ? 'Loading…' : 'No notes yet'}</div>
                   {!loading && <div style={{ fontSize: 11, color: 'var(--dimmer)' }}>Start capturing your thoughts</div>}
                 </div>

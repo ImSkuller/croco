@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeftIcon } from '../constants/SimpleSvgExports'
+import { ArrowLeftIcon, GameIcon, GiftIcon, MusicNoteIcon, PuzzleIcon } from '../constants/SimpleSvgExports'
 import { modKeyHint } from '../lib/platform'
 
 const EGGS = [
   {
     id: 'croco-run',
-    emoji: '🐊',
+    icon: <GameIcon size={22} />,
     title: 'Croco Run',
     desc: 'A mini endless-runner game hidden inside the app.',
     how: [
@@ -15,21 +15,21 @@ const EGGS = [
   },
   {
     id: 'easter-egg-page',
-    emoji: '🥚',
+    icon: <GiftIcon size={22} />,
     title: 'Easter Egg List',
     desc: 'This very page — a list of all hidden features.',
     how: [`Type croco:easter-egg in the search palette (${modKeyHint('K')}).`],
   },
   {
     id: 'babum',
-    emoji: '🎵',
+    icon: <MusicNoteIcon size={22} />,
     title: 'ba bum ba bum',
     desc: 'A special audio easter egg.',
     how: [`Type croco:babumbabum in the search palette (${modKeyHint('K')}).`],
   },
   {
     id: 'leetcode',
-    emoji: '🧩',
+    icon: <PuzzleIcon size={22} />,
     title: 'LeetCode',
     desc: 'Quick-launch the LeetCode problem set in your browser — for when the compile finishes early.',
     how: [`Type croco:leetcode in the search palette (${modKeyHint('K')}).`],
@@ -58,8 +58,8 @@ export default function EasterEggs() {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div className="pm-page" style={{ padding: 28, maxWidth: 640 }}>
           <div style={{ marginBottom: 28 }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: -0.5, marginBottom: 6 }}>
-              🥚 Hidden Easter Eggs
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: -0.5, marginBottom: 6 }}>
+              <GiftIcon size={22} /> Hidden Easter Eggs
             </div>
             <div style={{ fontSize: 13, color: 'var(--dim)', lineHeight: 1.6 }}>
               Croco has a few hidden surprises. Here's how to find them all.
@@ -76,7 +76,7 @@ export default function EasterEggs() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                  <span style={{ fontSize: 24 }}>{egg.emoji}</span>
+                  <span style={{ display: 'flex', color: 'var(--accent)' }}>{egg.icon}</span>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{egg.title}</div>
                     <div style={{ fontSize: 12, color: 'var(--dim)', marginTop: 2 }}>{egg.desc}</div>
