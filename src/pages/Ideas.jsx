@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast/useToast.js'
+import {
+  EditIcon, RefreshIcon, CheckCircleIcon, DownloadIcon, BulbIcon,
+  NoteIcon2, EraserIcon, UndoIcon, SaveIcon,
+} from '../constants/SimpleSvgExports'
 
 const DIFFICULTY_COLOR = { Beginner: '#4aff91', Intermediate: '#ffd700', Advanced: '#ff6b35' }
 const DIFFICULTY_BG    = { Beginner: 'rgba(74,255,145,0.1)', Intermediate: 'rgba(255,215,0,0.1)', Advanced: 'rgba(255,107,53,0.12)' }
@@ -435,7 +439,7 @@ export default function Ideas() {
               fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
             }}
           >
-            ✏️ Scribble
+            <EditIcon size={12} /> Scribble
           </button>
           <button
             onClick={fetchFromGitHub}
@@ -448,7 +452,7 @@ export default function Ideas() {
               fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: fetched || loading ? 'default' : 'pointer',
             }}
           >
-            {loading ? '⟳ Fetching…' : fetched ? '✓ Community ideas loaded' : '↓ Load community ideas'}
+            {loading ? <><RefreshIcon size={12} /> Fetching…</> : fetched ? <><CheckCircleIcon size={12} /> Community ideas loaded</> : <><DownloadIcon size={12} /> Load community ideas</>}
           </button>
         </div>
       </div>
@@ -490,7 +494,7 @@ export default function Ideas() {
         <div className="pm-page" style={{ padding: 28 }}>
           {filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>💡</div>
+              <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 12 }}><BulbIcon size={32} /></div>
               <div style={{ fontSize: 14, color: 'var(--dim)' }}>No ideas match your filters</div>
               <div style={{ fontSize: 12, color: 'var(--dimmer)', marginTop: 6 }}>Try a different category or search term</div>
             </div>
@@ -509,7 +513,7 @@ export default function Ideas() {
             onClick={() => setScribbleOpen(p => !p)}
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '10px 0', userSelect: 'none' }}
           >
-            <span style={{ fontSize: 14 }}>✏️</span>
+            <span style={{ display: 'flex', color: 'var(--dim)' }}><EditIcon size={14} /></span>
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--dim)' }}>Scribble Pad</span>
             <span style={{ fontSize: 10, color: 'var(--dimmer)', marginLeft: 4 }}>Notes &amp; drawings — saved locally</span>
             <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--dimmer)' }}>{scribbleOpen ? '▲' : '▼'}</span>
@@ -521,6 +525,7 @@ export default function Ideas() {
                 {['text', 'draw'].map(tab => (
                   <button key={tab} onClick={() => setScribbleTab(tab)}
                     style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
                       padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11,
                       fontFamily: 'Geist, sans-serif', fontWeight: scribbleTab === tab ? 600 : 400,
                       color: scribbleTab === tab ? 'var(--accent)' : 'var(--dimmer)',
@@ -528,7 +533,7 @@ export default function Ideas() {
                       transition: 'all 0.1s',
                     }}
                   >
-                    {tab === 'text' ? '📝 Text' : '🖌️ Draw'}
+                    {tab === 'text' ? <><NoteIcon2 size={11} /> Text</> : <><EditIcon size={11} /> Draw</>}
                   </button>
                 ))}
               </div>
@@ -552,11 +557,11 @@ export default function Ideas() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
                     {/* Tool selector */}
                     <div style={{ display: 'flex', gap: 2, padding: 2, background: 'var(--border)', borderRadius: 7 }}>
-                      {[{ id: 'pen', icon: '✏️', label: 'Pen' }, { id: 'eraser', icon: '⬜', label: 'Eraser' }].map(t => (
+                      {[{ id: 'pen', icon: <EditIcon size={12} />, label: 'Pen' }, { id: 'eraser', icon: <EraserIcon size={12} />, label: 'Eraser' }].map(t => (
                         <button key={t.id} onClick={() => { setDrawTool(t.id); toolRef.current = t.id }}
                           title={t.label}
                           style={{
-                            padding: '3px 9px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 11,
+                            display: 'flex', padding: '3px 9px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 11,
                             fontFamily: 'Geist, sans-serif',
                             background: drawTool === t.id ? 'var(--card)' : 'transparent',
                             color: drawTool === t.id ? 'var(--text)' : 'var(--dimmer)',
@@ -575,7 +580,9 @@ export default function Ideas() {
                     )}
 
                     <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--dim)' }}>
-                      {drawTool === 'eraser' ? '⬜' : '●'}
+                      {drawTool === 'eraser'
+                        ? <span style={{ width: 8, height: 8, border: '1px solid currentColor', display: 'inline-block' }} />
+                        : '●'}
                       <input type="range" min={1} max={20} value={drawSize} onChange={e => { const v = +e.target.value; setDrawSize(v); sizeRef.current = v }}
                         style={{ width: 60 }} />
                       <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--dimmer)', minWidth: 14 }}>{drawTool === 'eraser' ? drawSize * 3 : drawSize}</span>
@@ -583,8 +590,8 @@ export default function Ideas() {
 
                     <button onClick={undoDraw} disabled={!canUndo}
                       title="Undo last stroke"
-                      style={{ padding: '4px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: canUndo ? 'var(--dim)' : 'var(--dimmer)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: canUndo ? 'pointer' : 'default', opacity: canUndo ? 1 : 0.4 }}>
-                      ↩ Undo
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: canUndo ? 'var(--dim)' : 'var(--dimmer)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: canUndo ? 'pointer' : 'default', opacity: canUndo ? 1 : 0.4 }}>
+                      <UndoIcon size={11} /> Undo
                     </button>
                     <button onClick={clearCanvas}
                       style={{ padding: '4px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
@@ -622,7 +629,7 @@ export default function Ideas() {
                     fontSize: 11, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
                   }}
                 >
-                  📎 Save as Note + Todo
+                  <SaveIcon size={12} /> Save as Note + Todo
                 </button>
               </div>
             </div>

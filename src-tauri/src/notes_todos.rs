@@ -256,8 +256,38 @@ pub fn notes_update(app: AppHandle, id: String, changes: Value) -> Result<Value,
     Ok(updated)
 }
 
+// Soft delete: sets trashedAt instead of removing the note, and
+// deliberately does NOT touch the Obsidian vault copy (if any) — a trashed
+// note is meant to be reversible, and removing-then-restoring would leave
+// the vault file gone even after a restore. Only notes_delete_permanently
+// (and crate::purge_expired_trash after TRASH_RETENTION_DAYS) removes the
+// vault copy, matching the old hard-delete behavior.
 #[tauri::command]
 pub fn notes_delete(app: AppHandle, id: String) -> Result<Value, String> {
+    crate::validate_safe_id(&id)?;
+    let note_title = read_all_notes_raw(&app).into_iter()
+        .find(|n| n["id"].as_str() == Some(id.as_str()))
+        .and_then(|n| n["title"].as_str().map(|s| s.to_string()))
+        .unwrap_or_default();
+    notes_update(app.clone(), id.clone(), json!({ "trashedAt": chrono::Utc::now().to_rfc3339() }))?;
+    crate::activity_log(&app, "note.trashed", json!({ "title": note_title }));
+    Ok(json!({ "ok": true }))
+}
+
+#[tauri::command]
+pub fn notes_restore(app: AppHandle, id: String) -> Result<Value, String> {
+    crate::validate_safe_id(&id)?;
+    let note_title = read_all_notes_raw(&app).into_iter()
+        .find(|n| n["id"].as_str() == Some(id.as_str()))
+        .and_then(|n| n["title"].as_str().map(|s| s.to_string()))
+        .unwrap_or_default();
+    notes_update(app.clone(), id.clone(), json!({ "trashedAt": null }))?;
+    crate::activity_log(&app, "note.restored", json!({ "title": note_title }));
+    Ok(json!({ "ok": true }))
+}
+
+#[tauri::command]
+pub fn notes_delete_permanently(app: AppHandle, id: String) -> Result<Value, String> {
     crate::validate_safe_id(&id)?;
     let note_title: String;
     if crate::is_sqlite_enabled(&app) && crate::open_db(&app).is_ok() {
@@ -404,8 +434,32 @@ pub fn todos_update(app: AppHandle, id: String, changes: Value) -> Result<Value,
     Ok(updated)
 }
 
+// Soft delete: sets trashedAt instead of removing the todo — see
+// notes_delete's comment for the reasoning (this command mirrors it).
 #[tauri::command]
 pub fn todos_delete(app: AppHandle, id: String) -> Result<Value, String> {
+    crate::validate_safe_id(&id)?;
+    let todo_val = read_all_todos_raw(&app).into_iter().find(|t| t["id"].as_str() == Some(id.as_str())).unwrap_or(json!({}));
+    let title      = todo_val["title"].as_str().unwrap_or("").to_string();
+    let project_id = todo_val["projectId"].as_str().unwrap_or("").to_string();
+    todos_update(app.clone(), id.clone(), json!({ "trashedAt": chrono::Utc::now().to_rfc3339() }))?;
+    crate::activity_log(&app, "todo.trashed", json!({ "projectId": project_id, "title": title }));
+    Ok(json!({ "ok": true }))
+}
+
+#[tauri::command]
+pub fn todos_restore(app: AppHandle, id: String) -> Result<Value, String> {
+    crate::validate_safe_id(&id)?;
+    let todo_val = read_all_todos_raw(&app).into_iter().find(|t| t["id"].as_str() == Some(id.as_str())).unwrap_or(json!({}));
+    let title      = todo_val["title"].as_str().unwrap_or("").to_string();
+    let project_id = todo_val["projectId"].as_str().unwrap_or("").to_string();
+    todos_update(app.clone(), id.clone(), json!({ "trashedAt": null }))?;
+    crate::activity_log(&app, "todo.restored", json!({ "projectId": project_id, "title": title }));
+    Ok(json!({ "ok": true }))
+}
+
+#[tauri::command]
+pub fn todos_delete_permanently(app: AppHandle, id: String) -> Result<Value, String> {
     crate::validate_safe_id(&id)?;
     if crate::is_sqlite_enabled(&app) && crate::open_db(&app).is_ok() {
         let todo_val = crate::db_get_by_id("todos", &id).unwrap_or(json!({}));
@@ -428,4 +482,26 @@ pub fn todos_delete(app: AppHandle, id: String) -> Result<Value, String> {
     }
     invalidate_todos_cache();
     Ok(json!({ "ok": true }))
+}
+
+/// Startup sweep: permanently removes any note/todo trashed more than
+/// TRASH_RETENTION_DAYS ago. Called once at launch alongside the other
+/// migrate_*/purge_* startup passes — see main.rs's setup_app().
+pub fn purge_expired_notes_todos_trash(app: &AppHandle) {
+    let now = chrono::Utc::now();
+    let is_expired = |v: &Value| -> bool { crate::is_trash_expired(v["trashedAt"].as_str(), now) };
+    let expired_notes: Vec<String> = read_all_notes_raw(app).into_iter()
+        .filter(is_expired)
+        .filter_map(|n| n["id"].as_str().map(|s| s.to_string()))
+        .collect();
+    for id in expired_notes {
+        let _ = notes_delete_permanently(app.clone(), id);
+    }
+    let expired_todos: Vec<String> = read_all_todos_raw(app).into_iter()
+        .filter(is_expired)
+        .filter_map(|t| t["id"].as_str().map(|s| s.to_string()))
+        .collect();
+    for id in expired_todos {
+        let _ = todos_delete_permanently(app.clone(), id);
+    }
 }

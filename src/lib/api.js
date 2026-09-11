@@ -101,8 +101,12 @@ export const api = {
     import:               (path, opts)    => invoke('projects_import',               { folderPath: path, opts }),
     /** @param {string} id @param {any} changes @returns {Promise<any>} */
     edit:                 (id, changes)   => invoke('projects_edit',                 { id, changes }),
-    /** @param {string} id @returns {Promise<any>} */
+    /** @param {string} id @returns {Promise<any>} moves to trash (recoverable) */
     delete:               (id)            => invoke('projects_delete',               { id }),
+    /** @param {string} id @returns {Promise<any>} */
+    restore:              (id)            => invoke('projects_restore',              { id }),
+    /** @param {string} id @returns {Promise<any>} permanent — bypasses trash */
+    deletePermanently:    (id)            => invoke('projects_delete_permanently',   { id }),
     /** @param {string} id @returns {Promise<any>} */
     openInIDE:            (id)            => invoke('projects_open_in_ide',          { id }),
     /** @param {string} id @returns {Promise<any>} */
@@ -277,8 +281,12 @@ export const api = {
     create:  (data)        => invoke('notes_create',   { data }),
     /** @param {string} id @param {any} changes @returns {Promise<any>} */
     update:  (id, changes) => invoke('notes_update',   { id, changes }),
-    /** @param {string} id @returns {Promise<any>} */
+    /** @param {string} id @returns {Promise<any>} moves to trash (recoverable) */
     delete:  (id)          => invoke('notes_delete',   { id }),
+    /** @param {string} id @returns {Promise<any>} */
+    restore: (id)          => invoke('notes_restore',  { id }),
+    /** @param {string} id @returns {Promise<any>} permanent — bypasses trash */
+    deletePermanently: (id) => invoke('notes_delete_permanently', { id }),
   },
 
   // ── Obsidian vault sync ─────────────────────────────────────────────────────
@@ -311,8 +319,12 @@ export const api = {
     toggle:  (id)          => invoke('todos_toggle',   { id }),
     /** @param {string} id @param {any} changes @returns {Promise<any>} */
     update:  (id, changes) => invoke('todos_update',   { id, changes }),
-    /** @param {string} id @returns {Promise<any>} */
+    /** @param {string} id @returns {Promise<any>} moves to trash (recoverable) */
     delete:  (id)          => invoke('todos_delete',   { id }),
+    /** @param {string} id @returns {Promise<any>} */
+    restore: (id)          => invoke('todos_restore',  { id }),
+    /** @param {string} id @returns {Promise<any>} permanent — bypasses trash */
+    deletePermanently: (id) => invoke('todos_delete_permanently', { id }),
   },
 
   // ── Schedules & deadlines (distinct from todos — dated, with a
@@ -422,6 +434,11 @@ export const api = {
     exportAll: (destPath) => invoke('data_export_all', { destPath }),
     /** @param {string} srcPath @returns {Promise<any>} */
     importAll: (srcPath)  => invoke('data_import_all', { srcPath }),
+    // Scheduled/manual automatic backup — writes to a rotating set of
+    // files in the app data dir (settings.app.autoBackup), distinct from
+    // exportAll's user-chosen destination.
+    /** @returns {Promise<any>} */
+    backupNow: () => invoke('backup_run_now'),
   },
 
   // ── Entitlements ─────────────────────────────────────────────────────────────

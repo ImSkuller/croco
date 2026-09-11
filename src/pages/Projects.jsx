@@ -5,6 +5,10 @@ import {
   GridIcon,
   ListViewIcon,
   SortIcon,
+  BulbIcon,
+  XCircleIcon,
+  FolderIcon,
+  SearchIcon,
 } from '../constants/SimpleSvgExports.jsx'
 import { ProjectCardGrid, ProjectCardList, SearchBox, FilterTab, IconBtn, ViewBtn, TopBtn } from '../components/Projects/Exports.jsx'
 import { useToast } from '../components/Toast/useToast.js'
@@ -99,8 +103,13 @@ export default function Projects() {
 
   const allTags = [...new Set(projects.flatMap(p => p.tags || []))].sort()
 
+  // Trashed projects are excluded everywhere on this page (Trash.jsx is
+  // the only place that shows them) — filtered once here rather than
+  // threaded into every predicate below.
+  const liveProjects = useMemo(() => projects.filter(p => !p.trashedAt), [projects])
+
   const filtered = useMemo(() => sortProjects(
-    projects.filter(p => {
+    liveProjects.filter(p => {
       const q = search.toLowerCase()
       const matchSearch = !q
         || p.name.toLowerCase().includes(q)
@@ -117,12 +126,12 @@ export default function Projects() {
       return matchSearch && matchFilter && matchTag
     }),
     sort
-  ), [projects, search, filter, sort, selectedTag, runningIds])
+  ), [liveProjects, search, filter, sort, selectedTag, runningIds])
 
   // Archived projects, shown as a collapsible dropdown under the "All" tab
   // instead of forcing a separate tab switch to find them.
   const archivedProjects = useMemo(() => sortProjects(
-    projects.filter(p => {
+    liveProjects.filter(p => {
       if (!p.archived) return false
       const q = search.toLowerCase()
       const matchSearch = !q
@@ -133,16 +142,16 @@ export default function Projects() {
       return matchSearch && matchTag
     }),
     sort
-  ), [projects, search, sort, selectedTag])
+  ), [liveProjects, search, sort, selectedTag])
 
   const counts = useMemo(() => ({
-    All:        projects.filter(p => !p.archived).length,
-    Public:     projects.filter(p => !p.archived && p.visibility === 'public').length,
-    Hidden:     projects.filter(p => !p.archived && p.visibility === 'hidden').length,
-    Favourites: projects.filter(p => !p.archived && p.favourite).length,
-    Running:    projects.filter(p => !p.archived && runningIds.has(p.id)).length,
-    Archived:   projects.filter(p => p.archived).length,
-  }), [projects, runningIds])
+    All:        liveProjects.filter(p => !p.archived).length,
+    Public:     liveProjects.filter(p => !p.archived && p.visibility === 'public').length,
+    Hidden:     liveProjects.filter(p => !p.archived && p.visibility === 'hidden').length,
+    Favourites: liveProjects.filter(p => !p.archived && p.favourite).length,
+    Running:    liveProjects.filter(p => !p.archived && runningIds.has(p.id)).length,
+    Archived:   liveProjects.filter(p => p.archived).length,
+  }), [liveProjects, runningIds])
 
   const projectLabel = filter === 'Favourites' ? '' : 'Projects'
 
@@ -160,7 +169,7 @@ export default function Projects() {
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{filter} {projectLabel}</span>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <TopBtn onClick={() => navigate('/ideas')}>
-            💡 Ideas
+            <BulbIcon /> Ideas
           </TopBtn>
           <TopBtn onClick={handleImport}>
             Import
@@ -251,9 +260,9 @@ export default function Projects() {
           {selectedTag && (
             <button
               onClick={() => setSelectedTag(null)}
-              style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, fontFamily: 'Geist, sans-serif', border: '1px solid transparent', background: 'transparent', color: 'var(--dimmer)', cursor: 'pointer' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontFamily: 'Geist, sans-serif', border: '1px solid transparent', background: 'transparent', color: 'var(--dimmer)', cursor: 'pointer' }}
             >
-              ✕ clear
+              <XCircleIcon size={11} /> clear
             </button>
           )}
         </div>
@@ -280,7 +289,7 @@ export default function Projects() {
           {/* Empty state */}
           {!loading && filtered.length === 0 && (
             <EmptyState
-              icon={projects.length === 0 ? '📁' : '🔍'}
+              icon={projects.length === 0 ? <FolderIcon size={32} /> : <SearchIcon size={32} />}
               title={projects.length === 0 ? 'No projects yet' : 'No projects found'}
               body={projects.length === 0
                 ? 'Import an existing folder or create a new project to get started.'

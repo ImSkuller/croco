@@ -1,4 +1,4 @@
-import { KeyboardIcon } from '../../constants/SimpleSvgExports'
+import { KeyboardIcon, UndoIcon } from '../../constants/SimpleSvgExports'
 import { SectionTitle, SettingsCard, FieldLabel, FieldDesc, InfoBox } from './Exports'
 import { SHORTCUT_DEFS, bindingToDisplay } from '../../lib/shortcuts'
 import { formatKeyToken } from '../../lib/platform'
@@ -58,8 +58,8 @@ export default function ShortcutsSection({ capturingId, setCapturingId, shortcut
                                 window.dispatchEvent(new Event('croco:shortcuts-changed'))
                               }}
                               title="Reset to default"
-                              style={{ fontSize: 10, color: 'var(--dimmer)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 3px', marginLeft: 2 }}
-                            >↺</button>
+                              style={{ display: 'flex', color: 'var(--dimmer)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 3px', marginLeft: 2 }}
+                            ><UndoIcon size={11} /></button>
                           )}
                         </div>
                       )}

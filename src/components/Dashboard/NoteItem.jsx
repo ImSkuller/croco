@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { NoteIcon2 } from '../../constants/SimpleSvgExports'
 
 export default function NoteItem({ note }) {
   const navigate = useNavigate()
@@ -12,7 +13,7 @@ export default function NoteItem({ note }) {
       style={{ padding: '12px 18px', borderBottom: '1px solid var(--border)', cursor: 'pointer', background: hovered ? 'var(--hover-bg)' : 'transparent', transition: 'background 0.1s' }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3 }}>
-        <span style={{ fontSize: 14, flexShrink: 0 }}>{note.emoji || '📝'}</span>
+        <span style={{ fontSize: 14, flexShrink: 0, display: 'flex', color: 'var(--dim)' }}>{note.emoji || <NoteIcon2 size={14} />}</span>
         <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)' }}>{note.title}</span>
       </div>
       <div style={{ fontSize: 11, color: 'var(--dimmer)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 5 }}>{note.preview}</div>

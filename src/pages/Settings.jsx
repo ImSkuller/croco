@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon } from '../constants/SimpleSvgExports'
-import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, PathInput, IDEOption, ToggleChip, InfoBox, SmallBtn, SaveBtn } from '../components/Settings/Exports'
+import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, LockIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon } from '../constants/SimpleSvgExports'
+import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, PathInput, IDEOption, ToggleChip, Toggle, InfoBox, SmallBtn, SaveBtn } from '../components/Settings/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { THEMES, applyTheme, getThemeAccentSwatch, normalizeThemeId } from '../lib/theme.js'
 import { STYLES, applyStyle, normalizeStyleId } from '../lib/appearanceStyle.js'
@@ -127,6 +127,18 @@ export default function Settings() {
   const [backupBusy,       setBackupBusy]       = useState(null) // null | 'export' | 'import'
   const [backupResult,     setBackupResult]     = useState(null) // null | { ok: bool, message: str }
 
+  // Scheduled automatic backups
+  const [autoBackupEnabled,   setAutoBackupEnabled]   = useState(true)
+  const [autoBackupInterval,  setAutoBackupInterval]  = useState(1)
+  const [autoBackupRetention, setAutoBackupRetention] = useState(7)
+  const [autoBackupLastAt,    setAutoBackupLastAt]    = useState(null)
+  const [autoBackupBusy,      setAutoBackupBusy]      = useState(false)
+  const [autoBackupResult,    setAutoBackupResult]    = useState(null) // null | { ok: bool, message: str }
+
+  // Desktop notifications for schedules/deadlines
+  const [deadlineRemindersEnabled, setDeadlineRemindersEnabled] = useState(true)
+  const [desktopPermissionGranted, setDesktopPermissionGranted] = useState(null) // null (unknown yet) | bool
+
   // Obsidian vault sync
   const [obsidianEnabled,    setObsidianEnabled]    = useState(false)
   const [obsidianVaultPath,  setObsidianVaultPath]  = useState('')
@@ -236,12 +248,18 @@ export default function Settings() {
     setObsidianEnabled(s.app?.obsidian?.enabled || false)
     setObsidianVaultPath(s.app?.obsidian?.vaultPath || '')
     setObsidianLastSync(s.app?.obsidian?.lastSyncAt || null)
+    setAutoBackupEnabled(s.app?.autoBackup?.enabled ?? true)
+    setAutoBackupInterval(s.app?.autoBackup?.intervalDays || 1)
+    setAutoBackupRetention(s.app?.autoBackup?.retentionCount || 7)
+    setAutoBackupLastAt(s.app?.autoBackup?.lastBackupAt || null)
+    setDeadlineRemindersEnabled(s.app?.deadlineReminders?.enabled ?? true)
   }, [])
 
   useEffect(() => {
     if (!window.api) { Promise.resolve().then(() => setLoading(false)); return }
     window.api.github?.oauthConfigured().then(v => setOauthEnabled(!!v)).catch(() => {})
     window.api.app?.autostart.isEnabled().then(setLaunchOnStartup).catch(() => {})
+    window.api.notify?.isDesktopPermissionGranted().then(setDesktopPermissionGranted).catch(() => {})
     Promise.all([
       window.api.settings.get(),
       window.api.system.userData(),
@@ -317,6 +335,54 @@ export default function Settings() {
     } finally {
       setObsidianSyncing(false)
     }
+  }
+
+  const handleAutoBackupToggle = () => {
+    setAutoBackupEnabled(prev => {
+      const next = !prev
+      window.api?.settings.update({ app: { autoBackup: { enabled: next, intervalDays: autoBackupInterval, retentionCount: autoBackupRetention } } }).catch(() => {})
+      return next
+    })
+  }
+
+  const handleAutoBackupIntervalChange = (days) => {
+    setAutoBackupInterval(days)
+    window.api?.settings.update({ app: { autoBackup: { enabled: autoBackupEnabled, intervalDays: days, retentionCount: autoBackupRetention } } }).catch(() => {})
+  }
+
+  const handleAutoBackupRetentionChange = (count) => {
+    setAutoBackupRetention(count)
+    window.api?.settings.update({ app: { autoBackup: { enabled: autoBackupEnabled, intervalDays: autoBackupInterval, retentionCount: count } } }).catch(() => {})
+  }
+
+  const handleBackUpNow = async () => {
+    if (!window.api) return
+    setAutoBackupBusy(true)
+    setAutoBackupResult(null)
+    try {
+      await window.api.data.backupNow()
+      const now = new Date().toISOString()
+      setAutoBackupLastAt(now)
+      setAutoBackupResult({ ok: true, message: 'Backup saved.' })
+    } catch (err) {
+      setAutoBackupResult({ ok: false, message: err?.message || String(err) })
+    } finally {
+      setAutoBackupBusy(false)
+    }
+  }
+
+  const handleDeadlineRemindersToggle = () => {
+    setDeadlineRemindersEnabled(prev => {
+      const next = !prev
+      window.api?.settings.update({ app: { deadlineReminders: { enabled: next } } }).catch(() => {})
+      return next
+    })
+  }
+
+  const handleRequestDesktopPermission = async () => {
+    if (!window.api) return
+    const granted = await window.api.notify.requestDesktopPermission().catch(() => false)
+    setDesktopPermissionGranted(!!granted)
   }
 
   const handleAvatarUpload = async () => {
@@ -567,7 +633,7 @@ export default function Settings() {
                         background: 'var(--accent-dim)', border: '1px solid var(--accent)',
                         borderRadius: 20, padding: '6px 14px',
                       }}>
-                        <span style={{ fontSize: 14 }}>🔒</span>
+                        <span style={{ display: 'flex', color: 'var(--accent)' }}><LockIcon size={14} /></span>
                         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{userTag}</span>
                       </div>
                       <span style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
@@ -796,8 +862,10 @@ export default function Settings() {
                     )}
                   </div>
                   {ghTestStatus && ghTestStatus !== 'testing' && (
-                    <div style={{ marginTop: 10, fontSize: 12, color: ghTestStatus.ok ? 'var(--green)' : 'var(--red)', fontFamily: 'Geist Mono, monospace' }}>
-                      {ghTestStatus.ok ? `✓ Connected as @${ghTestStatus.login}` : `✗ ${ghTestStatus.message}`}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, fontSize: 12, color: ghTestStatus.ok ? 'var(--green)' : 'var(--red)', fontFamily: 'Geist Mono, monospace' }}>
+                      {ghTestStatus.ok
+                        ? <><CheckIcon size={12} /> Connected as @{ghTestStatus.login}</>
+                        : <><XCircleIcon size={12} /> {ghTestStatus.message}</>}
                     </div>
                   )}
                 </SettingsCard>
@@ -1066,8 +1134,8 @@ export default function Settings() {
                   <FieldDesc>Controls what happens when you click the X on the title bar.</FieldDesc>
                   <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     {[
-                      { id: 'tray', label: '🔔  Minimize to Tray' },
-                      { id: 'quit', label: '❌  Quit App'         },
+                      { id: 'tray', label: <><BellIcon size={12} /> Minimize to Tray</> },
+                      { id: 'quit', label: <><XCircleIcon size={12} /> Quit App</> },
                     ].map(opt => (
                       <ToggleChip
                         key={opt.id}
@@ -1089,8 +1157,8 @@ export default function Settings() {
                   <FieldDesc>Launch Croco automatically when you log in.</FieldDesc>
                   <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     {[
-                      { id: true,  label: '🚀  Enabled'  },
-                      { id: false, label: '🚫  Disabled' },
+                      { id: true,  label: <><CheckCircleIcon size={12} /> Enabled</> },
+                      { id: false, label: <><XCircleIcon size={12} /> Disabled</> },
                     ].map(opt => (
                       <ToggleChip
                         key={String(opt.id)}
@@ -1104,6 +1172,27 @@ export default function Settings() {
                     ))}
                   </div>
                 </SettingsCard>
+
+                <SettingsCard>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: desktopPermissionGranted === false ? 12 : 0 }}>
+                    <div>
+                      <FieldLabel>Deadline Reminders</FieldLabel>
+                      <FieldDesc>Sends a desktop notification when a schedule's due date/time arrives.</FieldDesc>
+                    </div>
+                    <Toggle value={deadlineRemindersEnabled} onChange={handleDeadlineRemindersToggle} />
+                  </div>
+                  {desktopPermissionGranted === false && (
+                    <InfoBox>
+                      Desktop notification permission hasn't been granted yet — reminders won't show until it is.
+                      <button
+                        onClick={handleRequestDesktopPermission}
+                        style={{ marginLeft: 8, padding: '3px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
+                      >
+                        Grant Permission
+                      </button>
+                    </InfoBox>
+                  )}
+                </SettingsCard>
               </>
             )}
 
@@ -1115,6 +1204,12 @@ export default function Settings() {
                 migrateResult={migrateResult} setMigrateResult={setMigrateResult}
                 backupBusy={backupBusy} setBackupBusy={setBackupBusy}
                 backupResult={backupResult} setBackupResult={setBackupResult}
+                autoBackupEnabled={autoBackupEnabled} onToggleAutoBackup={handleAutoBackupToggle}
+                autoBackupInterval={autoBackupInterval} onChangeAutoBackupInterval={handleAutoBackupIntervalChange}
+                autoBackupRetention={autoBackupRetention} onChangeAutoBackupRetention={handleAutoBackupRetentionChange}
+                autoBackupLastAt={autoBackupLastAt}
+                autoBackupBusy={autoBackupBusy} autoBackupResult={autoBackupResult}
+                onBackUpNow={handleBackUpNow}
               />
             )}
 

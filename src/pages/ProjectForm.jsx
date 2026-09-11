@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeftIcon, FolderIcon, GithubIcon } from '../constants/SimpleSvgExports'
+import { ArrowLeftIcon, FolderIcon, GithubIcon, CheckCircleIcon, EyeIcon, EyeOffIcon, AlertTriangleIcon, WindowIcon, DatabaseIcon, TerminalIcon, PackageIcon, GameIcon } from '../constants/SimpleSvgExports'
+
+// Templates carry an `icon` key (from templates_list() in system.rs) rather
+// than a hand-drawn brand logo per language/framework — keeps the picker
+// visually differentiated (icon shape + per-template color) without ~26
+// bespoke logo SVGs to draw and maintain.
+const TEMPLATE_ICONS = {
+  folder: FolderIcon, window: WindowIcon, database: DatabaseIcon,
+  terminal: TerminalIcon, package: PackageIcon, game: GameIcon,
+}
+const TemplateIcon = ({ icon, color, size = 17 }) => {
+  const Ico = TEMPLATE_ICONS[icon] || PackageIcon
+  return <span style={{ display: 'flex', color: color || 'var(--dim)' }}><Ico size={size} /></span>
+}
 
 const IDE_OPTIONS = [
   { value: 'vscode',    label: 'VS Code'   },
@@ -130,12 +143,12 @@ export default function ProjectForm() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '28px 28px 22px', maxWidth: 440, width: '90%' }}>
-          <div style={{ fontSize: 28, marginBottom: 12 }}>✅</div>
+          <div style={{ display: 'flex', color: '#4aff91', marginBottom: 12 }}><CheckCircleIcon size={28} /></div>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Project Created</div>
           {setupDone.warnings.length > 0 && (
             <div style={{ background: 'rgba(255,170,85,0.07)', border: '1px solid rgba(255,170,85,0.2)', borderRadius: 8, padding: '10px 12px', marginBottom: 16 }}>
               {setupDone.warnings.map((w, i) => (
-                <div key={i} style={{ fontSize: 11, color: '#ffaa55', fontFamily: 'Geist Mono, monospace', marginBottom: i < setupDone.warnings.length - 1 ? 6 : 0 }}>⚠ {w}</div>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#ffaa55', fontFamily: 'Geist Mono, monospace', marginBottom: i < setupDone.warnings.length - 1 ? 6 : 0 }}><AlertTriangleIcon size={12} /> {w}</div>
               ))}
             </div>
           )}
@@ -231,10 +244,10 @@ export default function ProjectForm() {
           <div style={{ marginBottom: 14 }}>
             <Label>Visibility</Label>
             <div style={{ display: 'flex', gap: 6 }}>
-              {[['public', '🌐 Public', '#4a9eff'], ['hidden', '🔒 Private', '#a855f7']].map(([v, lbl, col]) => (
+              {[['public', 'Public', <EyeIcon size={12} />, '#4a9eff'], ['hidden', 'Private', <EyeOffIcon size={12} />, '#a855f7']].map(([v, lbl, icon, col]) => (
                 <button key={v} onClick={() => setVisibility(v)}
-                  style={{ flex: 1, padding: '6px 10px', borderRadius: 7, cursor: 'pointer', fontSize: 11, fontFamily: 'Geist, sans-serif', transition: 'all 0.12s', border: `1px solid ${visibility === v ? col : 'var(--border)'}`, background: visibility === v ? `${col}14` : 'var(--card)', color: visibility === v ? col : 'var(--dim)' }}>
-                  {lbl}
+                  style={{ flex: 1, padding: '6px 10px', borderRadius: 7, cursor: 'pointer', fontSize: 11, fontFamily: 'Geist, sans-serif', transition: 'all 0.12s', border: `1px solid ${visibility === v ? col : 'var(--border)'}`, background: visibility === v ? `${col}14` : 'var(--card)', color: visibility === v ? col : 'var(--dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  {icon} {lbl}
                 </button>
               ))}
             </div>
@@ -356,7 +369,7 @@ export default function ProjectForm() {
           {/* Selected template preview */}
           {selectedTemplate && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border-bright)', borderRadius: 10 }}>
-              <span style={{ fontSize: 22 }}>{selectedTemplate.emoji}</span>
+              <TemplateIcon icon={selectedTemplate.icon} color={selectedTemplate.color} size={22} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{selectedTemplate.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 2 }}>{selectedTemplate.desc}</div>
@@ -393,7 +406,7 @@ export default function ProjectForm() {
                   onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--card)' } }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: 17 }}>{t.emoji}</span>
+                    <TemplateIcon icon={t.icon} color={t.color} />
                     {selected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: catColor, flexShrink: 0 }} />}
                   </div>
                   <div style={{ fontSize: 11, fontWeight: 500, color: selected ? 'var(--text)' : 'var(--dim)', lineHeight: 1.3 }}>{t.name}</div>

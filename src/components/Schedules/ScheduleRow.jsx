@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckIcon, TrashIcon, EditIcon, NoteIcon2 } from '../../constants/SimpleSvgExports.jsx'
+import { CheckIcon, TrashIcon, EditIcon, NoteIcon2, AlertTriangleIcon, ClockIcon } from '../../constants/SimpleSvgExports.jsx'
 import RowBtn from '../Todo/RowBtn.jsx'
 import { findPriority, hexToRgba, isTodoLocked } from '../../lib/todoPriorities.js'
 import { useNavigate } from 'react-router-dom'
@@ -73,12 +73,13 @@ export default function ScheduleRow({ schedule, last, priorities, notesById, onT
 
             {dueStr && (
               <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 3,
                 fontSize: 10, fontFamily: 'Geist Mono, monospace',
                 color:    overdue ? '#ff4444' : 'var(--dimmer)',
                 background: overdue ? 'rgba(255,68,68,0.08)' : 'transparent',
                 padding:  '2px 6px', borderRadius: 4,
               }}>
-                {overdue ? '⚠ ' : '🕐 '}{dueStr}
+                {overdue ? <AlertTriangleIcon size={10} /> : <ClockIcon size={10} />}{dueStr}
               </span>
             )}
 

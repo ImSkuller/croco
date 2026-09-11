@@ -1,4 +1,4 @@
-import { RefreshIcon } from '../../constants/SimpleSvgExports'
+import { RefreshIcon, DownloadIcon, CheckCircleIcon } from '../../constants/SimpleSvgExports'
 import { SectionTitle, SettingsCard, FieldLabel, FieldDesc, InfoBox } from './Exports'
 
 export default function UpdatesSection({
@@ -44,7 +44,7 @@ export default function UpdatesSection({
             background: updateInfo.hasUpdate ? 'var(--accent-dim)' : 'var(--card)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: updateInfo.hasUpdate ? 10 : 0 }}>
-              <span style={{ fontSize: 18 }}>{updateInfo.hasUpdate ? '🎉' : '✅'}</span>
+              <span style={{ display: 'flex', color: updateInfo.hasUpdate ? 'var(--accent)' : '#4aff91' }}>{updateInfo.hasUpdate ? <DownloadIcon size={18} /> : <CheckCircleIcon size={18} />}</span>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
                   {updateInfo.hasUpdate ? `v${updateInfo.latest} available` : 'You\'re up to date'}

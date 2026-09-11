@@ -25,7 +25,6 @@ export const TEMPLATES = [
     id: 'empty',
     name: 'Empty',
     desc: 'A blank project with no files.',
-    emoji: '📁',
     category: 'Blank',
     tags: [],
     files: () => ({ '.gitignore': '.DS_Store\nThumbs.db\n*.swp\n' }),
@@ -35,7 +34,6 @@ export const TEMPLATES = [
     id: 'vanilla-js',
     name: 'Vanilla JS',
     desc: 'Plain HTML, CSS, and JavaScript. No build tools.',
-    emoji: '🌐',
     category: 'Frontend',
     tags: ['html', 'css', 'javascript'],
     files: (n) => ({
@@ -50,7 +48,6 @@ export const TEMPLATES = [
     id: 'react-vite',
     name: 'React + Vite',
     desc: 'React 18 with Vite for blazing-fast HMR.',
-    emoji: '⚛️',
     category: 'Frontend',
     tags: ['react', 'vite', 'javascript'],
     files: (n) => ({
@@ -67,7 +64,6 @@ export const TEMPLATES = [
     id: 'react-ts',
     name: 'React + TypeScript',
     desc: 'React 18 with TypeScript and Vite.',
-    emoji: '⚛️',
     category: 'Frontend',
     tags: ['react', 'typescript', 'vite'],
     files: (n) => ({
@@ -86,7 +82,6 @@ export const TEMPLATES = [
     id: 'react-tailwind',
     name: 'React + Tailwind',
     desc: 'React + Vite with Tailwind CSS.',
-    emoji: '🎨',
     category: 'Frontend',
     tags: ['react', 'vite', 'tailwind', 'css'],
     files: (n) => ({
@@ -106,7 +101,6 @@ export const TEMPLATES = [
     id: 'vue-vite',
     name: 'Vue 3 + Vite',
     desc: 'Vue 3 with the Composition API and Vite.',
-    emoji: '💚',
     category: 'Frontend',
     tags: ['vue', 'vite', 'javascript'],
     files: (n) => ({
@@ -123,7 +117,6 @@ export const TEMPLATES = [
     id: 'svelte-vite',
     name: 'Svelte + Vite',
     desc: 'Svelte with Vite for fast development.',
-    emoji: '🔥',
     category: 'Frontend',
     tags: ['svelte', 'vite', 'javascript'],
     files: (n) => ({
@@ -140,7 +133,6 @@ export const TEMPLATES = [
     id: 'astro',
     name: 'Astro',
     desc: 'Content-driven site builder. Zero JS by default.',
-    emoji: '🚀',
     category: 'Frontend',
     tags: ['astro', 'static', 'javascript'],
     files: (n) => ({
@@ -156,7 +148,6 @@ export const TEMPLATES = [
     id: 'nextjs',
     name: 'Next.js',
     desc: 'Next.js 14 with App Router (React + TypeScript).',
-    emoji: '▲',
     category: 'Fullstack',
     tags: ['react', 'nextjs', 'typescript', 'fullstack'],
     files: (n) => ({
@@ -173,7 +164,6 @@ export const TEMPLATES = [
     id: 'sveltekit',
     name: 'SvelteKit',
     desc: 'Full-stack framework powered by Svelte.',
-    emoji: '🔥',
     category: 'Fullstack',
     tags: ['svelte', 'sveltekit', 'fullstack'],
     files: (n) => ({
@@ -190,7 +180,6 @@ export const TEMPLATES = [
     id: 'nuxt',
     name: 'Nuxt 3',
     desc: 'Vue-based fullstack framework.',
-    emoji: '💚',
     category: 'Fullstack',
     tags: ['vue', 'nuxt', 'fullstack'],
     files: (n) => ({
@@ -206,7 +195,6 @@ export const TEMPLATES = [
     id: 'express-api',
     name: 'Express API',
     desc: 'RESTful API server with Express.js.',
-    emoji: '🖥️',
     category: 'Backend',
     tags: ['nodejs', 'express', 'api'],
     files: (n) => ({
@@ -221,7 +209,6 @@ export const TEMPLATES = [
     id: 'fastify-api',
     name: 'Fastify API',
     desc: 'High-performance API server with Fastify.',
-    emoji: '⚡',
     category: 'Backend',
     tags: ['nodejs', 'fastify', 'api'],
     files: (n) => ({
@@ -236,7 +223,6 @@ export const TEMPLATES = [
     id: 'hono-api',
     name: 'Hono API',
     desc: 'Ultra-fast web framework for edge and Node.js.',
-    emoji: '🔥',
     category: 'Backend',
     tags: ['nodejs', 'hono', 'api', 'edge'],
     files: (n) => ({
@@ -251,7 +237,6 @@ export const TEMPLATES = [
     id: 'python-flask',
     name: 'Python Flask',
     desc: 'Lightweight Python web framework.',
-    emoji: '🐍',
     category: 'Backend',
     tags: ['python', 'flask', 'api'],
     files: (n) => ({
@@ -266,7 +251,6 @@ export const TEMPLATES = [
     id: 'python-fastapi',
     name: 'Python FastAPI',
     desc: 'Modern async Python API with auto-generated docs.',
-    emoji: '🐍',
     category: 'Backend',
     tags: ['python', 'fastapi', 'async', 'api'],
     files: (n) => ({
@@ -281,7 +265,6 @@ export const TEMPLATES = [
     id: 'node-cli',
     name: 'Node.js CLI',
     desc: 'Command-line tool with Commander.js and Chalk.',
-    emoji: '⌨️',
     category: 'CLI',
     tags: ['nodejs', 'cli', 'commander'],
     files: (n) => {
@@ -298,7 +281,6 @@ export const TEMPLATES = [
     id: 'electron-react',
     name: 'Electron + React',
     desc: 'Desktop app with Electron and React + Vite.',
-    emoji: '🖥️',
     category: 'Desktop',
     tags: ['electron', 'react', 'desktop', 'vite'],
     files: (n) => ({
@@ -316,7 +298,6 @@ export const TEMPLATES = [
     id: 'solid-vite',
     name: 'Solid.js + Vite',
     desc: 'Fine-grained reactive UI library with no virtual DOM.',
-    emoji: '💎',
     category: 'Frontend',
     tags: ['solidjs', 'vite', 'javascript'],
     files: (n) => ({
@@ -333,7 +314,6 @@ export const TEMPLATES = [
     id: 'preact-vite',
     name: 'Preact + Vite',
     desc: 'Fast 3kB alternative to React with the same API.',
-    emoji: '⚡',
     category: 'Frontend',
     tags: ['preact', 'vite', 'javascript'],
     files: (n) => ({
@@ -350,7 +330,6 @@ export const TEMPLATES = [
     id: 'remix',
     name: 'Remix',
     desc: 'Full-stack React framework focused on web standards.',
-    emoji: '💿',
     category: 'Fullstack',
     tags: ['react', 'remix', 'fullstack'],
     files: (n) => ({
@@ -366,7 +345,6 @@ export const TEMPLATES = [
     id: 'nestjs',
     name: 'NestJS',
     desc: 'Progressive Node.js framework with TypeScript and decorators.',
-    emoji: '🐱',
     category: 'Backend',
     tags: ['nodejs', 'nestjs', 'typescript', 'api'],
     files: (n) => ({
@@ -383,7 +361,6 @@ export const TEMPLATES = [
     id: 'bun-elysia',
     name: 'Bun + Elysia',
     desc: 'Blazing fast API server using Bun runtime and Elysia.',
-    emoji: '🫎',
     category: 'Backend',
     tags: ['bun', 'elysia', 'typescript', 'api'],
     files: (n) => ({
@@ -397,7 +374,6 @@ export const TEMPLATES = [
     id: 'python-click',
     name: 'Python CLI (Click)',
     desc: 'Command-line tool built with Python and Click.',
-    emoji: '🐍',
     category: 'CLI',
     tags: ['python', 'cli', 'click'],
     files: (n) => {
@@ -413,7 +389,6 @@ export const TEMPLATES = [
     id: 'tauri-react',
     name: 'Tauri + React',
     desc: 'Desktop app with Tauri v2 (Rust) and React + Vite.',
-    emoji: '🦀',
     category: 'Desktop',
     tags: ['tauri', 'rust', 'react', 'desktop'],
     files: (n) => ({
@@ -430,7 +405,6 @@ export const TEMPLATES = [
     id: 'deno-http',
     name: 'Deno HTTP',
     desc: 'Simple HTTP server with Deno — no npm, no node_modules.',
-    emoji: '🦕',
     category: 'Other',
     tags: ['deno', 'typescript', 'http'],
     files: (n) => ({
@@ -444,7 +418,6 @@ export const TEMPLATES = [
     id: 'go-http',
     name: 'Go HTTP Server',
     desc: 'HTTP server in Go using the standard library.',
-    emoji: '🐹',
     category: 'Other',
     tags: ['go', 'golang', 'http'],
     files: (n) => {
@@ -461,7 +434,6 @@ export const TEMPLATES = [
     id: 'rust-cli',
     name: 'Rust CLI',
     desc: 'Command-line tool in Rust with Cargo.',
-    emoji: '🦀',
     category: 'Other',
     tags: ['rust', 'cli', 'cargo'],
     files: (n) => {
@@ -479,7 +451,6 @@ export const TEMPLATES = [
     id: 'minecraft-fabric',
     name: 'Fabric Mod',
     desc: 'Minecraft Fabric mod with Gradle and Loom.',
-    emoji: '🪨',
     category: 'Minecraft',
     tags: ['minecraft', 'fabric', 'java', 'modding'],
     files: (n) => {
@@ -501,7 +472,6 @@ export const TEMPLATES = [
     id: 'minecraft-paper',
     name: 'Paper Plugin',
     desc: 'Minecraft Paper plugin with Maven.',
-    emoji: '📜',
     category: 'Minecraft',
     tags: ['minecraft', 'paper', 'java', 'plugin'],
     files: (n) => {
@@ -520,7 +490,6 @@ export const TEMPLATES = [
     id: 'minecraft-forge',
     name: 'Forge Mod',
     desc: 'Minecraft Forge mod with Gradle.',
-    emoji: '⚙️',
     category: 'Minecraft',
     tags: ['minecraft', 'forge', 'java', 'modding'],
     files: (n) => {
@@ -542,7 +511,6 @@ export const TEMPLATES = [
     id: 'minecraft-spigot',
     name: 'Spigot Plugin',
     desc: 'Minecraft Spigot plugin with Maven.',
-    emoji: '🌊',
     category: 'Minecraft',
     tags: ['minecraft', 'spigot', 'java', 'plugin'],
     files: (n) => {
@@ -562,7 +530,6 @@ export const TEMPLATES = [
     id: 'discord-python',
     name: 'Python Discord Bot',
     desc: 'Discord bot with discord.py and slash commands.',
-    emoji: '🤖',
     category: 'Discord',
     tags: ['discord', 'python', 'bot'],
     files: (n) => ({
@@ -577,7 +544,6 @@ export const TEMPLATES = [
     id: 'discord-js',
     name: 'JS Discord Bot',
     desc: 'Discord bot with discord.js v14 and slash commands.',
-    emoji: '🤖',
     category: 'Discord',
     tags: ['discord', 'javascript', 'bot', 'nodejs'],
     files: (n) => ({
@@ -594,7 +560,6 @@ export const TEMPLATES = [
     id: 'mc-paper',
     name: 'Paper Plugin',
     desc: 'Minecraft Paper/Spigot server plugin with Maven.',
-    emoji: '📜',
     category: 'Minecraft',
     tags: ['java', 'minecraft', 'paper', 'spigot', 'maven'],
     files: (n) => {
@@ -613,7 +578,6 @@ export const TEMPLATES = [
     id: 'mc-fabric',
     name: 'Fabric Mod',
     desc: 'Minecraft Fabric mod with Gradle and Java.',
-    emoji: '🧵',
     category: 'Minecraft',
     tags: ['java', 'minecraft', 'fabric', 'gradle', 'mod'],
     files: (n) => {
@@ -634,7 +598,6 @@ export const TEMPLATES = [
     id: 'mc-forge',
     name: 'Forge Mod',
     desc: 'Minecraft NeoForge mod with Gradle and Java.',
-    emoji: '⚒️',
     category: 'Minecraft',
     tags: ['java', 'minecraft', 'forge', 'neoforge', 'gradle', 'mod'],
     files: (n) => {
@@ -656,7 +619,6 @@ export const TEMPLATES = [
     id: 'mc-velocity',
     name: 'Velocity Plugin',
     desc: 'Velocity proxy plugin with Maven (Java).',
-    emoji: '🚄',
     category: 'Minecraft',
     tags: ['java', 'minecraft', 'velocity', 'proxy', 'maven'],
     files: (n) => {
@@ -674,7 +636,6 @@ export const TEMPLATES = [
     id: 'mc-bungeecord',
     name: 'BungeeCord Plugin',
     desc: 'BungeeCord proxy plugin with Maven (Java).',
-    emoji: '🌐',
     category: 'Minecraft',
     tags: ['java', 'minecraft', 'bungeecord', 'waterfall', 'proxy', 'maven'],
     files: (n) => {
@@ -693,7 +654,6 @@ export const TEMPLATES = [
     id: 'monorepo',
     name: 'Turborepo',
     desc: 'Monorepo with Turborepo, apps/web (Next.js) and packages/ui.',
-    emoji: '🏗️',
     category: 'Other',
     tags: ['monorepo', 'turborepo', 'nextjs'],
     files: (n) => ({

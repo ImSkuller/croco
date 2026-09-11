@@ -1,3 +1,5 @@
+import { CheckIcon } from '../../constants/SimpleSvgExports'
+
 export function Toggle({ value, onChange }) {
   return (
     <button
@@ -23,6 +25,7 @@ export function ToggleChip({ label, active, color, bg, onClick, disabled }) {
     <button
       onClick={!disabled ? onClick : undefined}
       style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
         padding: '6px 14px', borderRadius: 8, border: `1px solid ${active ? color : 'var(--border)'}`,
         background: active ? bg : 'transparent',
         color: active ? color : 'var(--dimmer)',
@@ -33,7 +36,7 @@ export function ToggleChip({ label, active, color, bg, onClick, disabled }) {
       }}
     >
       {label}
-      {active && !disabled && <span style={{ marginLeft: 6, opacity: 0.6 }}>✓</span>}
+      {active && !disabled && <span style={{ display: 'flex', marginLeft: 6, opacity: 0.6 }}><CheckIcon size={11} /></span>}
     </button>
   )
 }

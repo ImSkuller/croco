@@ -1,5 +1,6 @@
 import {
   GithubIcon, CommitIcon, DownloadIcon, RefreshIcon, BranchIcon, ExternalLinkIcon,
+  PackageIcon, CheckIcon, XCircleIcon,
 } from '../../constants/SimpleSvgExports'
 import { authorColor, initials } from '../../lib/projectDetailHelpers'
 import InfoSection from './InfoSection'
@@ -23,7 +24,7 @@ export default function GitPanel({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {!isRepo ? (
         <div style={{ textAlign: 'center', padding: '60px 0' }}>
-          <div style={{ fontSize: 28, marginBottom: 10 }}>📦</div>
+          <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><PackageIcon size={28} /></div>
           <div style={{ fontSize: 13, color: 'var(--dim)', marginBottom: 6 }}>No git repository at project path</div>
           <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', marginBottom: 16 }}>{project.paths?.projectRoot}</div>
           <button
@@ -72,7 +73,7 @@ export default function GitPanel({
                 </div>
                 <div style={{ display: 'flex', gap: 5 }}>
                   {gitStatus.clean ? (
-                    <Chip c="#4aff91" bg="rgba(74,255,145,0.1)">✓ clean</Chip>
+                    <Chip c="#4aff91" bg="rgba(74,255,145,0.1)"><CheckIcon size={10} /> clean</Chip>
                   ) : (
                     <>
                       {(gitStatus.staged  || []).length > 0 && <Chip c="#4aff91"       bg="rgba(74,255,145,0.1)">{gitStatus.staged.length} staged</Chip>}
@@ -85,8 +86,8 @@ export default function GitPanel({
                   {syncLoading
                     ? <span style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>checking remote…</span>
                     : aheadBehind && !aheadBehind.unavailable
-                    ? <span style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', color: behindCount > 0 ? '#4aff91' : aheadCount > 0 ? 'var(--orange)' : 'var(--dimmer)' }}>
-                        {behindCount > 0 ? `↓ ${behindCount} behind` : aheadCount > 0 ? `↑ ${aheadCount} ahead` : '✓ synced with remote'}
+                    ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: 'Geist Mono, monospace', color: behindCount > 0 ? '#4aff91' : aheadCount > 0 ? 'var(--orange)' : 'var(--dimmer)' }}>
+                        {behindCount > 0 ? `↓ ${behindCount} behind` : aheadCount > 0 ? `↑ ${aheadCount} ahead` : <><CheckIcon size={10} /> synced with remote</>}
                       </span>
                     : null
                   }
@@ -237,14 +238,15 @@ export default function GitPanel({
               />
               {commitResult && (
                 <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
                   fontSize: 11, padding: '7px 10px', borderRadius: 6, fontFamily: 'Geist Mono, monospace',
                   background: commitResult.ok ? 'rgba(74,255,145,0.08)' : 'rgba(255,68,68,0.08)',
                   border: `1px solid ${commitResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,68,68,0.2)'}`,
                   color: commitResult.ok ? '#4aff91' : '#ff4444',
                 }}>
                   {commitResult.ok
-                    ? commitResult.pushed ? '✓ Committed and pushed to remote' : '✓ Committed (push skipped — no remote or push failed)'
-                    : `✗ ${commitResult.message}`}
+                    ? <><CheckIcon size={12} /> {commitResult.pushed ? 'Committed and pushed to remote' : 'Committed (push skipped — no remote or push failed)'}</>
+                    : <><XCircleIcon size={12} /> {commitResult.message}</>}
                 </div>
               )}
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

@@ -1,4 +1,4 @@
-import { VaultIcon } from '../../constants/SimpleSvgExports'
+import { VaultIcon, CheckIcon, XCircleIcon } from '../../constants/SimpleSvgExports'
 import { SectionTitle, SettingsCard, FieldLabel, FieldDesc, PathInput, Toggle } from './Exports'
 
 export default function ObsidianSection({
@@ -29,8 +29,8 @@ export default function ObsidianSection({
         )}
 
         {obsidianSyncResult && (
-          <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 8, background: obsidianSyncResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${obsidianSyncResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: obsidianSyncResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
-            {obsidianSyncResult.ok ? '✓ ' : '✗ '}{obsidianSyncResult.message}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14, padding: '10px 14px', borderRadius: 8, background: obsidianSyncResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${obsidianSyncResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: obsidianSyncResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
+            {obsidianSyncResult.ok ? <CheckIcon size={12} /> : <XCircleIcon size={12} />}{obsidianSyncResult.message}
           </div>
         )}
 

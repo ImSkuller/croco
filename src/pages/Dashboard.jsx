@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, NavLink } from 'react-router-dom'
-import { PlusIcon } from '../constants/SimpleSvgExports.jsx'
+import { PlusIcon, FolderIcon, CheckCircleIcon, NoteIcon2 } from '../constants/SimpleSvgExports.jsx'
 import { StatCard, SectionHeader, ProjectCard, TodoItem, NoteItem, TopBtn, FavChip, SuggestionsCard } from '../components/Dashboard/Exports.jsx'
 import { useToast } from '../components/Toast/useToast.js'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
@@ -64,15 +64,19 @@ export default function Dashboard() {
   const dateStr  = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', year: 'numeric' })
 
   const userName    = settings?.user?.name || 'there'
-  const recents     = projects.slice(0, 5)
-  const favourites  = projects.filter(p => p.favourite)
-  const openTodos   = todos.filter(t => !t.completed).slice(0, 5)
+  // Trashed items are excluded from every Dashboard widget — Trash is a
+  // dedicated recovery view, not something that leaks into the home page.
+  const liveProjects = projects.filter(p => !p.trashedAt)
+  const liveTodos     = todos.filter(t => !t.trashedAt)
+  const recents     = liveProjects.slice(0, 5)
+  const favourites  = liveProjects.filter(p => p.favourite)
+  const openTodos   = liveTodos.filter(t => !t.completed).slice(0, 5)
   const projectMap  = Object.fromEntries(projects.map(p => [p.id, p.name]))
-  const recentNotes = notes.slice(0, 4).map(n => ({ ...n, project: n.projectId ? projectMap[n.projectId] : null }))
+  const recentNotes = notes.filter(n => !n.trashedAt).slice(0, 4).map(n => ({ ...n, project: n.projectId ? projectMap[n.projectId] : null }))
 
-  // Aggregate language breakdown from all projects
+  // Aggregate language breakdown from all (non-trashed) projects
   const langMap = {}
-  for (const p of projects) {
+  for (const p of liveProjects) {
     for (const lang of (p.languages || [])) {
       if (!lang.name) continue
       langMap[lang.name] = langMap[lang.name] || { name: lang.name, color: lang.color, total: 0 }
@@ -85,9 +89,9 @@ export default function Dashboard() {
     .slice(0, 5)
     .map(l => ({ ...l, pct: Math.round((l.total / langTotal) * 100) }))
 
-  const publicCount  = projects.filter(p => p.visibility === 'public').length
-  const hiddenCount  = projects.filter(p => p.visibility === 'hidden').length
-  const activeCount  = todos.filter(t => !t.completed).length
+  const publicCount  = liveProjects.filter(p => p.visibility === 'public').length
+  const hiddenCount  = liveProjects.filter(p => p.visibility === 'hidden').length
+  const activeCount  = liveTodos.filter(t => !t.completed).length
 
   const latestCommit = recentCommits[0] || null
 
@@ -95,12 +99,12 @@ export default function Dashboard() {
 
   const stats = [
     {
-      label: 'Total Projects', value: String(projects.length),
+      label: 'Total Projects', value: String(liveProjects.length),
       sub: `${publicCount} public · ${hiddenCount} hidden`, dot: '#4a9eff',
     },
     {
       label: 'Open Todos', value: String(activeCount),
-      sub: `${todos.filter(t => t.completed).length} completed`, dot: '#ff6b35',
+      sub: `${liveTodos.filter(t => t.completed).length} completed`, dot: '#ff6b35',
       valueColor: activeCount > 0 ? '#ff6b35' : '#4aff91',
     },
     {
@@ -190,7 +194,7 @@ export default function Dashboard() {
               <div style={{ fontSize: 13, color: 'var(--dim)', lineHeight: 1.6 }}>
                 {loading
                   ? 'Loading your workspace…'
-                  : `You have ${activeCount > 0 ? activeCount : 'no'} open ${activeCount === 1 ? 'task' : 'tasks'} and ${projects.length} project${projects.length === 1 ? '' : 's'} tracked.`
+                  : `You have ${activeCount > 0 ? activeCount : 'no'} open ${activeCount === 1 ? 'task' : 'tasks'} and ${liveProjects.length} project${liveProjects.length === 1 ? '' : 's'} tracked.`
                 }
               </div>
             </div>
@@ -206,11 +210,11 @@ export default function Dashboard() {
               flexShrink: 0,
               boxShadow: 'var(--shadow-sm)',
             }}>
-              <div style={{ width: 36, height: 36, background: 'var(--accent-dim)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-                📁
+              <div style={{ width: 36, height: 36, background: 'var(--accent-dim)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
+                <FolderIcon size={16} />
               </div>
               <div>
-                <div style={{ fontSize: 30, fontWeight: 700, color: 'var(--accent)', fontFamily: 'Geist Mono, monospace', lineHeight: 1, letterSpacing: -1 }}>{projects.length}</div>
+                <div style={{ fontSize: 30, fontWeight: 700, color: 'var(--accent)', fontFamily: 'Geist Mono, monospace', lineHeight: 1, letterSpacing: -1 }}>{liveProjects.length}</div>
                 <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 3 }}>projects tracked</div>
               </div>
             </div>
@@ -265,7 +269,7 @@ export default function Dashboard() {
           {/* Recent projects */}
           {recents.length > 0 && (
             <div>
-              <SectionHeader title="Recent Projects" action={`View all ${projects.length} ›`} link="/projects" />
+              <SectionHeader title="Recent Projects" action={`View all ${liveProjects.length} ›`} link="/projects" />
               <div className="pm-grid-3">
                 {recents.slice(0, 3).map(p => <ProjectCard key={p.id} project={p} />)}
               </div>
@@ -284,7 +288,7 @@ export default function Dashboard() {
               </div>
               {openTodos.length === 0 ? (
                 <div style={{ padding: '32px 18px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>✅</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 8 }}><CheckCircleIcon size={24} /></div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--dim)', marginBottom: 4 }}>{loading ? 'Loading…' : 'All clear!'}</div>
                   {!loading && <div style={{ fontSize: 11, color: 'var(--dimmer)' }}>No open tasks</div>}
                 </div>
@@ -300,7 +304,7 @@ export default function Dashboard() {
               </div>
               {recentNotes.length === 0 ? (
                 <div style={{ padding: '32px 18px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>📝</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 8 }}><NoteIcon2 size={24} /></div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--dim)', marginBottom: 4 }}>{loading ? 'Loading…' : 'No notes yet'}</div>
                   {!loading && <div style={{ fontSize: 11, color: 'var(--dimmer)' }}>Start capturing your thoughts</div>}
                 </div>

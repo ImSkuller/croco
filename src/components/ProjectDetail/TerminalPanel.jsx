@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { CopyIcon, StopIcon, PlayIcon, RefreshIcon, TerminalIcon } from '../../constants/SimpleSvgExports'
+import { CopyIcon, StopIcon, PlayIcon, RefreshIcon, TerminalIcon, XCircleIcon } from '../../constants/SimpleSvgExports'
 
 const SCRIPT_SLOTS    = ['dev', 'build', 'start', 'test']
 const RUN_ENVS        = ['development', 'production', 'staging', 'test']
@@ -151,9 +151,9 @@ export default function TerminalPanel({ output, command, isRunning, project, all
               Run
             </button>
             <button onClick={() => { setShowCustom(false); setCustom('') }}
-              style={{ padding: '5px 9px', borderRadius: 6, border: '1px solid var(--border)',
+              style={{ display: 'flex', padding: '5px 9px', borderRadius: 6, border: '1px solid var(--border)',
                 background: 'transparent', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
-              ✕
+              <XCircleIcon size={12} />
             </button>
           </div>
         )}

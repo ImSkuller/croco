@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { PlusIcon, ClockIcon } from '../constants/SimpleSvgExports'
+import { PlusIcon, ClockIcon, CheckCircleIcon, ListViewIcon } from '../constants/SimpleSvgExports'
+import { SettingsIcon } from '../constants/SvgExports.jsx'
 import { TodoRow, TodoGroup, TopBtn, SearchBox, FilterTab, PriorityTab } from '../components/Todo/Exports'
 import PriorityManagerModal from '../components/Todo/PriorityManagerModal'
 import { ScheduleRow, ScheduleModal } from '../components/Schedules/Exports'
@@ -87,9 +88,13 @@ export default function Todo() {
     if (updated) patchData('todos', prev => (prev || []).map(t => t.id === id ? { ...t, ...updated } : t))
   }
 
+  // Soft delete (Phase 6 trash) — patch trashedAt rather than filtering the
+  // todo out of the cache entirely, so Trash.jsx (reading the same cache)
+  // sees it immediately instead of waiting on a refetch.
   const remove = async (id) => {
     if (!window.api) return
-    patchData('todos', prev => (prev || []).filter(t => t.id !== id))
+    const trashedAt = new Date().toISOString()
+    patchData('todos', prev => (prev || []).map(t => t.id === id ? { ...t, trashedAt } : t))
     await window.api.todos.delete(id).catch(err => { console.error(err); refreshData('todos') })
   }
 
@@ -195,7 +200,11 @@ export default function Todo() {
 
   const projectNames = ['All Projects', ...projects.map(p => p.name)]
 
-  const filtered = todos.filter(t => {
+  // Trashed todos are excluded everywhere on this page — Trash.jsx is the
+  // only place that shows them.
+  const liveTodos = todos.filter(t => !t.trashedAt)
+
+  const filtered = liveTodos.filter(t => {
     const matchSearch   = t.title.toLowerCase().includes(search.toLowerCase())
     const matchFilter   = filter === 'All' ? true : filter === 'Active' ? !t.completed : t.completed
     const matchPriority = priority === 'All' ? true : t.priority === priority
@@ -204,9 +213,9 @@ export default function Todo() {
   })
 
   const counts = {
-    All:       todos.length,
-    Active:    todos.filter(t => !t.completed).length,
-    Completed: todos.filter(t => t.completed).length,
+    All:       liveTodos.length,
+    Active:    liveTodos.filter(t => !t.completed).length,
+    Completed: liveTodos.filter(t => t.completed).length,
   }
 
   const filteredSchedules = schedules.filter(s => {
@@ -331,7 +340,7 @@ export default function Todo() {
               color: 'var(--dimmer)', cursor: 'pointer', fontSize: 13,
             }}
           >
-            ⚙
+            <SettingsIcon />
           </button>
 
           <select
@@ -457,9 +466,9 @@ export default function Todo() {
                 background: 'var(--card)',
                 border: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28, marginBottom: 4,
+                color: 'var(--dimmer)', marginBottom: 4,
               }}>
-                {filter === 'Completed' ? '📋' : '✅'}
+                {filter === 'Completed' ? <ListViewIcon size={28} /> : <CheckCircleIcon size={28} />}
               </div>
               <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', letterSpacing: -0.3 }}>
                 {filter === 'Completed' ? 'No completed tasks yet' : search ? 'No tasks found' : 'All clear!'}
@@ -538,9 +547,9 @@ export default function Todo() {
                 background: 'var(--card)',
                 border: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28, marginBottom: 4,
+                color: 'var(--dimmer)', marginBottom: 4,
               }}>
-                🕐
+                <ClockIcon size={28} />
               </div>
               <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', letterSpacing: -0.3 }}>
                 {search ? 'No schedules found' : 'Nothing scheduled'}

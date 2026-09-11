@@ -4,14 +4,14 @@ import { RefreshIcon, TrashIcon, ActivityIcon, GithubIcon, PlayIcon, StopIcon, F
 
 // Group-based filter — each group maps to one or more event types
 const FILTER_GROUPS = [
-  { label: 'All',      icon: '⚡', types: null },
-  { label: 'Projects', icon: '📁', types: ['project.created', 'project.imported', 'project.updated', 'project.deleted'] },
-  { label: 'Git',      icon: '⑂',  types: ['git.committed', 'git.tag_created', 'github.release_created'] },
-  { label: 'Runs',     icon: '▶',  types: ['run.started', 'run.finished', 'ide.opened'] },
-  { label: 'Todos',    icon: '✓',  types: ['todo.created', 'todo.completed', 'todo.reverted', 'todo.deleted', 'todo.edited'] },
-  { label: 'Schedules', icon: '🕐', types: ['schedule.created', 'schedule.completed', 'schedule.reverted', 'schedule.deleted', 'schedule.edited'] },
-  { label: 'Notes',    icon: '📝', types: ['note.created', 'note.deleted', 'note.archived', 'note.unarchived'] },
-  { label: 'Settings', icon: '⚙',  types: ['setting.github', 'setting.profile'] },
+  { label: 'All',      icon: <ActivityIcon size={10} />,    types: null },
+  { label: 'Projects', icon: <FolderIcon size={10} />,      types: ['project.created', 'project.imported', 'project.updated', 'project.deleted'] },
+  { label: 'Git',      icon: <GithubIcon size={10} />,      types: ['git.committed', 'git.tag_created', 'github.release_created'] },
+  { label: 'Runs',     icon: <PlayIcon size={10} />,        types: ['run.started', 'run.finished', 'ide.opened'] },
+  { label: 'Todos',    icon: <CheckCircleIcon size={10} />, types: ['todo.created', 'todo.completed', 'todo.reverted', 'todo.deleted', 'todo.edited'] },
+  { label: 'Schedules', icon: <ClockIcon size={10} />,      types: ['schedule.created', 'schedule.completed', 'schedule.reverted', 'schedule.deleted', 'schedule.edited'] },
+  { label: 'Notes',    icon: <NoteIcon2 size={10} />,       types: ['note.created', 'note.deleted', 'note.archived', 'note.unarchived'] },
+  { label: 'Settings', icon: <PaletteIcon size={10} />,     types: ['setting.github', 'setting.profile'] },
 ]
 
 const EVENT_META = {
@@ -131,7 +131,7 @@ export default function Activity() {
               fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
               transition: 'all 0.12s', flexShrink: 0, whiteSpace: 'nowrap',
             }}>
-              <span style={{ fontSize: 10 }}>{g.icon}</span>
+              <span style={{ display: 'flex' }}>{g.icon}</span>
               {g.label}
               <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', opacity: 0.7 }}>{count}</span>
             </button>
