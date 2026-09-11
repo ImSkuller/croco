@@ -1,14 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FolderIcon, CheckCircleIcon } from '../constants/SimpleSvgExports'
+import {
+  FolderIcon, FolderOpenIcon, CheckCircleIcon, CheckIcon, KeyboardIcon, TagIcon,
+  DatabaseIcon, ShieldIcon, IdeLogoIcon, GithubIcon,
+  CrocoIcon, HomeIcon, XCircleIcon, FileIcon, BellIcon, WindowIcon,
+} from '../constants/SimpleSvgExports'
 
 const IDE_OPTIONS = [
-  { value: 'vscode',   label: 'Visual Studio Code', emoji: '🔵' },
-  { value: 'cursor',   label: 'Cursor',             emoji: '⚫' },
-  { value: 'zed',      label: 'Zed',                emoji: '⚡' },
-  { value: 'neovim',   label: 'Neovim',             emoji: '🟢' },
-  { value: 'idea',     label: 'IntelliJ IDEA',      emoji: '🔴' },
-  { value: 'webstorm', label: 'WebStorm',            emoji: '🔵' },
+  { value: 'vscode',   label: 'Visual Studio Code' },
+  { value: 'cursor',   label: 'Cursor'             },
+  { value: 'zed',      label: 'Zed'                },
+  { value: 'neovim',   label: 'Neovim'             },
+  { value: 'idea',     label: 'IntelliJ IDEA'      },
+  { value: 'webstorm', label: 'WebStorm'            },
 ]
 
 const PRESET_TAGS = [
@@ -197,7 +201,7 @@ export default function Onboarding() {
         {/* Step 1 — Name */}
         {step === 1 && (
           <StepCard>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>👋</div>
+            <div style={{ display: 'flex', color: 'var(--accent)', marginBottom: 16 }}><CrocoIcon size={40} /></div>
             <StepTitle>Welcome to Croco</StepTitle>
             <StepDesc>The project manager built for developers. Let's get you set up in a few quick steps.</StepDesc>
             <div style={{ marginTop: 28 }}>
@@ -224,7 +228,7 @@ export default function Onboarding() {
         {/* Step 2 — Projects folder */}
         {step === 2 && (
           <StepCard>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>📁</div>
+            <div style={{ display: 'flex', color: 'var(--dim)', marginBottom: 16 }}><FolderIcon size={40} /></div>
             <StepTitle>Where are your projects?</StepTitle>
             <StepDesc>The root folder where Croco will look for and create projects. You can change this later in Settings.</StepDesc>
             <div style={{ marginTop: 28 }}>
@@ -249,7 +253,7 @@ export default function Onboarding() {
         {/* Step 3 — IDE */}
         {step === 3 && (
           <StepCard>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>⌨️</div>
+            <div style={{ display: 'flex', color: 'var(--dim)', marginBottom: 16 }}><KeyboardIcon size={40} /></div>
             <StepTitle>Pick your IDE</StepTitle>
             <StepDesc>Your default editor for opening projects. You can override this per-project later.</StepDesc>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 28 }}>
@@ -259,9 +263,9 @@ export default function Onboarding() {
                   active={ide === opt.value}
                   onClick={() => setIde(opt.value)}
                 >
-                  <span style={{ fontSize: 18 }}>{opt.emoji}</span>
+                  <span style={{ display: 'flex' }}><IdeLogoIcon ide={opt.value} /></span>
                   {opt.label}
-                  {ide === opt.value && <span style={{ marginLeft: 'auto', color: 'var(--orange)' }}>✓</span>}
+                  {ide === opt.value && <span style={{ marginLeft: 'auto', color: 'var(--orange)', display: 'flex' }}><CheckIcon /></span>}
                 </OptionBtn>
               ))}
             </div>
@@ -271,7 +275,7 @@ export default function Onboarding() {
         {/* Step 4 — GitHub connect */}
         {step === 4 && (
           <StepCard>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>🔗</div>
+            <div style={{ display: 'flex', color: 'var(--dim)', marginBottom: 16 }}><GithubIcon size={40} /></div>
             <StepTitle>Connect GitHub</StepTitle>
             <StepDesc>Link your GitHub account to enable repo creation, commits, and GitHub features. Optional — skip anytime.</StepDesc>
 
@@ -390,7 +394,7 @@ export default function Onboarding() {
                       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>@{ghInfo.login}</div>
                       {ghInfo.name && <div style={{ fontSize: 12, color: 'var(--dim)', marginTop: 2 }}>{ghInfo.name}</div>}
                     </div>
-                    <span style={{ fontSize: 20, color: 'var(--green)' }}>✓</span>
+                    <span style={{ display: 'flex', color: 'var(--green)' }}><CheckCircleIcon size={20} /></span>
                   </div>
                 )}
                 {ghInfo.skipped && (
@@ -416,19 +420,19 @@ export default function Onboarding() {
         {/* Step 5 — Tag */}
         {step === 5 && (
           <StepCard>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>🏷️</div>
+            <div style={{ display: 'flex', color: 'var(--dim)', marginBottom: 16 }}><TagIcon size={40} /></div>
             {communityUser ? (
               <>
                 <StepTitle>Your tag is special!</StepTitle>
                 <StepDesc>
-                  Hey {name}! Your tag has been predefined by the author of Croco. 😄
+                  Hey {name}! Your tag has been predefined by the author of Croco.
                 </StepDesc>
                 <div style={{
                   display: 'inline-flex', alignItems: 'center', gap: 10, marginTop: 24,
                   background: 'rgba(255,107,53,0.12)', border: '1px solid var(--orange)',
                   borderRadius: 24, padding: '10px 22px',
                 }}>
-                  <span style={{ fontSize: 16 }}>🔒</span>
+                  <span style={{ display: 'flex' }}><ShieldIcon size={16} /></span>
                   <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--orange)', letterSpacing: -0.3 }}>
                     {communityUser.tag}
                   </span>
@@ -467,7 +471,7 @@ export default function Onboarding() {
         {/* Step 6 — Data storage */}
         {step === 6 && (
           <StepCard>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>🗄️</div>
+            <div style={{ display: 'flex', color: 'var(--dim)', marginBottom: 16 }}><DatabaseIcon size={40} /></div>
             <StepTitle>Data storage</StepTitle>
             <StepDesc>Where should Croco store your projects, notes, and todos?</StepDesc>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
@@ -477,14 +481,14 @@ export default function Onboarding() {
                   label: 'App Data',
                   badge: 'Recommended',
                   desc:  appDataPath || '%APPDATA%/croco',
-                  icon:  '🖥️',
+                  icon:  <HomeIcon size={22} />,
                 },
                 {
                   id:    'custom',
                   label: 'Custom Folder',
                   badge: null,
                   desc:  customDataPath || 'Choose a folder — great for Dropbox / OneDrive sync',
-                  icon:  '📂',
+                  icon:  <FolderOpenIcon size={22} />,
                 },
               ].map(opt => (
                 <button
@@ -499,7 +503,7 @@ export default function Onboarding() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  <span style={{ fontSize: 22, flexShrink: 0, marginTop: 1 }}>{opt.icon}</span>
+                  <span style={{ display: 'flex', flexShrink: 0, marginTop: 1, color: 'var(--dim)' }}>{opt.icon}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 13, fontWeight: 500, color: dataLocation === opt.id ? 'var(--text)' : 'var(--dim)' }}>
@@ -515,7 +519,7 @@ export default function Onboarding() {
                       {opt.desc}
                     </div>
                   </div>
-                  {dataLocation === opt.id && <span style={{ color: 'var(--orange)', flexShrink: 0, marginTop: 2 }}>✓</span>}
+                  {dataLocation === opt.id && <span style={{ color: 'var(--orange)', flexShrink: 0, marginTop: 2, display: 'flex' }}><CheckIcon /></span>}
                 </button>
               ))}
             </div>
@@ -541,7 +545,7 @@ export default function Onboarding() {
         {/* Step 7 — Storage Backend */}
         {step === 7 && (
           <StepCard>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>🗃️</div>
+            <div style={{ display: 'flex', color: 'var(--dim)', marginBottom: 16 }}><DatabaseIcon size={40} /></div>
             <StepTitle>Storage backend</StepTitle>
             <StepDesc>How should Croco store your projects, notes, and todos? Activity is always in SQLite.</StepDesc>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
@@ -550,7 +554,7 @@ export default function Onboarding() {
                   id:    'json',
                   label: 'JSON Files',
                   badge: 'Default',
-                  icon:  '📄',
+                  icon:  <FileIcon size={22} />,
                   pros:  ['Human-readable files', 'Easy to back up manually'],
                   cons:  ['Slower with large datasets'],
                 },
@@ -558,7 +562,7 @@ export default function Onboarding() {
                   id:    'sqlite',
                   label: 'SQLite Database',
                   badge: null,
-                  icon:  '🗄️',
+                  icon:  <DatabaseIcon size={22} />,
                   pros:  ['Faster queries', 'Atomic writes — no data loss'],
                   cons:  ['Binary format — not hand-editable'],
                 },
@@ -575,7 +579,7 @@ export default function Onboarding() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  <span style={{ fontSize: 22, flexShrink: 0, marginTop: 1 }}>{opt.icon}</span>
+                  <span style={{ display: 'flex', flexShrink: 0, marginTop: 1, color: 'var(--dim)' }}>{opt.icon}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 13, fontWeight: 500, color: storageBackend === opt.id ? 'var(--text)' : 'var(--dim)' }}>
@@ -592,7 +596,7 @@ export default function Onboarding() {
                       {opt.cons.map(c => <div key={c} style={{ fontSize: 11, color: 'var(--dimmer)' }}>– {c}</div>)}
                     </div>
                   </div>
-                  {storageBackend === opt.id && <span style={{ color: 'var(--orange)', flexShrink: 0, marginTop: 2 }}>✓</span>}
+                  {storageBackend === opt.id && <span style={{ color: 'var(--orange)', flexShrink: 0, marginTop: 2, display: 'flex' }}><CheckIcon /></span>}
                 </button>
               ))}
             </div>
@@ -602,7 +606,7 @@ export default function Onboarding() {
         {/* Step 8 — Close behavior */}
         {step === 8 && (
           <StepCard>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>🪟</div>
+            <div style={{ display: 'flex', color: 'var(--dim)', marginBottom: 16 }}><WindowIcon size={40} /></div>
             <StepTitle>When you close the window</StepTitle>
             <StepDesc>What should happen when you click the X on the title bar?</StepDesc>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
@@ -612,14 +616,14 @@ export default function Onboarding() {
                   label: 'Minimize to Tray',
                   badge: 'Default',
                   desc:  'Croco keeps running in the background. Access it from the system tray icon.',
-                  icon:  '🔔',
+                  icon:  <BellIcon size={22} />,
                 },
                 {
                   id:    'quit',
                   label: 'Quit the App',
                   badge: null,
                   desc:  'Fully closes Croco. Running dev servers will be stopped.',
-                  icon:  '❌',
+                  icon:  <XCircleIcon size={22} />,
                 },
               ].map(opt => (
                 <button
@@ -634,7 +638,7 @@ export default function Onboarding() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  <span style={{ fontSize: 22, flexShrink: 0, marginTop: 1 }}>{opt.icon}</span>
+                  <span style={{ display: 'flex', flexShrink: 0, marginTop: 1, color: 'var(--dim)' }}>{opt.icon}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 13, fontWeight: 500, color: closeBehavior === opt.id ? 'var(--text)' : 'var(--dim)' }}>
@@ -650,7 +654,7 @@ export default function Onboarding() {
                       {opt.desc}
                     </div>
                   </div>
-                  {closeBehavior === opt.id && <span style={{ color: 'var(--orange)', flexShrink: 0, marginTop: 2 }}>✓</span>}
+                  {closeBehavior === opt.id && <span style={{ color: 'var(--orange)', flexShrink: 0, marginTop: 2, display: 'flex' }}><CheckIcon /></span>}
                 </button>
               ))}
             </div>
