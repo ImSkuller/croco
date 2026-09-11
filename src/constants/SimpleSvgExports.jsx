@@ -108,6 +108,8 @@ const PackageIcon       = ({ size }) => <Icon size={size}><path d="M8 1.5 14 5v6
 const FileIcon          = ({ size }) => <Icon size={size}><path d="M4 1.5h5.5L13 5v9.5H4z"/><path d="M9.5 1.5V5H13"/></Icon>
 const BellIcon          = ({ size }) => <Icon size={size}><path d="M8 1.5a1 1 0 0 1 1 1v.6a4.5 4.5 0 0 1 3.5 4.4v2l1.3 2.1H2.2L3.5 9.5v-2A4.5 4.5 0 0 1 7 3.1v-.6a1 1 0 0 1 1-1z"/><path d="M6.2 13.5a1.8 1.8 0 0 0 3.6 0"/></Icon>
 const WindowIcon        = ({ size }) => <Icon size={size}><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 5.5h13"/><circle cx="3.5" cy="4" r=".4" fill="currentColor" stroke="none"/></Icon>
+const EraserIcon        = ({ size }) => <Icon size={size}><path d="M10.5 1.5 14.5 5.5 6 14H2v-4z"/><path d="M8 4 12 8"/></Icon>
+const UndoIcon          = ({ size }) => <Icon size={size}><path d="M3 5.5H10a4 4 0 0 1 0 8H6"/><path d="M5.5 2.5 3 5.5l2.5 3"/></Icon>
 
 export {
   PlusIcon, MoreIcon, IDEIcon, IdeLogoIcon, CommitIcon, PlayIcon, StopIcon, CheckIcon, ClockIcon,
@@ -119,4 +121,5 @@ export {
   TerminalIcon, ActivityIcon, CopyIcon, AIIcon, KeyboardIcon, DatabaseIcon, GitInitIcon, UploadCloudIcon,
   VaultIcon, HomeIcon, BulbIcon, ImportIcon, PlusCircleIcon, GameIcon, GiftIcon, MusicNoteIcon,
   PuzzleIcon, CrocoIcon, CalendarIcon, PinIcon, PackageIcon, FileIcon, BellIcon, WindowIcon,
+  EraserIcon, UndoIcon,
 }
