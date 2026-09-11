@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeftIcon, FolderIcon, GithubIcon, CheckCircleIcon, EyeIcon, EyeOffIcon } from '../constants/SimpleSvgExports'
+import { ArrowLeftIcon, FolderIcon, GithubIcon, CheckCircleIcon, EyeIcon, EyeOffIcon, AlertTriangleIcon } from '../constants/SimpleSvgExports'
 
 const IDE_OPTIONS = [
   { value: 'vscode',    label: 'VS Code'   },
@@ -135,7 +135,7 @@ export default function ProjectForm() {
           {setupDone.warnings.length > 0 && (
             <div style={{ background: 'rgba(255,170,85,0.07)', border: '1px solid rgba(255,170,85,0.2)', borderRadius: 8, padding: '10px 12px', marginBottom: 16 }}>
               {setupDone.warnings.map((w, i) => (
-                <div key={i} style={{ fontSize: 11, color: '#ffaa55', fontFamily: 'Geist Mono, monospace', marginBottom: i < setupDone.warnings.length - 1 ? 6 : 0 }}>⚠ {w}</div>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#ffaa55', fontFamily: 'Geist Mono, monospace', marginBottom: i < setupDone.warnings.length - 1 ? 6 : 0 }}><AlertTriangleIcon size={12} /> {w}</div>
               ))}
             </div>
           )}
