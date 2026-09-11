@@ -434,6 +434,11 @@ export const api = {
     exportAll: (destPath) => invoke('data_export_all', { destPath }),
     /** @param {string} srcPath @returns {Promise<any>} */
     importAll: (srcPath)  => invoke('data_import_all', { srcPath }),
+    // Scheduled/manual automatic backup — writes to a rotating set of
+    // files in the app data dir (settings.app.autoBackup), distinct from
+    // exportAll's user-chosen destination.
+    /** @returns {Promise<any>} */
+    backupNow: () => invoke('backup_run_now'),
   },
 
   // ── Entitlements ─────────────────────────────────────────────────────────────

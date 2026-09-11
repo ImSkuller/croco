@@ -127,6 +127,14 @@ export default function Settings() {
   const [backupBusy,       setBackupBusy]       = useState(null) // null | 'export' | 'import'
   const [backupResult,     setBackupResult]     = useState(null) // null | { ok: bool, message: str }
 
+  // Scheduled automatic backups
+  const [autoBackupEnabled,   setAutoBackupEnabled]   = useState(true)
+  const [autoBackupInterval,  setAutoBackupInterval]  = useState(1)
+  const [autoBackupRetention, setAutoBackupRetention] = useState(7)
+  const [autoBackupLastAt,    setAutoBackupLastAt]    = useState(null)
+  const [autoBackupBusy,      setAutoBackupBusy]      = useState(false)
+  const [autoBackupResult,    setAutoBackupResult]    = useState(null) // null | { ok: bool, message: str }
+
   // Obsidian vault sync
   const [obsidianEnabled,    setObsidianEnabled]    = useState(false)
   const [obsidianVaultPath,  setObsidianVaultPath]  = useState('')
@@ -236,6 +244,10 @@ export default function Settings() {
     setObsidianEnabled(s.app?.obsidian?.enabled || false)
     setObsidianVaultPath(s.app?.obsidian?.vaultPath || '')
     setObsidianLastSync(s.app?.obsidian?.lastSyncAt || null)
+    setAutoBackupEnabled(s.app?.autoBackup?.enabled ?? true)
+    setAutoBackupInterval(s.app?.autoBackup?.intervalDays || 1)
+    setAutoBackupRetention(s.app?.autoBackup?.retentionCount || 7)
+    setAutoBackupLastAt(s.app?.autoBackup?.lastBackupAt || null)
   }, [])
 
   useEffect(() => {
@@ -316,6 +328,40 @@ export default function Settings() {
       setObsidianSyncResult({ ok: false, message: err?.message || String(err) })
     } finally {
       setObsidianSyncing(false)
+    }
+  }
+
+  const handleAutoBackupToggle = () => {
+    setAutoBackupEnabled(prev => {
+      const next = !prev
+      window.api?.settings.update({ app: { autoBackup: { enabled: next, intervalDays: autoBackupInterval, retentionCount: autoBackupRetention } } }).catch(() => {})
+      return next
+    })
+  }
+
+  const handleAutoBackupIntervalChange = (days) => {
+    setAutoBackupInterval(days)
+    window.api?.settings.update({ app: { autoBackup: { enabled: autoBackupEnabled, intervalDays: days, retentionCount: autoBackupRetention } } }).catch(() => {})
+  }
+
+  const handleAutoBackupRetentionChange = (count) => {
+    setAutoBackupRetention(count)
+    window.api?.settings.update({ app: { autoBackup: { enabled: autoBackupEnabled, intervalDays: autoBackupInterval, retentionCount: count } } }).catch(() => {})
+  }
+
+  const handleBackUpNow = async () => {
+    if (!window.api) return
+    setAutoBackupBusy(true)
+    setAutoBackupResult(null)
+    try {
+      await window.api.data.backupNow()
+      const now = new Date().toISOString()
+      setAutoBackupLastAt(now)
+      setAutoBackupResult({ ok: true, message: 'Backup saved.' })
+    } catch (err) {
+      setAutoBackupResult({ ok: false, message: err?.message || String(err) })
+    } finally {
+      setAutoBackupBusy(false)
     }
   }
 
@@ -1115,6 +1161,12 @@ export default function Settings() {
                 migrateResult={migrateResult} setMigrateResult={setMigrateResult}
                 backupBusy={backupBusy} setBackupBusy={setBackupBusy}
                 backupResult={backupResult} setBackupResult={setBackupResult}
+                autoBackupEnabled={autoBackupEnabled} onToggleAutoBackup={handleAutoBackupToggle}
+                autoBackupInterval={autoBackupInterval} onChangeAutoBackupInterval={handleAutoBackupIntervalChange}
+                autoBackupRetention={autoBackupRetention} onChangeAutoBackupRetention={handleAutoBackupRetentionChange}
+                autoBackupLastAt={autoBackupLastAt}
+                autoBackupBusy={autoBackupBusy} autoBackupResult={autoBackupResult}
+                onBackUpNow={handleBackUpNow}
               />
             )}
 

@@ -87,7 +87,19 @@ pub fn default_settings() -> Value {
             // Stable, non-secret per-install identifier for entitlements.rs
             // — safe to keep in plain settings.json, unlike anything in
             // secrets.rs. Generated lazily on first use, not here.
-            "deviceId": ""
+            "deviceId": "",
+            // Scheduled automatic backups (Phase 6, see backups.rs) — on by
+            // default for new installs. Purely additive local safety (a
+            // rotating set of JSON dumps in the app data dir, never
+            // touching the network), so unlike most defaults here there's
+            // no real downside to shipping it opted-in rather than making
+            // people discover and enable it themselves.
+            "autoBackup": {
+                "enabled": true,
+                "intervalDays": 1,
+                "retentionCount": 7,
+                "lastBackupAt": null
+            }
         }
     })
 }

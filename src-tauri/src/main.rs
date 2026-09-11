@@ -41,6 +41,9 @@ pub(crate) use system::*;
 mod data_transfer;
 pub(crate) use data_transfer::*;
 
+mod backups;
+pub(crate) use backups::*;
+
 mod updates;
 pub(crate) use updates::*;
 
@@ -211,6 +214,13 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     purge_expired_project_trash(&handle);
     purge_expired_notes_todos_trash(&handle);
 
+    // Scheduled automatic backups (Phase 6): catch up immediately if one's
+    // overdue (covers "launched once a day" — the common case), then keep
+    // checking hourly for the rest of the process lifetime so a long-running
+    // session left open across a day boundary doesn't need a relaunch.
+    maybe_run_scheduled_backup(&handle);
+    start_backup_scheduler(handle.clone());
+
     // Build tray menu
     let show  = MenuItem::with_id(app, "show",  "Show Window", true, None::<&str>)?;
     let sep   = PredefinedMenuItem::separator(app)?;
@@ -332,7 +342,7 @@ fn main() {
             // entitlements
             entitlements_refresh, entitlements_get,
             // data backup / restore
-            data_export_all, data_import_all,
+            data_export_all, data_import_all, backup_run_now,
             // obsidian vault sync
             obsidian_sync_all, obsidian_test_vault_path,
             // personality / work-habits tracking
