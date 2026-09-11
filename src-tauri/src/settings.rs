@@ -99,6 +99,15 @@ pub fn default_settings() -> Value {
                 "intervalDays": 1,
                 "retentionCount": 7,
                 "lastBackupAt": null
+            },
+            // Desktop notifications when a schedule/deadline becomes due
+            // (Phase 6, see schedules.rs). On by default — if a user has
+            // created a schedule with a due date, being notified when it
+            // arrives is the point of the feature, not an opt-in extra.
+            // Still gated behind the OS's own notification permission
+            // (notify_desktop_permission_granted) regardless of this flag.
+            "deadlineReminders": {
+                "enabled": true
             }
         }
     })

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon } from '../constants/SimpleSvgExports'
-import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, PathInput, IDEOption, ToggleChip, InfoBox, SmallBtn, SaveBtn } from '../components/Settings/Exports'
+import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, PathInput, IDEOption, ToggleChip, Toggle, InfoBox, SmallBtn, SaveBtn } from '../components/Settings/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { THEMES, applyTheme, getThemeAccentSwatch, normalizeThemeId } from '../lib/theme.js'
 import { STYLES, applyStyle, normalizeStyleId } from '../lib/appearanceStyle.js'
@@ -135,6 +135,10 @@ export default function Settings() {
   const [autoBackupBusy,      setAutoBackupBusy]      = useState(false)
   const [autoBackupResult,    setAutoBackupResult]    = useState(null) // null | { ok: bool, message: str }
 
+  // Desktop notifications for schedules/deadlines
+  const [deadlineRemindersEnabled, setDeadlineRemindersEnabled] = useState(true)
+  const [desktopPermissionGranted, setDesktopPermissionGranted] = useState(null) // null (unknown yet) | bool
+
   // Obsidian vault sync
   const [obsidianEnabled,    setObsidianEnabled]    = useState(false)
   const [obsidianVaultPath,  setObsidianVaultPath]  = useState('')
@@ -248,12 +252,14 @@ export default function Settings() {
     setAutoBackupInterval(s.app?.autoBackup?.intervalDays || 1)
     setAutoBackupRetention(s.app?.autoBackup?.retentionCount || 7)
     setAutoBackupLastAt(s.app?.autoBackup?.lastBackupAt || null)
+    setDeadlineRemindersEnabled(s.app?.deadlineReminders?.enabled ?? true)
   }, [])
 
   useEffect(() => {
     if (!window.api) { Promise.resolve().then(() => setLoading(false)); return }
     window.api.github?.oauthConfigured().then(v => setOauthEnabled(!!v)).catch(() => {})
     window.api.app?.autostart.isEnabled().then(setLaunchOnStartup).catch(() => {})
+    window.api.notify?.isDesktopPermissionGranted().then(setDesktopPermissionGranted).catch(() => {})
     Promise.all([
       window.api.settings.get(),
       window.api.system.userData(),
@@ -363,6 +369,20 @@ export default function Settings() {
     } finally {
       setAutoBackupBusy(false)
     }
+  }
+
+  const handleDeadlineRemindersToggle = () => {
+    setDeadlineRemindersEnabled(prev => {
+      const next = !prev
+      window.api?.settings.update({ app: { deadlineReminders: { enabled: next } } }).catch(() => {})
+      return next
+    })
+  }
+
+  const handleRequestDesktopPermission = async () => {
+    if (!window.api) return
+    const granted = await window.api.notify.requestDesktopPermission().catch(() => false)
+    setDesktopPermissionGranted(!!granted)
   }
 
   const handleAvatarUpload = async () => {
@@ -1149,6 +1169,27 @@ export default function Settings() {
                       />
                     ))}
                   </div>
+                </SettingsCard>
+
+                <SettingsCard>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: desktopPermissionGranted === false ? 12 : 0 }}>
+                    <div>
+                      <FieldLabel>Deadline Reminders</FieldLabel>
+                      <FieldDesc>Sends a desktop notification when a schedule's due date/time arrives.</FieldDesc>
+                    </div>
+                    <Toggle value={deadlineRemindersEnabled} onChange={handleDeadlineRemindersToggle} />
+                  </div>
+                  {desktopPermissionGranted === false && (
+                    <InfoBox>
+                      Desktop notification permission hasn't been granted yet — reminders won't show until it is.
+                      <button
+                        onClick={handleRequestDesktopPermission}
+                        style={{ marginLeft: 8, padding: '3px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
+                      >
+                        Grant Permission
+                      </button>
+                    </InfoBox>
+                  )}
                 </SettingsCard>
               </>
             )}

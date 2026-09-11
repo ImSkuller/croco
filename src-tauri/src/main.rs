@@ -221,6 +221,12 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     maybe_run_scheduled_backup(&handle);
     start_backup_scheduler(handle.clone());
 
+    // Desktop notifications for schedules/deadlines (Phase 6): same
+    // catch-up-at-startup-then-keep-checking pattern, but every minute
+    // rather than hourly — deadlines are time-sensitive.
+    check_and_send_deadline_reminders(&handle);
+    start_deadline_reminder_scheduler(handle.clone());
+
     // Build tray menu
     let show  = MenuItem::with_id(app, "show",  "Show Window", true, None::<&str>)?;
     let sep   = PredefinedMenuItem::separator(app)?;
