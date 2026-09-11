@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { PlusIcon, GridIcon, ListViewIcon, SearchIcon, StarIcon, TrashIcon } from '../constants/SimpleSvgExports'
+import { PlusIcon, GridIcon, ListViewIcon, SearchIcon, StarIcon, TrashIcon, PackageIcon, NoteIcon2, UndoIcon, ImportIcon } from '../constants/SimpleSvgExports'
 import { ViewBtn } from '../components/Projects/Exports'
 import { useKeyboard } from '../hooks/useKeyboard'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
@@ -188,7 +188,7 @@ export default function Notes() {
             border: '2px dashed var(--accent)', borderRadius: 12, margin: 12,
             pointerEvents: 'none',
           }}>
-            <div style={{ fontSize: 36 }}>📄</div>
+            <div style={{ display: 'flex', color: 'var(--accent)' }}><ImportIcon size={36} /></div>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Drop .md file to import</div>
             <div style={{ fontSize: 12, color: 'var(--dimmer)' }}>First line becomes the title</div>
           </div>
@@ -218,9 +218,9 @@ export default function Notes() {
                 background: 'var(--card)',
                 border: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 32, marginBottom: 4,
+                color: 'var(--dimmer)', marginBottom: 4,
               }}>
-                {filter === 'Starred' ? '⭐' : filter === 'Archived' ? '📦' : search ? '🔍' : '📝'}
+                {filter === 'Starred' ? <StarIcon filled size={32} /> : filter === 'Archived' ? <PackageIcon size={32} /> : search ? <SearchIcon size={32} /> : <NoteIcon2 size={32} />}
               </div>
               <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', letterSpacing: -0.3 }}>
                 {filter === 'Archived' ? 'No archived notes' : filter === 'Starred' ? 'No starred notes' : search ? 'No notes found' : 'No notes yet'}
@@ -309,7 +309,7 @@ function NoteCard({ note, onToggleStar, onDelete, onToggleArchive, onOpen }) {
 
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
-          <span style={{ fontSize: 18, flexShrink: 0 }}>{note.emoji || '📝'}</span>
+          <span style={{ fontSize: 18, flexShrink: 0, display: 'flex', color: 'var(--dim)' }}>{note.emoji || <NoteIcon2 size={18} />}</span>
           <div style={{ minWidth: 0 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: -0.2, lineHeight: 1.3, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.title}</span>
             <span style={{ display: 'block', fontSize: 9, fontFamily: 'Geist Mono, monospace', color: 'var(--dimmer)', marginTop: 1 }}>
@@ -339,7 +339,7 @@ function NoteCard({ note, onToggleStar, onDelete, onToggleArchive, onOpen }) {
               transition: 'all 0.15s',
             }}
           >
-            {note.archived ? '↩' : '📥'}
+            {note.archived ? <UndoIcon size={12} /> : <PackageIcon size={12} />}
           </button>
           {hovered && (
             <button
@@ -398,7 +398,7 @@ function NoteRow({ note, index, onToggleStar, onDelete, onToggleArchive, onOpen 
         borderRadius: 10, cursor: 'pointer', transition: 'all 0.12s',
       }}
     >
-      <span style={{ fontSize: 16, flexShrink: 0 }}>{note.emoji || '📝'}</span>
+      <span style={{ fontSize: 16, flexShrink: 0, display: 'flex', color: 'var(--dim)' }}>{note.emoji || <NoteIcon2 size={16} />}</span>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
@@ -449,7 +449,7 @@ function NoteRow({ note, index, onToggleStar, onDelete, onToggleArchive, onOpen 
             transition: 'all 0.15s',
           }}
         >
-          {note.archived ? '↩' : '📥'}
+          {note.archived ? <UndoIcon size={12} /> : <PackageIcon size={12} />}
         </button>
         <button
           onClick={e => { e.stopPropagation(); onDelete(note.id) }}

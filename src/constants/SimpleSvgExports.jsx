@@ -37,8 +37,8 @@ const ArrowLeftIcon   = ({ size }) => <Icon size={size}><path d="M10 3L4 8l6 5"/
 const TagIcon         = ({ size }) => <Icon size={size}><path d="M1 1h7l7 7-7 7-7-7z"/><circle cx="4.5" cy="4.5" r="1"/></Icon>
 const LinkIcon        = ({ size }) => <Icon size={size}><path d="M7 9a3 3 0 0 0 4.243.243l2-2a3 3 0 0 0-4.243-4.243L7.5 5.5"/><path d="M9 7a3 3 0 0 0-4.243-.243l-2 2a3 3 0 0 0 4.243 4.243L8.5 10.5"/></Icon>
 const CheckCircleIcon = ({ size }) => <Icon size={size}><circle cx="8" cy="8" r="7"/><path d="M5 8l2.5 2.5L11 6"/></Icon>
-const StarIcon        = ({ filled }) => (
-  <svg width="14" height="14" viewBox="0 0 16 16"
+const StarIcon        = ({ filled, size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16"
     fill={filled ? '#ffd700' : 'none'}
     stroke={filled ? '#ffd700' : 'currentColor'}
     strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
