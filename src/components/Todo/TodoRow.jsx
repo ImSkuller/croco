@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckIcon, TrashIcon, EditIcon } from '../../constants/SimpleSvgExports.jsx'
+import { CheckIcon, TrashIcon, EditIcon, AlertTriangleIcon } from '../../constants/SimpleSvgExports.jsx'
 import RowBtn from './RowBtn.jsx'
 import { DEFAULT_PRIORITIES, findPriority, hexToRgba, isTodoLocked } from '../../lib/todoPriorities.js'
 
@@ -106,20 +106,21 @@ export default function TodoRow({ todo, last, onToggle, onDelete, onEdit, editin
 
         {/* Completion date (shown on completed todos) */}
         {todo.completed && todo.completedAt && (
-          <span style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
-            ✓ {new Date(todo.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
+            <CheckIcon size={10} /> {new Date(todo.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
         )}
 
         {/* Due date */}
         {dueStr && !todo.completed && (
           <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 3,
             fontSize: 10, fontFamily: 'Geist Mono, monospace',
             color:    overdue ? '#ff4444' : 'var(--dimmer)',
             background: overdue ? 'rgba(255,68,68,0.08)' : 'transparent',
             padding:  '2px 6px', borderRadius: 4,
           }}>
-            {overdue ? '⚠ ' : ''}{dueStr}
+            {overdue && <AlertTriangleIcon size={10} />}{dueStr}
           </span>
         )}
 

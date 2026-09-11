@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { TrashIcon, AlertTriangleIcon, FolderIcon, NoteIcon2, CheckCircleIcon } from '../constants/SimpleSvgExports'
+import { TrashIcon, AlertTriangleIcon, FolderIcon, NoteIcon2, CheckCircleIcon, UndoIcon } from '../constants/SimpleSvgExports'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
 import { EmptyState } from '../components/ui/EmptyState.jsx'
 import { Button } from '../components/ui/Button.jsx'
@@ -204,7 +204,7 @@ function TrashRow({ item, index, onRestore, onDeleteForever, onOpen }) {
           title="Restore"
           style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 11, fontWeight: 500, fontFamily: 'Geist, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
         >
-          ↩ Restore
+          <UndoIcon size={12} /> Restore
         </button>
         <button
           onClick={e => { e.stopPropagation(); onDeleteForever() }}

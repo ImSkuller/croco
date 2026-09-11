@@ -125,7 +125,7 @@ export default function Favourites() {
 
           {!loading && filtered.length === 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', gap: 12 }}>
-              <div style={{ fontSize: 36 }}>⭐</div>
+              <div style={{ display: 'flex' }}><StarIcon filled size={36} /></div>
               <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--dim)' }}>No favourites yet</div>
               <div style={{ fontSize: 12, color: 'var(--dimmer)', textAlign: 'center' }}>
                 {search ? 'No favourites match your search' : 'Star a project to pin it here for quick access'}

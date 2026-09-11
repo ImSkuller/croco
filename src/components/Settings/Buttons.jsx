@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SaveIcon } from '../../constants/SimpleSvgExports'
+import { SaveIcon, CheckIcon } from '../../constants/SimpleSvgExports'
 
 export function SmallBtn({ children, onClick }) {
   const [hovered, setHovered] = useState(false)
@@ -39,7 +39,7 @@ export function SaveBtn({ saved, onClick }) {
         transition: 'all 0.2s',
       }}
     >
-      {saved ? '✓ Saved' : <><SaveIcon /> Save Changes</>}
+      {saved ? <><CheckIcon /> Saved</> : <><SaveIcon /> Save Changes</>}
     </button>
   )
 }

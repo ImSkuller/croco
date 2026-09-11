@@ -1,6 +1,7 @@
 import { computeDateStreak } from '../../lib/habitInsights'
+import { FlameIcon, CalendarIcon } from '../../constants/SimpleSvgExports'
 
-function Flame({ current, label, emoji, color }) {
+function Flame({ current, label, icon: Icon, color }) {
   const alive = current > 0
   return (
     <div style={{
@@ -9,7 +10,7 @@ function Flame({ current, label, emoji, color }) {
       background: 'var(--card)',
       border: `1px solid ${alive ? color : 'var(--border)'}`,
     }}>
-      <span style={{ fontSize: 26, opacity: alive ? 1 : 0.35, filter: alive ? 'none' : 'grayscale(1)' }}>{emoji}</span>
+      <span style={{ display: 'flex', color: alive ? color : 'var(--dimmer)', opacity: alive ? 1 : 0.35 }}><Icon size={26} /></span>
       <div>
         <div style={{ fontSize: 20, fontWeight: 700, color: alive ? color : 'var(--dimmer)', lineHeight: 1.1 }}>
           {current} {current === 1 ? 'day' : 'days'}
@@ -26,8 +27,8 @@ export default function StreakHero({ commitDates, appOpenDates }) {
 
   return (
     <div style={{ display: 'flex', gap: 12, gridColumn: '1 / -1', flexWrap: 'wrap' }}>
-      <Flame current={commit.current} label="commit streak — keeps going as long as you push code somewhere every day" emoji="🔥" color="var(--accent)" />
-      <Flame current={login.current} label="login streak — days you've opened Croco" emoji="🗓️" color="var(--blue)" />
+      <Flame current={commit.current} label="commit streak — keeps going as long as you push code somewhere every day" icon={FlameIcon} color="var(--accent)" />
+      <Flame current={login.current} label="login streak — days you've opened Croco" icon={CalendarIcon} color="var(--blue)" />
     </div>
   )
 }

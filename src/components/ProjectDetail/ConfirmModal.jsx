@@ -23,8 +23,8 @@ export default function ConfirmModal({ modal, input, onInput, loading, error, on
         <div style={{ fontSize: 12, color: 'var(--dim)', lineHeight: 1.65, marginBottom: modal.warning ? 10 : 18, whiteSpace: 'pre-line' }}>{modal.desc}</div>
 
         {modal.warning && (
-          <div style={{ fontSize: 11, color: '#ffaa55', background: 'rgba(255,170,85,0.07)', border: '1px solid rgba(255,170,85,0.2)', borderRadius: 6, padding: '8px 12px', marginBottom: 18, fontFamily: 'Geist Mono, monospace' }}>
-            ⚠ {modal.warning}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#ffaa55', background: 'rgba(255,170,85,0.07)', border: '1px solid rgba(255,170,85,0.2)', borderRadius: 6, padding: '8px 12px', marginBottom: 18, fontFamily: 'Geist Mono, monospace' }}>
+            <AlertTriangleIcon size={12} /> {modal.warning}
           </div>
         )}
 
