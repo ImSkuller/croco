@@ -1,4 +1,4 @@
-import { DatabaseIcon } from '../../constants/SimpleSvgExports'
+import { DatabaseIcon, CheckIcon, XCircleIcon } from '../../constants/SimpleSvgExports'
 import { SectionTitle, SettingsCard, FieldLabel, FieldDesc, Toggle } from './Exports'
 
 const INTERVAL_OPTIONS = [
@@ -40,8 +40,8 @@ export default function StorageSection({
         </div>
 
         {migrateResult && (
-          <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 8, background: migrateResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${migrateResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: migrateResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
-            {migrateResult.ok ? '✓ ' : '✗ '}{migrateResult.message}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, padding: '10px 14px', borderRadius: 8, background: migrateResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${migrateResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: migrateResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
+            {migrateResult.ok ? <CheckIcon size={12} /> : <XCircleIcon size={12} />}{migrateResult.message}
           </div>
         )}
 
@@ -87,8 +87,8 @@ export default function StorageSection({
         <FieldDesc>Export all projects, notes and todos to a single backup file, or restore from a previous backup. Settings and tokens are never included in restores.</FieldDesc>
 
         {backupResult && (
-          <div style={{ margin: '12px 0', padding: '10px 14px', borderRadius: 8, background: backupResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${backupResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: backupResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
-            {backupResult.ok ? '✓ ' : '✗ '}{backupResult.message}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '12px 0', padding: '10px 14px', borderRadius: 8, background: backupResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${backupResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: backupResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
+            {backupResult.ok ? <CheckIcon size={12} /> : <XCircleIcon size={12} />}{backupResult.message}
           </div>
         )}
 
@@ -179,8 +179,8 @@ export default function StorageSection({
         </div>
 
         {autoBackupResult && (
-          <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 8, background: autoBackupResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${autoBackupResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: autoBackupResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
-            {autoBackupResult.ok ? '✓ ' : '✗ '}{autoBackupResult.message}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, padding: '10px 14px', borderRadius: 8, background: autoBackupResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${autoBackupResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: autoBackupResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
+            {autoBackupResult.ok ? <CheckIcon size={12} /> : <XCircleIcon size={12} />}{autoBackupResult.message}
           </div>
         )}
 
