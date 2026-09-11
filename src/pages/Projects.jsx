@@ -5,6 +5,10 @@ import {
   GridIcon,
   ListViewIcon,
   SortIcon,
+  BulbIcon,
+  XCircleIcon,
+  FolderIcon,
+  SearchIcon,
 } from '../constants/SimpleSvgExports.jsx'
 import { ProjectCardGrid, ProjectCardList, SearchBox, FilterTab, IconBtn, ViewBtn, TopBtn } from '../components/Projects/Exports.jsx'
 import { useToast } from '../components/Toast/useToast.js'
@@ -165,7 +169,7 @@ export default function Projects() {
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{filter} {projectLabel}</span>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <TopBtn onClick={() => navigate('/ideas')}>
-            💡 Ideas
+            <BulbIcon /> Ideas
           </TopBtn>
           <TopBtn onClick={handleImport}>
             Import
@@ -256,9 +260,9 @@ export default function Projects() {
           {selectedTag && (
             <button
               onClick={() => setSelectedTag(null)}
-              style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, fontFamily: 'Geist, sans-serif', border: '1px solid transparent', background: 'transparent', color: 'var(--dimmer)', cursor: 'pointer' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontFamily: 'Geist, sans-serif', border: '1px solid transparent', background: 'transparent', color: 'var(--dimmer)', cursor: 'pointer' }}
             >
-              ✕ clear
+              <XCircleIcon size={11} /> clear
             </button>
           )}
         </div>
@@ -285,7 +289,7 @@ export default function Projects() {
           {/* Empty state */}
           {!loading && filtered.length === 0 && (
             <EmptyState
-              icon={projects.length === 0 ? '📁' : '🔍'}
+              icon={projects.length === 0 ? <FolderIcon size={32} /> : <SearchIcon size={32} />}
               title={projects.length === 0 ? 'No projects yet' : 'No projects found'}
               body={projects.length === 0
                 ? 'Import an existing folder or create a new project to get started.'
