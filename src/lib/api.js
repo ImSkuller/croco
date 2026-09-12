@@ -237,6 +237,15 @@ export const api = {
     generateCommitMessage: (id) => invoke('ai_generate_commit_message', { id }),
   },
 
+  // ── Local HTTP API (Phase 6 item 7) — opt-in, see Settings → Local API ─────────
+  localApi: {
+    /** Re-applies settings.api.{enabled,port}: stops/starts the loopback server as needed.
+     * @returns {Promise<{running: boolean, port?: number, tokenJustGenerated?: string|null}>} */
+    apply: () => invoke('local_api_apply'),
+    /** @returns {Promise<string>} the new token (shown once — not retrievable afterward) */
+    regenerateToken: () => invoke('local_api_regenerate_token'),
+  },
+
   // ── System ───────────────────────────────────────────────────────────────────
   system: {
     /** @param {string} p @returns {Promise<any>} */

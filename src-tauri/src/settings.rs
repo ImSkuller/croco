@@ -81,6 +81,15 @@ pub fn default_settings() -> Value {
                 "provider": "anthropic"
             }
         },
+        // Local HTTP API (Phase 6 item 7) — same "api" key the old dead
+        // config used, now with a real consumer (local_api.rs). Loopback-
+        // only and off by default; the bearer token lives in the keyring
+        // under "local_api_token", never here. See local_api_apply, which
+        // the frontend calls after any change to either field below.
+        "api": {
+            "enabled": false,
+            "port": 3131
+        },
         "app": {
             "version": env!("CARGO_PKG_VERSION"),
             "onboarded": false,
@@ -137,14 +146,18 @@ pub fn migrate_away_premium_stub(app: &AppHandle) {
     }
 }
 
-/// One-time migration removing the top-level "api" block and the "ai.keys"
-/// sub-object (Phase 5 item 7) — both dead config with zero consumers
-/// anywhere in the codebase at the time. `ai` itself got a real consumer
-/// back in Phase 6 item 6 (AI commit messages, see default_settings' ai
-/// block), so this no longer touches "ai" wholesale — only the specific
-/// "ai.keys" shape that used to hold plaintext provider keys, which is
-/// still dead (keys now live in the keyring, see settings_set_ai_key).
-/// Idempotent — a no-op once both are gone. Must run *after*
+/// One-time migration removing the "ai.keys" sub-object — Phase 5 item 7
+/// found both the top-level "api" block and "ai.keys" dead (zero consumers
+/// anywhere in the codebase). Both since got real consumers: "api" in
+/// Phase 6 item 7 (the local HTTP API, same {enabled, port} shape the dead
+/// version had — see local_api.rs) and "ai" in Phase 6 item 6 (AI commit
+/// messages). Since the live "api" shape is identical to the old dead one,
+/// there's nothing left to strip there — an existing install's file
+/// already lost it in the original Phase 5 migration, and deep-merge onto
+/// the new defaults brings the real fields back automatically. Only
+/// "ai.keys" (the old plaintext-provider-key container, since replaced by
+/// the keyring — see settings_set_ai_key) still needs one-time removal.
+/// Idempotent — a no-op once it's gone. Must run *after*
 /// migrate_secrets_to_keyring so any legacy plaintext ai.keys.* value has
 /// already been swept into the keyring before this deletes the block it
 /// lived in.
@@ -152,14 +165,12 @@ pub fn migrate_away_dead_ai_api_config(app: &AppHandle) {
     let path = crate::settings_path(app);
     let Ok(raw) = fs::read_to_string(&path) else { return };
     let Ok(mut v) = serde_json::from_str::<Value>(&raw) else { return };
-    let Some(obj) = v.as_object_mut() else { return };
-    let removed_api = obj.remove("api").is_some();
     let removed_ai_keys = v.get_mut("ai")
         .and_then(|a| a.as_object_mut())
         .map(|ai| ai.remove("keys").is_some())
         .unwrap_or(false);
-    if !removed_api && !removed_ai_keys {
-        return; // already migrated (or a fresh install that never had them)
+    if !removed_ai_keys {
+        return; // already migrated (or a fresh install that never had it)
     }
     if let Ok(pretty) = serde_json::to_string_pretty(&v) {
         let _ = fs::write(&path, pretty);
@@ -221,6 +232,10 @@ pub fn read_settings(app: &AppHandle) -> Value {
             "openai": crate::get_secret(app, "ai_key_openai").is_some(),
             "gemini": crate::get_secret(app, "ai_key_gemini").is_some(),
         }));
+    }
+    if let Some(api) = merged.get_mut("api").and_then(|a| a.as_object_mut()) {
+        api.insert("tokenStored".into(), Value::Bool(crate::get_secret(app, "local_api_token").is_some()));
+        api.insert("running".into(), Value::Bool(crate::local_api_is_running()));
     }
     if let Some(app_obj) = merged.get_mut("app").and_then(|a| a.as_object_mut()) {
         app_obj.insert("secretsFallbackActive".into(), Value::Bool(crate::fallback_in_use()));

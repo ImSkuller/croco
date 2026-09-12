@@ -59,6 +59,9 @@ pub(crate) use projects::*;
 mod ai;
 pub(crate) use ai::*;
 
+mod local_api;
+pub(crate) use local_api::*;
+
 // ─── Global state ──────────────────────────────────────────────────────────────
 
 // User-Agent for all GitHub API calls — always matches the app version.
@@ -230,6 +233,10 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     check_and_send_deadline_reminders(&handle);
     start_deadline_reminder_scheduler(handle.clone());
 
+    // Local HTTP API (Phase 6 item 7): a no-op if settings.api.enabled is
+    // false, which is the default — see local_api.rs.
+    tauri::async_runtime::spawn(local_api_apply(handle.clone()));
+
     // Build tray menu
     let show  = MenuItem::with_id(app, "show",  "Show Window", true, None::<&str>)?;
     let sep   = PredefinedMenuItem::separator(app)?;
@@ -310,6 +317,8 @@ fn main() {
             git_get_ahead_behind,
             // ai
             ai_generate_commit_message,
+            // local api
+            local_api_apply, local_api_regenerate_token,
             // git tags & version diffing (GitHub page: Releases, Changelog, Insights tabs)
             git_list_tags, git_create_tag, git_get_commits_between, git_diff_between_refs,
             git_get_commit_dates,
