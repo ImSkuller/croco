@@ -9,8 +9,10 @@ import {
   XCircleIcon,
   FolderIcon,
   SearchIcon,
+  GithubIcon,
 } from '../constants/SimpleSvgExports.jsx'
 import { ProjectCardGrid, ProjectCardList, SearchBox, FilterTab, IconBtn, ViewBtn, TopBtn } from '../components/Projects/Exports.jsx'
+import CloneModal from '../components/Projects/CloneModal.jsx'
 import { useToast } from '../components/Toast/useToast.js'
 import { useKeyboard } from '../hooks/useKeyboard'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
@@ -46,11 +48,13 @@ export default function Projects() {
   const [runningIds,  setRunningIds]  = useState(new Set())
   const [selectedTag, setSelectedTag] = useState(null)
   const [archivedOpen, setArchivedOpen] = useState(false)
+  const [showClone,   setShowClone]   = useState(false)
   const searchRef  = useRef(null)
 
   // Instant render from the shared cache; refreshes in the background
   const projects = useData('projects') || EMPTY_LIST
   const loading  = useData('projects') === null
+  const settings = useData('settings')
 
   useKeyboard({
     '/':       () => searchRef.current?.focus(),
@@ -173,6 +177,9 @@ export default function Projects() {
           </TopBtn>
           <TopBtn onClick={handleImport}>
             Import
+          </TopBtn>
+          <TopBtn onClick={() => setShowClone(true)}>
+            <GithubIcon /> Clone
           </TopBtn>
           <TopBtn primary onClick={() => navigate('/projects/new')}>
             <PlusIcon color="#000" /> New Project
@@ -366,6 +373,10 @@ export default function Projects() {
 
         </div>
       </div>
+
+      {showClone && (
+        <CloneModal defaultParent={settings?.paths?.publicProjects} onClose={() => setShowClone(false)} />
+      )}
 
     </div>
   )

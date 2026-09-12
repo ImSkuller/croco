@@ -9,6 +9,7 @@ import InfoSection from './InfoSection'
 import Chip from './Chip'
 import Spinner from './Spinner'
 import DiffView from './DiffView'
+import StashPanel from './StashPanel'
 
 export default function GitPanel({
   project, projectId, toast,
@@ -16,7 +17,7 @@ export default function GitPanel({
   gitLoading, gitStatus, setGitStatus, gitLog, setGitLog, branches, setBranches,
   syncLoading, aheadBehind, behindCount, aheadCount, checkRemote,
   openDiff, diffLoading, diffText, toggleDiff,
-  handleStageFiles, handleUnstageFiles,
+  handleStageFiles, handleUnstageFiles, handleDiscardFile, refreshGitStatus,
   showCommit, setShowCommit, commitMsg, setCommitMsg, commitResult, setCommitResult, committing, handleCommit,
   pulling, handlePull, pushing, handlePush,
   setPublishName, setPublishDesc, setPublishError, setPublishModal,
@@ -25,6 +26,23 @@ export default function GitPanel({
   const settings = useData('settings')
   const aiEnabled = !!settings?.ai?.commitMessages?.enabled
   const [generatingMsg, setGeneratingMsg] = useState(false)
+  // Two-step confirm (click to arm, click again to actually discard) rather
+  // than a native confirm() dialog — matches the click-again pattern used
+  // elsewhere in Settings for destructive-but-quick actions, and it's an
+  // irreversible action (untracked files are gone for good; tracked ones
+  // lose their uncommitted work) so a bare button would be too easy to fat-finger.
+  const [discardArmed, setDiscardArmed] = useState(null)
+
+  const handleDiscardClick = (type, f) => {
+    const key = `${type}:${f}`
+    if (discardArmed === key) {
+      setDiscardArmed(null)
+      handleDiscardFile(f, type)
+    } else {
+      setDiscardArmed(key)
+      setTimeout(() => setDiscardArmed(prev => (prev === key ? null : prev)), 3000)
+    }
+  }
 
   const handleGenerateCommitMessage = async () => {
     if (!window.api || generatingMsg) return
@@ -163,6 +181,19 @@ export default function GitPanel({
                             color: 'var(--dimmer)', cursor: 'pointer', fontSize: 12, lineHeight: 1, padding: 0,
                           }}
                         >{type === 'staged' ? '−' : '+'}</button>
+                        {type !== 'staged' && (
+                          <button
+                            onClick={() => handleDiscardClick(type, f)}
+                            title={discardArmed === `${type}:${f}` ? 'Click again to discard permanently' : (type === 'untracked' ? 'Delete file' : 'Discard changes')}
+                            style={{
+                              flexShrink: 0, height: 18, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              borderRadius: 4, border: `1px solid ${discardArmed === `${type}:${f}` ? '#ff4444' : 'var(--border)'}`,
+                              background: discardArmed === `${type}:${f}` ? 'rgba(255,68,68,0.12)' : 'transparent',
+                              color: discardArmed === `${type}:${f}` ? '#ff4444' : 'var(--dimmer)',
+                              cursor: 'pointer', fontSize: 9, fontFamily: 'Geist Mono, monospace', whiteSpace: 'nowrap',
+                            }}
+                          >{discardArmed === `${type}:${f}` ? 'confirm?' : 'discard'}</button>
+                        )}
                       </div>
                       {isOpen && (
                         <DiffView loading={diffLoading === key} text={diffText[key]} />
@@ -363,6 +394,8 @@ export default function GitPanel({
               )}
             </div>
           </InfoSection>
+
+          <StashPanel projectId={projectId} toast={toast} onChanged={refreshGitStatus} />
 
           {/* Commit history */}
           <InfoSection label={`Commit History${gitLog.length > 0 ? ` (${gitLog.length})` : ''}`}>

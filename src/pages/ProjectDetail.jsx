@@ -301,6 +301,17 @@ export default function ProjectDetail() {
     refreshGitStatus()
   }
 
+  async function handleDiscardFile(path, kind) {
+    if (!window.api) return
+    try {
+      await window.api.git.discardFile(project.id, path, kind)
+      if (openDiff === `${kind}:${path}`) setOpenDiff(null)
+      refreshGitStatus()
+    } catch (e) {
+      toast.error('Discard failed', e.message)
+    }
+  }
+
   async function toggleDiff(type, f) {
     const key = `${type}:${f}`
     if (openDiff === key) { setOpenDiff(null); return }
@@ -830,6 +841,7 @@ export default function ProjectDetail() {
               syncLoading={syncLoading} aheadBehind={aheadBehind} behindCount={behindCount} aheadCount={aheadCount} checkRemote={checkRemote}
               openDiff={openDiff} diffLoading={diffLoading} diffText={diffText} toggleDiff={toggleDiff}
               handleStageFiles={handleStageFiles} handleUnstageFiles={handleUnstageFiles}
+              handleDiscardFile={handleDiscardFile} refreshGitStatus={refreshGitStatus}
               showCommit={showCommit} setShowCommit={setShowCommit} commitMsg={commitMsg} setCommitMsg={setCommitMsg}
               commitResult={commitResult} setCommitResult={setCommitResult} committing={committing} handleCommit={handleCommit}
               pulling={pulling} handlePull={handlePull} pushing={pushing} handlePush={handlePush}

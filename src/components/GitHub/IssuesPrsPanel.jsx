@@ -20,7 +20,36 @@ function StateBadge({ item, kind }) {
   )
 }
 
-function Row({ item, kind }) {
+const MERGE_METHODS = [
+  { id: 'merge',  label: 'Merge'  },
+  { id: 'squash', label: 'Squash' },
+  { id: 'rebase', label: 'Rebase' },
+]
+
+function Row({ item, kind, projectId, onChanged }) {
+  const toast = useToast()
+  const [busy, setBusy] = useState(false)
+  const [showComment, setShowComment] = useState(false)
+  const [comment, setComment] = useState('')
+  const [mergeMethod, setMergeMethod] = useState('merge')
+
+  const run = async (fn, successMsg) => {
+    setBusy(true)
+    try {
+      await fn()
+      if (successMsg) toast.success(successMsg)
+      onChanged()
+    } catch (e) {
+      toast.error('Action failed', e?.message || String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const canClose = kind === 'issue' ? item.state === 'open' : (item.state === 'open' && !item.merged)
+  const canReopen = kind === 'issue' && item.state === 'closed'
+  const canMerge = kind === 'pr' && item.state === 'open' && !item.merged && !item.draft
+
   return (
     <SettingsCard style={{ margin: 0 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -43,6 +72,61 @@ function Row({ item, kind }) {
                   {l.name}
                 </span>
               ))}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+            {kind === 'issue' && (
+              <button onClick={() => setShowComment(v => !v)} disabled={busy}
+                style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+                Comment
+              </button>
+            )}
+            {canClose && (
+              <button onClick={() => run(() => kind === 'issue'
+                  ? window.api.github.setIssueState(projectId, item.number, 'closed')
+                  : window.api.github.closePullRequest(projectId, item.number), 'Closed')}
+                disabled={busy}
+                style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: '#ff6b6b', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+                Close
+              </button>
+            )}
+            {canReopen && (
+              <button onClick={() => run(() => window.api.github.setIssueState(projectId, item.number, 'open'), 'Reopened')}
+                disabled={busy}
+                style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: '#4aff91', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+                Reopen
+              </button>
+            )}
+            {canMerge && (
+              <>
+                <select value={mergeMethod} onChange={e => setMergeMethod(e.target.value)}
+                  style={{ background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 6px', fontSize: 11, color: 'var(--dim)', fontFamily: 'Geist Mono, monospace' }}>
+                  {MERGE_METHODS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+                </select>
+                <button onClick={() => run(() => window.api.github.mergePullRequest(projectId, item.number, mergeMethod), 'Merged')}
+                  disabled={busy}
+                  style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#a855f7', color: '#fff', fontSize: 11, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+                  Merge
+                </button>
+              </>
+            )}
+          </div>
+
+          {showComment && (
+            <div style={{ marginTop: 10, display: 'flex', gap: 6 }}>
+              <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2} placeholder="Write a comment…"
+                style={{ flex: 1, background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 7, padding: '7px 10px', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist, sans-serif', outline: 'none', resize: 'vertical' }} />
+              <button
+                onClick={() => run(async () => {
+                  await window.api.github.commentOnIssue(projectId, item.number, comment.trim())
+                  setComment(''); setShowComment(false)
+                }, 'Comment posted')}
+                disabled={busy || !comment.trim()}
+                style={{ padding: '0 14px', borderRadius: 7, border: 'none', background: comment.trim() ? '#24292e' : 'var(--dimmer)', color: '#fff', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: comment.trim() ? 'pointer' : 'not-allowed' }}>
+                Post
+              </button>
             </div>
           )}
         </div>
@@ -160,7 +244,7 @@ export default function IssuesPrsPanel({ projects }) {
       )}
 
       {!loading && !error && list.map(item => (
-        <Row key={item.id} item={item} kind={tab === 'issues' ? 'issue' : 'pr'} />
+        <Row key={item.id} item={item} kind={tab === 'issues' ? 'issue' : 'pr'} projectId={projectId} onChanged={load} />
       ))}
 
       {showCreate && (
