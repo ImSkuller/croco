@@ -146,6 +146,14 @@ export const api = {
     setArchived:          (id, archived)  => invoke('projects_set_archived',         { id, archived }),
     /** @param {string} id @param {string} repoName @param {string} description @param {boolean} priv @returns {Promise<any>} */
     publishToGithub:      (id, repoName, description, priv) => invoke('projects_publish_to_github', { id, repoName, description, private: priv }),
+
+    // Community templates (Phase 6 item 12) — local-first export/import,
+    // no hosted marketplace. Export returns the template JSON for the
+    // frontend to write wherever the user picks (system.showSavePicker +
+    // system.writeBytes); import is just projects.create with the parsed
+    // file's `files` passed straight through as templateFiles.
+    /** @param {string} id @param {string} name @param {string} [description] @returns {Promise<any>} */
+    exportAsTemplate: (id, name, description) => invoke('projects_export_as_template', { id, name, description: description || '' }),
   },
 
   // ── Templates ────────────────────────────────────────────────────────────────
@@ -273,6 +281,8 @@ export const api = {
 
     /** @param {string} path @param {number[]} data @returns {Promise<any>} */
     writeBytes:             (path, data) => invoke('system_write_bytes',            { path, data }),
+    /** @param {string} path @returns {Promise<string>} */
+    readTextFile:           (path)       => invoke('system_read_text_file',         { path }),
     /** @param {string} p @returns {Promise<boolean>} */
     pathExists:             (p)        => invoke('system_path_exists',              { p }),
     /** @returns {Promise<string>} */

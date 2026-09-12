@@ -316,6 +316,7 @@ fn main() {
             projects_get_dependencies, projects_install_dependencies, projects_update_dependencies,
             projects_add_dependency, projects_remove_dependency, projects_get_file_tree,
             projects_get_scripts, projects_rename, projects_set_archived,
+            projects_export_as_template,
             // git
             git_status, git_commit, git_get_log, git_is_repo, git_get_branches,
             git_switch_branch, git_create_branch, git_push, git_get_readme, git_pull,
@@ -348,7 +349,7 @@ fn main() {
             system_open_path, system_open_external, system_open_in_app_browser, system_path_exists,
             system_homedir, system_platform, system_user_data,
             system_lookup_community_user, system_validate_github_username,
-            system_write_bytes,
+            system_write_bytes, system_read_text_file,
             // templates
             templates_list,
             // notify

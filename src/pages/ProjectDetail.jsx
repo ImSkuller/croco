@@ -111,6 +111,7 @@ export default function ProjectDetail() {
   // Settings tab edit draft
   const [editDraft,  setEditDraft]  = useState(null)
   const [editSaving, setEditSaving] = useState(false)
+  const [exportingTemplate, setExportingTemplate] = useState(false)
   const [tagInput,   setTagInput]   = useState('')
 
   useEffect(() => {
@@ -1444,6 +1445,36 @@ export default function ProjectDetail() {
                     }}
                     style={{ padding: '9px 22px', borderRadius: 8, background: editSaving ? 'var(--border)' : 'var(--orange)', border: 'none', color: editSaving ? 'var(--dim)' : '#fff', fontSize: 13, fontWeight: 600, cursor: editSaving ? 'default' : 'pointer', transition: 'background 0.15s' }}>
                     {editSaving ? 'Saving…' : 'Save Changes'}
+                  </button>
+                </div>
+
+                {/* Export as Template (Phase 6 item 12) — local-first: writes a
+                    shareable JSON file the user can send to anyone; there's no
+                    hosted marketplace to publish to. */}
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 4 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Export as Template</div>
+                  <div style={{ fontSize: 12, color: 'var(--dim)', marginBottom: 10 }}>
+                    Save this project's file structure as a reusable starter template. Excludes node_modules/build output, lockfiles, and .env files. Share the resulting file with anyone — they import it from the New Project screen.
+                  </div>
+                  <button
+                    disabled={exportingTemplate}
+                    onClick={async () => {
+                      setExportingTemplate(true)
+                      try {
+                        const template = await window.api.projects.exportAsTemplate(project.id, project.name, project.description || '')
+                        const savePath = await window.api.system.showSavePicker(`${project.name}.crocotemplate.json`, [{ name: 'Croco Template', extensions: ['json'] }])
+                        if (!savePath) return
+                        const bytes = Array.from(new TextEncoder().encode(JSON.stringify(template, null, 2)))
+                        await window.api.system.writeBytes(savePath, bytes)
+                        toast.success('Template exported', `${template.fileCount} files`)
+                      } catch (err) {
+                        toast.error('Export failed', err?.message || String(err))
+                      } finally {
+                        setExportingTemplate(false)
+                      }
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: 'transparent', border: '1px solid var(--border)', color: 'var(--dim)', fontSize: 12, cursor: exportingTemplate ? 'default' : 'pointer', fontFamily: 'Geist, sans-serif' }}>
+                    <PackageIcon size={14} /> {exportingTemplate ? 'Exporting…' : 'Export as Template'}
                   </button>
                 </div>
               </div>

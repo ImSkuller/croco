@@ -968,6 +968,92 @@ pub async fn projects_get_file_tree(app: AppHandle, id: String) -> Value {
     walk_file_tree(root, root, 0)
 }
 
+// Community templates (Phase 6 item 12) — local-first: export a project's
+// current files as a reusable template JSON (same {relPath: content} shape
+// TEMPLATES' own files() generators produce in templates.js, so it can be
+// fed straight into projects_create's existing templateFiles field with no
+// new import command needed), which the user can then share by any means
+// they like (a gist, a chat message, a repo of their own) — there's no
+// hosted marketplace/discovery here, since that would need an actual
+// backend service this session isn't positioned to stand up unilaterally.
+// Deliberately conservative about what gets swept in: skips the same
+// generated/vendor dirs the file tree view already ignores, lockfiles (a
+// starter template regenerates these fresh, matching how the built-in
+// TEMPLATES never ship one), and anything .env-shaped (never bundle
+// secrets into something meant to be shared).
+const TEMPLATE_EXCLUDED_FILES: &[&str] = &[
+    "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lockb", "Cargo.lock", "composer.lock",
+];
+const TEMPLATE_EXPORT_MAX_FILES: usize = 300;
+const TEMPLATE_EXPORT_MAX_BYTES: u64 = 2 * 1024 * 1024; // 2MB — a starter skeleton, not a populated project
+
+fn is_env_like(name: &str) -> bool {
+    name == ".env" || name.starts_with(".env.")
+}
+
+fn collect_template_files(
+    root: &Path,
+    dir: &Path,
+    out: &mut std::collections::HashMap<String, String>,
+    total_bytes: &mut u64,
+) -> Result<(), String> {
+    let Ok(entries) = fs::read_dir(dir) else { return Ok(()) };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let name = entry.file_name().to_string_lossy().to_string();
+        if path.is_dir() {
+            if IGNORE_DIRS.contains(&name.as_str()) { continue; }
+            collect_template_files(root, &path, out, total_bytes)?;
+        } else {
+            if TEMPLATE_EXCLUDED_FILES.contains(&name.as_str()) || is_env_like(&name) { continue; }
+            let Ok(metadata) = entry.metadata() else { continue };
+            *total_bytes += metadata.len();
+            if *total_bytes > TEMPLATE_EXPORT_MAX_BYTES {
+                return Err(format!("Project is too large to export as a template (over {}MB) — trim generated/vendored files first.", TEMPLATE_EXPORT_MAX_BYTES / 1024 / 1024));
+            }
+            if out.len() >= TEMPLATE_EXPORT_MAX_FILES {
+                return Err(format!("Project has more than {TEMPLATE_EXPORT_MAX_FILES} files — too many for a starter template."));
+            }
+            // Skip anything that isn't valid UTF-8 text (images, binaries) —
+            // a template's files map is plain strings, same as templates.js.
+            let Ok(content) = fs::read_to_string(&path) else { continue };
+            let rel = path.strip_prefix(root).unwrap_or(&path).to_string_lossy().replace('\\', "/");
+            out.insert(rel, content);
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn projects_export_as_template(app: AppHandle, id: String, name: String, description: String) -> Result<Value, String> {
+    let project = get_project(&app, &id).ok_or("Project not found")?;
+    let root_str = project_root_str(&project);
+    let root = Path::new(&root_str);
+    if root_str.is_empty() || !root.exists() {
+        return Err("Project folder not found".into());
+    }
+    let name = name.trim().to_string();
+    if name.is_empty() { return Err("Template name is required".into()); }
+
+    let mut files = std::collections::HashMap::new();
+    let mut total_bytes: u64 = 0;
+    collect_template_files(root, root, &mut files, &mut total_bytes)?;
+    if files.is_empty() {
+        return Err("No text files found to export".into());
+    }
+
+    Ok(json!({
+        "formatVersion": 1,
+        "kind": "croco-custom-template",
+        "name": name,
+        "description": description.trim(),
+        "sourceProject": project["name"],
+        "createdAt": chrono::Utc::now().to_rfc3339(),
+        "fileCount": files.len(),
+        "files": files,
+    }))
+}
+
 #[tauri::command]
 pub fn projects_get_scripts(app: AppHandle, id: String) -> Vec<Value> {
     if crate::validate_safe_id(&id).is_err() { return vec![]; }
@@ -1021,4 +1107,73 @@ pub fn projects_rename(app: AppHandle, id: String, new_name: String) -> Result<V
 #[tauri::command]
 pub fn projects_set_archived(app: AppHandle, id: String, archived: bool) -> Result<Value, String> {
     projects_edit(app, id, json!({ "archived": archived }))
+}
+
+#[cfg(test)]
+mod template_export_tests {
+    use super::*;
+
+    // No tempfile crate dependency in this workspace — a unique subdir
+    // under the OS temp dir, cleaned up at the end of each test, is enough
+    // for exercising a real filesystem walk without adding one.
+    struct TempProjectDir(std::path::PathBuf);
+    impl TempProjectDir {
+        fn new(name: &str) -> Self {
+            let dir = std::env::temp_dir().join(format!("croco-template-export-test-{name}-{}", uuid::Uuid::new_v4()));
+            fs::create_dir_all(&dir).unwrap();
+            Self(dir)
+        }
+        fn write(&self, rel: &str, content: &str) {
+            let path = self.0.join(rel);
+            if let Some(parent) = path.parent() { fs::create_dir_all(parent).unwrap(); }
+            fs::write(path, content).unwrap();
+        }
+    }
+    impl Drop for TempProjectDir {
+        fn drop(&mut self) { let _ = fs::remove_dir_all(&self.0); }
+    }
+
+    #[test]
+    fn is_env_like_matches_dotenv_and_its_variants_only() {
+        assert!(is_env_like(".env"));
+        assert!(is_env_like(".env.local"));
+        assert!(is_env_like(".env.production"));
+        assert!(!is_env_like("env.js"));
+        assert!(!is_env_like("environment.ts"));
+    }
+
+    #[test]
+    fn collect_template_files_includes_real_source_and_excludes_generated_content() {
+        let dir = TempProjectDir::new("basic");
+        dir.write("src/index.js", "console.log('hi')");
+        dir.write("package.json", "{}");
+        dir.write("package-lock.json", "{ \"huge\": true }");
+        dir.write(".env", "SECRET=123");
+        dir.write(".env.local", "SECRET=456");
+        dir.write("node_modules/some-dep/index.js", "module.exports = {}");
+
+        let mut files = std::collections::HashMap::new();
+        let mut total_bytes = 0u64;
+        collect_template_files(&dir.0, &dir.0, &mut files, &mut total_bytes).unwrap();
+
+        assert!(files.contains_key("src/index.js"));
+        assert!(files.contains_key("package.json"));
+        assert!(!files.contains_key("package-lock.json"));
+        assert!(!files.contains_key(".env"));
+        assert!(!files.contains_key(".env.local"));
+        assert!(!files.keys().any(|k| k.starts_with("node_modules")));
+        assert_eq!(files.len(), 2);
+    }
+
+    #[test]
+    fn collect_template_files_rejects_projects_over_the_file_count_cap() {
+        let dir = TempProjectDir::new("too-many-files");
+        for i in 0..(TEMPLATE_EXPORT_MAX_FILES + 5) {
+            dir.write(&format!("file-{i}.txt"), "x");
+        }
+        let mut files = std::collections::HashMap::new();
+        let mut total_bytes = 0u64;
+        let result = collect_template_files(&dir.0, &dir.0, &mut files, &mut total_bytes);
+        assert!(result.is_err());
+    }
 }
