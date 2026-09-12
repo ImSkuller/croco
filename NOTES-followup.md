@@ -373,3 +373,97 @@ had resolved to `2.11.0`, and Tauri refuses to build on a major/minor
 mismatch between the two. Bumped the npm package to match. This blocks any
 real release, not just this session's testing — worth a periodic check
 whenever either side's lockfile moves.
+
+## From Phase 6 (features — good-to-have items 6–13)
+
+Items 1–5 (must-have) shipped earlier as their own commits: command
+palette, undo/trash, scheduled backups, desktop notifications (item 1,
+macOS/Linux hardware testing, deferred per explicit instruction — no Mac
+or Linux machine available). This section covers 6 onward.
+
+**Two premises in the brief turned out to be stale** (both from Phase 5's
+own dead-config cleanup, which happened after the brief was written from
+commit `4f90750`):
+
+- Items 6 and 7 assumed the `ai.*` and `api.*` settings blocks "already
+  exist" with real fields (`ai.keys.*`, `api.enabled`/`port`). Phase 5
+  item 7 had already deleted both wholesale as dead config with zero
+  consumers. Rebuilt them as genuinely new settings rather than "finish
+  wiring existing scaffolding" — same field shapes where the brief named
+  them (`api.enabled`/`port: 3131`), so an old settings.json's already-
+  stripped blocks pick the new defaults straight back up via the existing
+  deep-merge-onto-defaults read path with no extra migration needed. The
+  one migration that did need surgery: `migrate_away_dead_ai_api_config`
+  used to nuke the entire `ai`/`api` top level on every launch — narrowed
+  to only strip the specific dead `ai.keys` sub-object now that both
+  parents have real, live content (see settings.rs's updated doc comment
+  on that function for the full reasoning).
+- Item 6 assumed a clean slate for AI provider keys. This dev machine
+  actually already had a real (now-revoked, "API key is invalid")
+  Anthropic key sitting in the OS keyring under the exact account name
+  this feature reuses (`ai_key_anthropic`) — left over from the old AI
+  Assistant feature (removed entirely in v1.9.0, whose keys were migrated
+  into the keyring rather than deleted, back when that removal shipped).
+  Not a bug: the new opt-in commit-message feature shares the same
+  keyring account as the old removed one on purpose, so a returning
+  user's already-stored key just works. Worth knowing before assuming a
+  clean-slate test environment on this machine specifically — the e2e
+  verification script had to be rewritten mid-run to test against
+  `gemini`/`openai` instead of `anthropic` for exactly this reason, to
+  avoid ever calling `settings_set_ai_key` on a provider slot that might
+  hold a real secret with no way to read it back and restore it.
+
+**Item 10 (drag-and-drop folder import) is not implemented, on purpose.**
+The brief describes it as "flipping `dragDropEnabled` [to `true`] plus a
+drop handler." CLAUDE.md's own Gotchas section documents — in detail,
+clearly written to warn off exactly this kind of change — that
+`dragDropEnabled: true` makes WebView2 intercept drag gestures at the
+native level on Windows, which silently breaks every existing HTML5
+`draggable`/`onDragStart`/`onDragOver`/`onDrop` UI in the app at once:
+Favourites' custom reorder, the Todo priority manager, and — the
+irony — Notes' *existing* drag-and-drop `.md` import, which already
+ships today built on the HTML5 API this flag would break. Confirmed this
+isn't a purely theoretical conflict: Tauri v2's browser-standard
+(non-native) drag-and-drop never exposes a dropped folder's real
+filesystem path to JS (by web-platform design — `webkitGetAsEntry()`
+gives a virtual `fullPath`, not an OS path), which is exactly why
+`dragDropEnabled: true` and its native path-bearing event exist in Tauri
+in the first place. There is no way to get a real project-import-ready
+folder path through the safe (`false`) path, and no way to flip to the
+unsafe (`true`) path without breaking three already-shipped features.
+Doing this properly would mean first migrating Favourites/Todo/Notes'
+drag-and-drop off the HTML5 API onto Tauri's native
+`onDragDropEvent`-based system — a real, separate project, not a
+"flip a boolean" cheap win as scoped in the brief. Left undone rather
+than shipped half-broken or silently skipped without explanation.
+
+Items completed, each independently unit-tested (Rust) and verified
+end-to-end against the real compiled app via a temporary tauri-driver
+script (deleted after each run, not kept as permanent test
+infrastructure):
+
+6. **AI-generated commit messages** — opt-in, provider choice
+   (Anthropic/OpenAI/Gemini), key in the OS keyring, diff mirrors exactly
+   what `git_commit` would actually commit. e2e-verified: the disabled
+   gate, the missing-key gate, a real network round-trip with a
+   deliberately-fake key (confirms the whole request/response/error path
+   without touching a real account), and token clear/provider-switch.
+7. **Local HTTP API** — loopback-only, bearer-token-gated, hand-rolled
+   over tokio's already-linked networking (no new crate). Routes for
+   projects/notes/todos/run. e2e-verified: not listening while disabled,
+   auth rejection (missing/wrong token) and acceptance (right token),
+   real data round-trip visible through `window.api` too (not a parallel
+   mock store), 404 on unknown routes, immediate token-rotation
+   invalidation, and clean shutdown on disable.
+8. **GitHub Issues & PRs tab** — third panel on the GitHub page. Verified
+   via build/lint/`cargo check`/`cargo test` and code-level review against
+   the already-proven `github_get` pattern the Releases tab uses; not
+   e2e-tested against a real repo (would mean creating real issues in a
+   real user-facing repository from automated test code — declined on
+   purpose, unlike items 6/7/9 which could be verified with fully
+   disposable local/fake data).
+9. **Per-project time tracking** — `projectStats.<id>.runSeconds`,
+   accumulated from a run's actual process lifetime (unambiguous start/
+   stop), not UI session length (personality.rs already documented why
+   that's ambiguous under the close-to-tray default — left as-is,
+   extended rather than revisited). New `ProjectTimeCard` on Patterns.
