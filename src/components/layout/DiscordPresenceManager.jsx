@@ -13,6 +13,14 @@ const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchsta
 export default function DiscordPresenceManager() {
   const settings = useData('settings')
   const enabled = !!settings?.modules?.discord?.enabled && !!settings?.modules?.discord?.richPresence?.enabled
+  // Fallback button target for every context that isn't scoped to a
+  // project with its own repo (Dashboard, Notes, Settings, idle, an
+  // unscoped AI chat, ...) — the user's own GitHub profile instead of no
+  // button at all. A project's real repo (ctx.githubUrl) always wins when
+  // present; this only fills the gap.
+  const profileUrl = settings?.user?.github?.username ? `https://github.com/${settings.user.github.username}` : null
+  const profileUrlRef = useRef(profileUrl)
+  useEffect(() => { profileUrlRef.current = profileUrl }, [profileUrl])
   const lastActivityRef = useRef(0)
   const lastSentRef = useRef(null) // { details, state, githubUrl } | null
   const idleRef = useRef(false)
@@ -44,10 +52,10 @@ export default function DiscordPresenceManager() {
       const idleNow = Date.now() - lastActivityRef.current >= IDLE_THRESHOLD_MS
       idleRef.current = idleNow
       if (idleNow) {
-        send('Idle', null, null)
+        send('Idle', null, profileUrlRef.current)
       } else {
         const ctx = getDiscordContext()
-        send(ctx.details, ctx.state, ctx.githubUrl)
+        send(ctx.details, ctx.state, ctx.githubUrl || profileUrlRef.current)
       }
     }
 
