@@ -8,8 +8,8 @@
 // 3. Selective git staging (git_stage_files/git_unstage_files + git_commit
 //    only auto-staging everything when nothing is explicitly staged)
 //
-// Safety: settings.json is backed up before the run and restored byte-for-byte
-// in the `finally` block. All test data lives under temporary directories.
+// Safety: the app is launched with CROCO_DATA_DIR pointing at a fresh temp
+// directory, so settings, storage and secrets never touch the real profile.
 //
 // Run with: node e2e/verify-v2-milestones.mjs
 // Requires a fresh `npm run tauri:build` and tauri-driver + msedgedriver on

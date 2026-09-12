@@ -3,11 +3,10 @@
 // window.api.* bridge the React UI calls, hitting the real Rust commands and
 // real filesystem writes — not a mock.
 //
-// Safety: settings.json is backed up before the run and restored byte-for-byte
-// in the `finally` block, regardless of pass/fail. Notes created during the
-// test live under a temporary settings.app.dataPath, never the user's real
-// notes folder. The already-installed Croco instance is untouched — this
-// spawns its own throwaway process via tauri-driver.
+// Safety: the app is launched with CROCO_DATA_DIR pointing at a fresh temp
+// directory, so settings, storage and secrets never touch the real profile.
+// The already-installed Croco instance is untouched — this spawns its own
+// throwaway process via tauri-driver.
 //
 // Run with: node e2e/verify-obsidian-sync.mjs
 // Requires tauri-driver + a matching msedgedriver on PATH (see

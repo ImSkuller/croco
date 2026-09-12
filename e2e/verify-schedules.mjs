@@ -3,9 +3,8 @@
 // same window.api.* bridge the React UI calls, hitting the real Rust
 // commands and real filesystem writes — not a mock.
 //
-// Safety: settings.json is backed up before the run and restored byte-for-byte
-// in the `finally` block. All data created during the test lives under a
-// temporary settings.app.dataPath, never the user's real data folder.
+// Safety: the app is launched with CROCO_DATA_DIR pointing at a fresh temp
+// directory, so settings, storage and secrets never touch the real profile.
 //
 // Run with: node e2e/verify-schedules.mjs
 // Requires tauri-driver + a matching msedgedriver on PATH (see
