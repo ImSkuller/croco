@@ -365,9 +365,9 @@ export const api = {
 
   // ── AI module (beta) — Storage Brain + chat ──────────────────────────────────
   ai: {
-    /** @param {string} mode 'chat'|'research'|'plan'|'code' @param {string} provider @param {string|null} projectId @param {string} conversationId @param {string} message @returns {Promise<string>} */
-    chat: (mode, provider, projectId, conversationId, message) =>
-      invoke('ai_chat', { mode, provider, projectId, conversationId, message }),
+    /** @param {string} mode 'chat'|'research'|'plan'|'code' @param {string} provider @param {string|null} projectId @param {string} conversationId @param {string} message @param {string|null} [fileContext] contents of the file open in the IDE, folded into the system prompt for this call only @returns {Promise<string>} */
+    chat: (mode, provider, projectId, conversationId, message, fileContext) =>
+      invoke('ai_chat', { mode, provider, projectId, conversationId, message, fileContext: fileContext || null }),
     /** @param {string} host @returns {Promise<string[]>} */
     ollamaListModels: (host) => invoke('ollama_list_models', { host }),
     brain: {

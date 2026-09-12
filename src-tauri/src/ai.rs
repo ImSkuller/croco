@@ -372,7 +372,7 @@ pub async fn ollama_list_models(host: String) -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-pub async fn ai_chat(app: AppHandle, mode: String, provider: String, project_id: Option<String>, conversation_id: String, message: String) -> Result<String, String> {
+pub async fn ai_chat(app: AppHandle, mode: String, provider: String, project_id: Option<String>, conversation_id: String, message: String, file_context: Option<String>) -> Result<String, String> {
     let settings = crate::read_settings(&app);
     if !settings["modules"]["ai"]["enabled"].as_bool().unwrap_or(false) {
         return Err("The AI module is off — enable it in Settings → Modules.".into());
@@ -381,7 +381,21 @@ pub async fn ai_chat(app: AppHandle, mode: String, provider: String, project_id:
 
     let web_access = settings["modules"]["ai"]["webAccess"]["enabled"].as_bool().unwrap_or(false);
     let brain_context = crate::assemble_context(&app, project_id.as_deref(), &message);
-    let system_prompt = build_system_prompt(&mode, &brain_context);
+    let mut system_prompt = build_system_prompt(&mode, &brain_context);
+    // IDE "Ask AI": the open file rides along as system context for this
+    // one call (never persisted in the conversation — the file changes
+    // between turns, the stored history shouldn't carry stale copies).
+    // Capped so a huge generated file can't blow the request budget.
+    if let Some(ctx) = file_context.as_deref().filter(|c| !c.trim().is_empty()) {
+        const MAX_FILE_CONTEXT: usize = 60_000;
+        let clipped: String = if ctx.len() > MAX_FILE_CONTEXT {
+            let mut end = MAX_FILE_CONTEXT;
+            while !ctx.is_char_boundary(end) { end -= 1; }
+            format!("{}\n\n[… file truncated at {MAX_FILE_CONTEXT} bytes …]", &ctx[..end])
+        } else { ctx.to_string() };
+        system_prompt.push_str("\n\nThe user has this file open in Croco's editor. When you propose code, put the complete replacement (or the snippet to insert) in a single fenced code block so it can be applied directly:\n\n");
+        system_prompt.push_str(&clipped);
+    }
 
     let mut outgoing = crate::brain_conversation_get(app.clone(), conversation_id.clone());
     outgoing.push(json!({ "role": "user", "text": message }));

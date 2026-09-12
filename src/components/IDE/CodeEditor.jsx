@@ -5,6 +5,7 @@ import { FolderIcon, FolderOpenIcon, FileIcon, SaveIcon, RefreshIcon } from '../
 import { useToast } from '../Toast/useToast.js'
 import { useData } from '../../lib/store'
 import useDiscordPresence from '../../hooks/useDiscordPresence'
+import ChatPanel from '../AI/ChatPanel'
 
 const DEFAULT_EDITOR_PREFS = {
   fontSize: 13, tabSize: 2, insertSpaces: true, wordWrap: 'off',
@@ -96,10 +97,16 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
   const [tabs, setTabs] = useState([]) // [{ rel, name, ext, content, savedContent, dirty }]
   const [activeRel, setActiveRel] = useState(null)
   const [loadingTree, setLoadingTree] = useState(true)
+  const [aiOpen, setAiOpen] = useState(() => { try { return localStorage.getItem('croco:ide:aiOpen') === '1' } catch { return false } })
   const tabsRef = useRef(tabs)
   useEffect(() => { tabsRef.current = tabs }, [tabs])
+  useEffect(() => { try { localStorage.setItem('croco:ide:aiOpen', aiOpen ? '1' : '0') } catch { /* private mode */ } }, [aiOpen])
 
   const prefs = { ...DEFAULT_EDITOR_PREFS, ...(settings?.modules?.ide?.editor || {}) }
+  // "Ask AI" is only offered when the AI module is on; provider follows
+  // whatever the AI page last selected so the two never disagree.
+  const aiEnabled = !!settings?.modules?.ai?.enabled
+  const aiProvider = settings?.modules?.ai?.provider || 'anthropic'
 
   // Re-theme whenever the app's own theme/accent changes, not just once on
   // mount — matches the rest of the UI updating live from Settings.
@@ -192,6 +199,33 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
       setActiveRel(remaining.length ? remaining[remaining.length - 1].rel : null)
     }
   }
+
+  // The open file's live contents, read at send time (not captured at
+  // render) so the AI always sees what's actually in the buffer.
+  const fileContextFor = useCallback(() => {
+    const tab = tabsRef.current.find(t => t.rel === activeRel)
+    if (!tab) return null
+    return `File: ${tab.rel}\n\n\`\`\`${langForExt(tab.ext)}\n${tab.content}\n\`\`\``
+  }, [activeRel])
+
+  // Applies a fenced block from the AI reply through Monaco's edit API so
+  // it lands in the undo stack like any typed change. Nothing is written
+  // to disk until the user saves.
+  const applyCode = useCallback((code, how) => {
+    const editor = editorRef.current
+    if (!editor || !activeRel) { toast.error('No file open', 'Open a file in the editor first.'); return }
+    const model = editor.getModel()
+    if (!model) return
+    if (how === 'replace') {
+      editor.executeEdits('croco-ai', [{ range: model.getFullModelRange(), text: code, forceMoveMarkers: true }])
+    } else {
+      const sel = editor.getSelection()
+      editor.executeEdits('croco-ai', [{ range: sel, text: code, forceMoveMarkers: true }])
+    }
+    editor.pushUndoStop()
+    editor.focus()
+    toast.success(how === 'replace' ? 'File replaced' : 'Code inserted', 'Ctrl+Z to undo, Ctrl+S to save.')
+  }, [activeRel, toast])
 
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
@@ -293,8 +327,17 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
         )}
 
         {activeTab && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 12px', borderTop: '1px solid var(--border)', fontSize: 11, color: 'var(--dimmer)', flexShrink: 0 }}>
-            <span style={{ fontFamily: 'Geist Mono, monospace' }}>{activeTab.rel}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '4px 12px', borderTop: '1px solid var(--border)', fontSize: 11, color: 'var(--dimmer)', flexShrink: 0 }}>
+            <span style={{ fontFamily: 'Geist Mono, monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTab.rel}</span>
+            {aiEnabled && (
+              <span
+                onClick={() => setAiOpen(o => !o)}
+                title={aiOpen ? 'Hide the AI panel' : 'Ask the AI about this file'}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', color: aiOpen ? 'var(--accent)' : 'var(--dimmer)', transition: 'color var(--transition-fast)' }}
+              >
+                <SparkleIcon size={11} /> {aiOpen ? 'AI' : 'Ask AI'}
+              </span>
+            )}
             <span
               onClick={() => saveTab(activeTab.rel)}
               style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: activeTab.dirty ? 'pointer' : 'default', color: activeTab.dirty ? 'var(--accent)' : 'var(--dimmer)', transition: 'color var(--transition-fast)' }}
@@ -304,6 +347,49 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
           </div>
         )}
       </div>
+
+      {/* Ask AI side panel — one conversation per project+file so switching
+          files switches threads. The open file is sent as context on every
+          message; fenced code in replies gets Insert / Replace buttons. */}
+      {aiEnabled && aiOpen && activeTab && (
+        <div style={{
+          width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', minWidth: 0,
+          borderLeft: '1px solid var(--border)', background: 'var(--sidebar-bg)',
+          backdropFilter: 'var(--panel-blur)', WebkitBackdropFilter: 'var(--panel-blur)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 6px', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--dimmer)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <SparkleIcon size={11} /> Ask AI · {activeTab.name}
+            </span>
+            <button
+              onClick={() => setAiOpen(false)}
+              title="Close"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', fontSize: 14, lineHeight: 1, padding: 2 }}
+            >×</button>
+          </div>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ChatPanel
+              key={`${projectId}:${activeTab.rel}`}
+              mode="code"
+              provider={aiProvider}
+              projectId={projectId}
+              conversationKey={`ide:${projectId}:${activeTab.rel}`}
+              fileContext={fileContextFor}
+              onApplyCode={applyCode}
+              compact
+            />
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+function SparkleIcon({ size = 12 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 1.5l1.6 4.1L13.7 7l-4.1 1.4L8 12.5 6.4 8.4 2.3 7l4.1-1.4z" />
+      <path d="M13 11.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" />
+    </svg>
   )
 }
