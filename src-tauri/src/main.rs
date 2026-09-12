@@ -56,6 +56,9 @@ pub(crate) use entitlements::*;
 mod projects;
 pub(crate) use projects::*;
 
+mod ai;
+pub(crate) use ai::*;
+
 // ─── Global state ──────────────────────────────────────────────────────────────
 
 // User-Agent for all GitHub API calls — always matches the app version.
@@ -290,6 +293,7 @@ fn main() {
             // settings
             settings_get, settings_set, settings_update, settings_reset,
             settings_test_github, settings_save_avatar, settings_set_github_token,
+            settings_set_ai_key,
             // projects
             projects_get_all, projects_get_by_id, projects_create, projects_import,
             projects_edit, projects_delete, projects_restore, projects_delete_permanently,
@@ -304,6 +308,8 @@ fn main() {
             git_switch_branch, git_create_branch, git_push, git_get_readme, git_pull,
             git_stage_files, git_unstage_files, git_diff_file,
             git_get_ahead_behind,
+            // ai
+            ai_generate_commit_message,
             // git tags & version diffing (GitHub page: Releases, Changelog, Insights tabs)
             git_list_tags, git_create_tag, git_get_commits_between, git_diff_between_refs,
             git_get_commit_dates,

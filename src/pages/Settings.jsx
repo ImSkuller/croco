@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, LockIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon } from '../constants/SimpleSvgExports'
+import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, LockIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon, AIIcon, EyeIcon, EyeOffIcon } from '../constants/SimpleSvgExports'
 import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, PathInput, IDEOption, ToggleChip, Toggle, InfoBox, SmallBtn, SaveBtn } from '../components/Settings/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { THEMES, applyTheme, getThemeAccentSwatch, normalizeThemeId } from '../lib/theme.js'
@@ -46,6 +46,7 @@ const NAV_SECTIONS = [
   { id: 'paths',      label: 'Paths',        icon: <FolderIcon />  },
   { id: 'defaults',   label: 'Defaults',     icon: <SaveIcon />    },
   { id: 'github',     label: 'GitHub',       icon: <GitIcon />     },
+  { id: 'ai',         label: 'AI',           icon: <AIIcon />      },
   { id: 'appearance', label: 'Appearance',   icon: <PaletteIcon /> },
   { id: 'behaviour',  label: 'Behaviour',    icon: <TagIcon />     },
   { id: 'storage',    label: 'Storage',      icon: <DatabaseIcon /> },
@@ -91,6 +92,14 @@ export default function Settings() {
   const [ghTokenStored, setGhTokenStored] = useState(false)
   const [ghTestStatus,  setGhTestStatus]  = useState(null) // null | 'testing' | {ok, login, message}
   const [secretsFallbackActive, setSecretsFallbackActive] = useState(false)
+  const [aiEnabled,     setAiEnabled]     = useState(false)
+  const [aiProvider,    setAiProvider]    = useState('anthropic')
+  const [aiKeysStored,  setAiKeysStored]  = useState({ anthropic: false, openai: false, gemini: false })
+  // Same "only holds what was just typed this session" rule as ghToken —
+  // settings_get never returns a real stored AI key.
+  const [aiKeyInput,    setAiKeyInput]    = useState('')
+  const [aiKeyVisible,  setAiKeyVisible]  = useState(false)
+  const [aiKeySaving,   setAiKeySaving]   = useState(false)
   const [userAvatar,    setUserAvatar]    = useState(null)
   const [oauthEnabled,  setOauthEnabled]  = useState(true) // optimistic default (always true in shipped builds); corrected after the async check below
   const [oauthData,     setOauthData]     = useState(null) // {user_code, verification_uri, device_code, interval}
@@ -228,6 +237,9 @@ export default function Settings() {
     setGhUsername(s.user?.github?.username || '')
     setGhTokenStored(!!s.user?.github?.tokenStored)
     setSecretsFallbackActive(!!s.app?.secretsFallbackActive)
+    setAiEnabled(!!s.ai?.commitMessages?.enabled)
+    setAiProvider(s.ai?.commitMessages?.provider || 'anthropic')
+    setAiKeysStored(s.ai?.keysStored || { anthropic: false, openai: false, gemini: false })
     setCloseBehavior(s.app?.closeBehavior || 'tray')
     setCustomDataPath(s.app?.dataPath || '')
     const color = s.appearance?.accentColor || '#e8e4dc'
@@ -377,6 +389,41 @@ export default function Settings() {
       window.api?.settings.update({ app: { deadlineReminders: { enabled: next } } }).catch(() => {})
       return next
     })
+  }
+
+  const handleAiToggle = () => {
+    setAiEnabled(prev => {
+      const next = !prev
+      window.api?.settings.update({ ai: { commitMessages: { enabled: next, provider: aiProvider } } }).catch(() => {})
+      return next
+    })
+  }
+
+  const handleAiProviderChange = (provider) => {
+    setAiProvider(provider)
+    setAiKeyInput('')
+    window.api?.settings.update({ ai: { commitMessages: { enabled: aiEnabled, provider } } }).catch(() => {})
+  }
+
+  const handleAiKeySave = async () => {
+    if (!aiKeyInput.trim() || !window.api) return
+    setAiKeySaving(true)
+    try {
+      await window.api.settings.setAiKey(aiProvider, aiKeyInput.trim())
+      setAiKeysStored(prev => ({ ...prev, [aiProvider]: true }))
+      setAiKeyInput('')
+      toast.success('API key saved')
+    } catch (e) {
+      toast.error('Could not save key', e.message)
+    } finally {
+      setAiKeySaving(false)
+    }
+  }
+
+  const handleAiKeyClear = async () => {
+    if (!window.api) return
+    await window.api.settings.setAiKey(aiProvider, '').catch(() => {})
+    setAiKeysStored(prev => ({ ...prev, [aiProvider]: false }))
   }
 
   const handleRequestDesktopPermission = async () => {
@@ -890,6 +937,78 @@ export default function Settings() {
                       <SmallBtn onClick={() => window.api?.system.openExternal(`https://github.com/${ghUsername}`)}>
                         View Profile
                       </SmallBtn>
+                    )}
+                  </div>
+                </SettingsCard>
+              </>
+            )}
+
+            {/* AI */}
+            {activeSection === 'ai' && (
+              <>
+                <SectionTitle icon={<AIIcon />} title="AI" desc="Generate a commit message from your staged changes. Strictly opt-in — nothing here is called unless you turn it on and provide your own API key." />
+
+                <SettingsCard>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <FieldLabel>AI Commit Messages</FieldLabel>
+                      <FieldDesc>Adds a "Generate with AI" button to the commit box in each project's Git tab. The diff is sent to the provider below — review the generated message before committing, it's never used automatically.</FieldDesc>
+                    </div>
+                    <Toggle value={aiEnabled} onChange={handleAiToggle} />
+                  </div>
+                </SettingsCard>
+
+                <SettingsCard>
+                  <FieldLabel>Provider</FieldLabel>
+                  <FieldDesc>Each provider needs its own API key, entered below.</FieldDesc>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    {[
+                      { id: 'anthropic', label: 'Anthropic' },
+                      { id: 'openai',    label: 'OpenAI'    },
+                      { id: 'gemini',    label: 'Gemini'    },
+                    ].map(opt => (
+                      <ToggleChip
+                        key={opt.id}
+                        label={<>{opt.label}{aiKeysStored[opt.id] && <CheckIcon size={11} />}</>}
+                        active={aiProvider === opt.id}
+                        color="var(--accent)"
+                        bg="var(--accent-dim)"
+                        onClick={() => handleAiProviderChange(opt.id)}
+                      />
+                    ))}
+                  </div>
+
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                    <FieldLabel>{{ anthropic: 'Anthropic', openai: 'OpenAI', gemini: 'Gemini' }[aiProvider]} API Key</FieldLabel>
+                    <FieldDesc>
+                      {aiKeysStored[aiProvider]
+                        ? 'A key is currently stored for this provider — paste a new one to replace it.'
+                        : 'Paste a key from your provider account. Stored in your OS credential store, never in settings.json.'}
+                    </FieldDesc>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <div style={{ flex: 1, position: 'relative' }}>
+                        <TextInput
+                          type={aiKeyVisible ? 'text' : 'password'}
+                          value={aiKeyInput}
+                          onChange={setAiKeyInput}
+                          placeholder={aiKeysStored[aiProvider] ? '••••••••  (stored — paste to replace)' : 'sk-...'}
+                          mono
+                        />
+                        <button
+                          onClick={() => setAiKeyVisible(v => !v)}
+                          title={aiKeyVisible ? 'Hide' : 'Show'}
+                          style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', display: 'flex' }}
+                        >
+                          {aiKeyVisible ? <EyeOffIcon size={14} /> : <EyeIcon size={14} />}
+                        </button>
+                      </div>
+                      <SmallBtn onClick={handleAiKeySave}>{aiKeySaving ? 'Saving…' : 'Save Key'}</SmallBtn>
+                      {aiKeysStored[aiProvider] && <SmallBtn onClick={handleAiKeyClear}>Clear</SmallBtn>}
+                    </div>
+                    {secretsFallbackActive && (
+                      <InfoBox style={{ marginTop: 10 }}>
+                        Your OS credential store isn't available, so this key is stored in an encrypted local file instead. It's protected from casual disk access but not from other processes on this machine.
+                      </InfoBox>
                     )}
                   </div>
                 </SettingsCard>

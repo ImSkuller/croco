@@ -75,6 +75,9 @@ export const api = {
     // Stored in the OS keyring, never in settings.json — pass '' to clear.
     /** @param {string} token @returns {Promise<void>} */
     setGithubToken: (token)                => invoke('settings_set_github_token', { token }),
+    // Also keyring-backed — pass '' to clear. provider is 'anthropic' | 'openai' | 'gemini'.
+    /** @param {string} provider @param {string} key @returns {Promise<void>} */
+    setAiKey:    (provider, key)           => invoke('settings_set_ai_key', { provider, key }),
   },
 
   // ── Projects ─────────────────────────────────────────────────────────────────
@@ -228,6 +231,10 @@ export const api = {
     diffBetweenRefs:   (id, fromRef, toRef)   => invoke('git_diff_between_refs',   { id, fromRef, toRef }),
     /** @param {string} id @param {number} [limit] @returns {Promise<any[]>} */
     getCommitDates:    (id, limit)         => invoke('git_get_commit_dates',    { id, limit }),
+
+    // AI-generated commit message (Phase 6 item 6) — opt-in, see Settings → AI.
+    /** @param {string} id @returns {Promise<string>} */
+    generateCommitMessage: (id) => invoke('ai_generate_commit_message', { id }),
   },
 
   // ── System ───────────────────────────────────────────────────────────────────

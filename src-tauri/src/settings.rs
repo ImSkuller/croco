@@ -69,14 +69,18 @@ pub fn default_settings() -> Value {
                 { "id": "low",  "label": "Low",     "color": "#4aff91" }
             ]
         },
-        // No "api" or "ai" block here — both were dead config with zero
-        // consumers anywhere in the codebase (Phase 5 item 7): "api" was a
-        // leftover from the REST server removed in v1.1.0, "ai" from the
-        // AI Assistant deleted in v1.9.0. Removed from defaults rather than
-        // reimplemented; see migrate_away_dead_ai_api_config below for how
-        // an existing install's settings.json gets the same fields
-        // stripped, and secrets.rs::migrate_secrets_to_keyring for where
-        // any legacy plaintext ai.keys.* value goes before that strip runs.
+        // "ai" was dead config (Phase 5 item 7) until Phase 6 item 6 gave it
+        // a real consumer: AI-generated commit messages from the staged
+        // diff. Deliberately opt-in (enabled: false) since it sends a diff
+        // to a third-party API — never on by default. The provider's API
+        // key itself is never stored here; it lives in the OS keyring under
+        // "ai_key_<provider>" (see secrets.rs), same as the GitHub token.
+        "ai": {
+            "commitMessages": {
+                "enabled": false,
+                "provider": "anthropic"
+            }
+        },
         "app": {
             "version": env!("CARGO_PKG_VERSION"),
             "onboarded": false,
@@ -133,11 +137,14 @@ pub fn migrate_away_premium_stub(app: &AppHandle) {
     }
 }
 
-/// One-time migration removing the "api" and "ai" top-level blocks
-/// (Phase 5 item 7) — both dead config with zero consumers anywhere in the
-/// codebase, no longer in default_settings() for fresh installs, but an
-/// existing settings.json from before this change still has them until
-/// this runs. Idempotent — a no-op once both are gone. Must run *after*
+/// One-time migration removing the top-level "api" block and the "ai.keys"
+/// sub-object (Phase 5 item 7) — both dead config with zero consumers
+/// anywhere in the codebase at the time. `ai` itself got a real consumer
+/// back in Phase 6 item 6 (AI commit messages, see default_settings' ai
+/// block), so this no longer touches "ai" wholesale — only the specific
+/// "ai.keys" shape that used to hold plaintext provider keys, which is
+/// still dead (keys now live in the keyring, see settings_set_ai_key).
+/// Idempotent — a no-op once both are gone. Must run *after*
 /// migrate_secrets_to_keyring so any legacy plaintext ai.keys.* value has
 /// already been swept into the keyring before this deletes the block it
 /// lived in.
@@ -147,8 +154,11 @@ pub fn migrate_away_dead_ai_api_config(app: &AppHandle) {
     let Ok(mut v) = serde_json::from_str::<Value>(&raw) else { return };
     let Some(obj) = v.as_object_mut() else { return };
     let removed_api = obj.remove("api").is_some();
-    let removed_ai = obj.remove("ai").is_some();
-    if !removed_api && !removed_ai {
+    let removed_ai_keys = v.get_mut("ai")
+        .and_then(|a| a.as_object_mut())
+        .map(|ai| ai.remove("keys").is_some())
+        .unwrap_or(false);
+    if !removed_api && !removed_ai_keys {
         return; // already migrated (or a fresh install that never had them)
     }
     if let Ok(pretty) = serde_json::to_string_pretty(&v) {
@@ -171,19 +181,19 @@ pub fn deep_merge(base: Value, patch: Value) -> Value {
 
 // Secret fields that must never survive a read (returned to the frontend)
 // or a write (persisted to settings.json) in plaintext. Actual values live
-// in the OS keyring / secrets.rs fallback — see settings_set_github_token
-// and secrets::migrate_secrets_to_keyring for how they get there.
+// in the OS keyring / secrets.rs fallback — see settings_set_github_token,
+// settings_set_ai_key, and secrets::migrate_secrets_to_keyring for how they
+// get there. There is no AI-key field to strip here: unlike the old dead
+// "ai.keys.*" shape, the current schema (ai.commitMessages) never carries a
+// raw key through settings.json in the first place — settings_set_ai_key
+// writes straight to the keyring and the frontend only ever sees the
+// keysStored booleans injected below.
 fn strip_secrets(v: &mut Value) {
     if let Some(github) = v.get_mut("user").and_then(|u| u.get_mut("github")).and_then(|g| g.as_object_mut()) {
         github.remove("token");
     }
     if let Some(obj) = v.as_object_mut() {
         obj.remove("githubToken");
-    }
-    if let Some(keys) = v.get_mut("ai").and_then(|a| a.get_mut("keys")).and_then(|k| k.as_object_mut()) {
-        for k in ["anthropic", "openai", "gemini"] {
-            keys.insert(k.into(), Value::String(String::new()));
-        }
     }
 }
 
@@ -204,6 +214,13 @@ pub fn read_settings(app: &AppHandle) -> Value {
     strip_secrets(&mut merged);
     if let Some(github) = merged.get_mut("user").and_then(|u| u.get_mut("github")).and_then(|g| g.as_object_mut()) {
         github.insert("tokenStored".into(), Value::Bool(crate::get_secret(app, "github_token").is_some()));
+    }
+    if let Some(ai) = merged.get_mut("ai").and_then(|a| a.as_object_mut()) {
+        ai.insert("keysStored".into(), json!({
+            "anthropic": crate::get_secret(app, "ai_key_anthropic").is_some(),
+            "openai": crate::get_secret(app, "ai_key_openai").is_some(),
+            "gemini": crate::get_secret(app, "ai_key_gemini").is_some(),
+        }));
     }
     if let Some(app_obj) = merged.get_mut("app").and_then(|a| a.as_object_mut()) {
         app_obj.insert("secretsFallbackActive".into(), Value::Bool(crate::fallback_in_use()));
@@ -333,6 +350,21 @@ pub fn settings_reset(app: AppHandle) -> Result<Value, String> {
 pub fn settings_set_github_token(app: AppHandle, token: String) -> Result<(), String> {
     crate::set_secret(&app, "github_token", &token)?;
     crate::activity_log(&app, "setting.github", json!({}));
+    Ok(())
+}
+
+// Stores an AI provider's API key in the OS keyring (never in settings.json
+// — see strip_secrets above). Passing an empty string clears it. `provider`
+// must be one of the three keyring accounts secrets.rs already reserves
+// ("anthropic" | "openai" | "gemini") — reject anything else rather than
+// silently writing an arbitrary keyring account name.
+#[tauri::command]
+pub fn settings_set_ai_key(app: AppHandle, provider: String, key: String) -> Result<(), String> {
+    if !["anthropic", "openai", "gemini"].contains(&provider.as_str()) {
+        return Err(format!("Unknown AI provider: {provider}"));
+    }
+    crate::set_secret(&app, &format!("ai_key_{provider}"), &key)?;
+    crate::activity_log(&app, "setting.ai", json!({}));
     Ok(())
 }
 

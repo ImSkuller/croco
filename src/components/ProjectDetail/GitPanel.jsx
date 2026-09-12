@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import {
   GithubIcon, CommitIcon, DownloadIcon, RefreshIcon, BranchIcon, ExternalLinkIcon,
-  PackageIcon, CheckIcon, XCircleIcon,
+  PackageIcon, CheckIcon, XCircleIcon, AIIcon,
 } from '../../constants/SimpleSvgExports'
 import { authorColor, initials } from '../../lib/projectDetailHelpers'
+import { useData } from '../../lib/store'
 import InfoSection from './InfoSection'
 import Chip from './Chip'
 import Spinner from './Spinner'
@@ -20,6 +22,23 @@ export default function GitPanel({
   setPublishName, setPublishDesc, setPublishError, setPublishModal,
   branchOp, branchOpen, setBranchOpen, newBranch, setNewBranch, handleCreateBranch, handleSwitchBranch,
 }) {
+  const settings = useData('settings')
+  const aiEnabled = !!settings?.ai?.commitMessages?.enabled
+  const [generatingMsg, setGeneratingMsg] = useState(false)
+
+  const handleGenerateCommitMessage = async () => {
+    if (!window.api || generatingMsg) return
+    setGeneratingMsg(true)
+    try {
+      const message = await window.api.git.generateCommitMessage(projectId)
+      setCommitMsg(message)
+    } catch (e) {
+      toast.error('Could not generate message', e.message)
+    } finally {
+      setGeneratingMsg(false)
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {!isRepo ? (
@@ -217,10 +236,28 @@ export default function GitPanel({
           {/* Commit panel */}
           {showCommit && (
             <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
-                {(gitStatus?.staged?.length || 0) > 0
-                  ? `Committing ${gitStatus.staged.length} staged file${gitStatus.staged.length === 1 ? '' : 's'}`
-                  : 'No files staged — all changes will be committed'}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
+                  {(gitStatus?.staged?.length || 0) > 0
+                    ? `Committing ${gitStatus.staged.length} staged file${gitStatus.staged.length === 1 ? '' : 's'}`
+                    : 'No files staged — all changes will be committed'}
+                </div>
+                {aiEnabled && (
+                  <button
+                    onClick={handleGenerateCommitMessage}
+                    disabled={generatingMsg}
+                    title="Generate a commit message from the diff with AI"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
+                      padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)',
+                      background: 'transparent', color: 'var(--dim)', fontSize: 11,
+                      fontFamily: 'Geist, sans-serif', cursor: generatingMsg ? 'default' : 'pointer',
+                      opacity: generatingMsg ? 0.6 : 1,
+                    }}
+                  >
+                    <AIIcon size={12} /> {generatingMsg ? 'Generating…' : 'Generate with AI'}
+                  </button>
+                )}
               </div>
               <textarea
                 value={commitMsg}

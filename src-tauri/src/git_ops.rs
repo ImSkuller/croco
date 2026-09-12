@@ -307,6 +307,50 @@ pub async fn git_unstage_files(app: AppHandle, id: String, paths: Vec<String>) -
     Ok(json!({ "ok": true }))
 }
 
+// Diff text describing whatever `git_commit` would actually commit right
+// now — mirrors its own "staged wins, otherwise everything" rule (see
+// git_commit above) without staging anything as a side effect, so
+// generating a commit message never mutates git state on its own. Capped
+// well under typical provider context limits; a huge diff gets truncated
+// with a note rather than sent whole (cost and payload-size reasons, not
+// correctness — a truncated diff still produces a reasonable summary of
+// the bulk of the change).
+const AI_DIFF_CHAR_CAP: usize = 12_000;
+
+pub async fn build_commit_diff(app: &AppHandle, id: &str) -> Result<String, String> {
+    let cwd = project_root(app, id)?;
+    let status = git_status(app.clone(), id.to_string()).await?;
+    let has_staged = status["staged"].as_array().map(|a| !a.is_empty()).unwrap_or(false);
+
+    let mut diff = if has_staged {
+        run_git_diff(&["diff", "--cached"], &cwd)?
+    } else {
+        run_git_diff(&["diff"], &cwd)?
+    };
+
+    // Untracked files contribute nothing to `git diff` but would still be
+    // swept in by git_commit's `git add .` fallback — list their names (not
+    // contents, to keep the payload small) so the model knows they exist.
+    if !has_staged {
+        if let Some(untracked) = status["untracked"].as_array() {
+            if !untracked.is_empty() {
+                let names: Vec<&str> = untracked.iter().filter_map(|v| v.as_str()).collect();
+                diff.push_str(&format!("\n\nNew untracked files:\n{}\n", names.join("\n")));
+            }
+        }
+    }
+
+    if diff.trim().is_empty() {
+        return Err("Nothing to summarize — stage or make some changes first.".into());
+    }
+
+    if diff.len() > AI_DIFF_CHAR_CAP {
+        diff.truncate(AI_DIFF_CHAR_CAP);
+        diff.push_str("\n\n[diff truncated — showing the first part of a larger change]");
+    }
+    Ok(diff)
+}
+
 #[tauri::command]
 pub async fn git_commit(app: AppHandle, id: String, msg: String) -> Result<Value, String> {
     let cwd     = project_root(&app, &id)?;
