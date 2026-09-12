@@ -130,7 +130,12 @@ pub fn backup_run_now(app: AppHandle) -> Result<Value, String> {
     Ok(json!({ "ok": true, "path": path.to_string_lossy() }))
 }
 
+// The module-level `#![deny(clippy::unwrap_used)]` above is meant for the
+// production code in this file; test code unwrapping a hardcoded, known-valid
+// literal is normal Rust style and should just panic (fail the test) if that
+// ever stops parsing, so it's allowed back here.
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::is_backup_due;
 

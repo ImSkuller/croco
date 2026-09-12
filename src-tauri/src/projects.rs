@@ -1162,7 +1162,11 @@ pub fn projects_set_archived(app: AppHandle, id: String, archived: bool) -> Resu
     projects_edit(app, id, json!({ "archived": archived }))
 }
 
+// The module-level `#![deny(clippy::unwrap_used)]` above targets production
+// code; test helpers/assertions unwrapping a value they just constructed are
+// normal Rust style, so it's allowed back here.
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod template_export_tests {
     use super::*;
 
@@ -1237,6 +1241,7 @@ mod template_export_tests {
 // docs/git-github-upgrade-plan.md-adjacent session notes. The merge itself
 // already worked for a *fresh* scan; the cache-hit path just never ran it.
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod language_merge_tests {
     use super::*;
 

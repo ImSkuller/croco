@@ -107,42 +107,6 @@ fn is_trash_expired(trashed_at: Option<&str>, now: chrono::DateTime<chrono::Utc>
     now.signed_duration_since(trashed_at) > chrono::Duration::days(TRASH_RETENTION_DAYS)
 }
 
-#[cfg(test)]
-mod trash_tests {
-    use super::*;
-
-    #[test]
-    fn not_trashed_never_expires() {
-        assert!(!is_trash_expired(None, chrono::Utc::now()));
-    }
-
-    #[test]
-    fn unparseable_timestamp_is_treated_as_not_expired() {
-        assert!(!is_trash_expired(Some("not-a-date"), chrono::Utc::now()));
-    }
-
-    #[test]
-    fn within_retention_window_is_not_expired() {
-        let now = chrono::DateTime::parse_from_rfc3339("2026-02-01T00:00:00Z").unwrap().to_utc();
-        let trashed_at = "2026-01-15T00:00:00Z"; // 17 days ago
-        assert!(!is_trash_expired(Some(trashed_at), now));
-    }
-
-    #[test]
-    fn past_retention_window_is_expired() {
-        let now = chrono::DateTime::parse_from_rfc3339("2026-02-01T00:00:00Z").unwrap().to_utc();
-        let trashed_at = "2025-12-01T00:00:00Z"; // 62 days ago
-        assert!(is_trash_expired(Some(trashed_at), now));
-    }
-
-    #[test]
-    fn exactly_at_the_boundary_is_not_yet_expired() {
-        let now = chrono::DateTime::parse_from_rfc3339("2026-02-01T00:00:00Z").unwrap().to_utc();
-        let trashed_at = "2026-01-02T00:00:00Z"; // exactly 30 days ago
-        assert!(!is_trash_expired(Some(trashed_at), now));
-    }
-}
-
 // ─── Suppress console window on Windows for all child processes ───────────────
 
 #[cfg(windows)]
@@ -458,5 +422,44 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application")
+}
+
+// Kept at the end of the file (clippy::items_after_test_module) rather than
+// right after is_trash_expired, where it used to sit ahead of everything
+// else in main.rs.
+#[cfg(test)]
+mod trash_tests {
+    use super::*;
+
+    #[test]
+    fn not_trashed_never_expires() {
+        assert!(!is_trash_expired(None, chrono::Utc::now()));
+    }
+
+    #[test]
+    fn unparseable_timestamp_is_treated_as_not_expired() {
+        assert!(!is_trash_expired(Some("not-a-date"), chrono::Utc::now()));
+    }
+
+    #[test]
+    fn within_retention_window_is_not_expired() {
+        let now = chrono::DateTime::parse_from_rfc3339("2026-02-01T00:00:00Z").unwrap().to_utc();
+        let trashed_at = "2026-01-15T00:00:00Z"; // 17 days ago
+        assert!(!is_trash_expired(Some(trashed_at), now));
+    }
+
+    #[test]
+    fn past_retention_window_is_expired() {
+        let now = chrono::DateTime::parse_from_rfc3339("2026-02-01T00:00:00Z").unwrap().to_utc();
+        let trashed_at = "2025-12-01T00:00:00Z"; // 62 days ago
+        assert!(is_trash_expired(Some(trashed_at), now));
+    }
+
+    #[test]
+    fn exactly_at_the_boundary_is_not_yet_expired() {
+        let now = chrono::DateTime::parse_from_rfc3339("2026-02-01T00:00:00Z").unwrap().to_utc();
+        let trashed_at = "2026-01-02T00:00:00Z"; // exactly 30 days ago
+        assert!(!is_trash_expired(Some(trashed_at), now));
+    }
 }
 
