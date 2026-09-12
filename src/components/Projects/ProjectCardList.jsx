@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CardBtn, VisibilityBadge } from './Exports.jsx'
 import { GithubIcon, IDEIcon, FolderIcon, StarIcon } from '../../constants/SimpleSvgExports.jsx'
+import TagChip from '../ui/TagChip.jsx'
 
 export default function ProjectCardList({ project, isRunning, onToggleFav, index, onClick }) {
   const [hovered, setHovered] = useState(false)
@@ -44,11 +45,7 @@ export default function ProjectCardList({ project, isRunning, onToggleFav, index
 
       {/* Tags */}
       <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-        {(project.tags || []).slice(0, 3).map(tag => (
-          <span key={tag} style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, background: 'var(--border)', color: 'var(--dim)', padding: '2px 6px', borderRadius: 3 }}>
-            {tag}
-          </span>
-        ))}
+        {(project.tags || []).slice(0, 3).map(tag => <TagChip key={tag} tag={tag} />)}
       </div>
 
       {/* Language bar */}

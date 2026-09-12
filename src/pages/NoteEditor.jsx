@@ -4,6 +4,7 @@ import { marked } from 'marked'
 import { ArrowLeftIcon, StarIcon, TagIcon, FolderIcon, CheckIcon } from '../constants/SimpleSvgExports'
 import { modKeyHint } from '../lib/platform'
 import useDiscordPresence from '../hooks/useDiscordPresence'
+import TagChip from '../components/ui/TagChip'
 
 marked.setOptions({ gfm: true, breaks: true })
 
@@ -450,10 +451,7 @@ export default function NoteEditor() {
                 borderRadius: 7, padding: '7px 10px', display: 'flex', flexWrap: 'wrap', gap: 4, minHeight: 38,
               }}>
                 {tags.map(tag => (
-                  <span key={tag} style={{ display: 'flex', alignItems: 'center', gap: 3, fontFamily: 'Geist Mono, monospace', fontSize: 10, background: 'var(--border)', color: 'var(--dim)', padding: '2px 6px', borderRadius: 3 }}>
-                    #{tag}
-                    <button onClick={() => setTags(p => p.filter(t => t !== tag))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', fontSize: 12, lineHeight: 1, padding: 0 }}>×</button>
-                  </span>
+                  <TagChip key={tag} tag={tag} prefix="#" onRemove={() => setTags(p => p.filter(t => t !== tag))} />
                 ))}
                 <input
                   value={tagInput}

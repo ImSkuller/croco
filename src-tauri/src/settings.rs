@@ -69,6 +69,11 @@ pub fn default_settings() -> Value {
                 { "id": "low",  "label": "Low",     "color": "#4aff91" }
             ]
         },
+        // Custom tags (v2, see tags.rs) — colors + management for the
+        // free-text tags on projects/notes. Keyed by tag name.
+        "tags": {
+            "catalog": {}
+        },
         // "ai" was dead config (Phase 5 item 7) until Phase 6 item 6 gave it
         // a real consumer: AI-generated commit messages from the staged
         // diff. Deliberately opt-in (enabled: false) since it sends a diff

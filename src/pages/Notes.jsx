@@ -5,6 +5,7 @@ import { ViewBtn } from '../components/Projects/Exports'
 import { useKeyboard } from '../hooks/useKeyboard'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
 import useDiscordPresence from '../hooks/useDiscordPresence'
+import TagChip from '../components/ui/TagChip'
 
 const FILTERS = ['All', 'Starred', 'Archived']
 
@@ -14,6 +15,7 @@ export default function Notes() {
   const [search,   setSearch]   = useState('')
   const [filter,   setFilter]   = useState('All')
   const [project,  setProject]  = useState('All')
+  const [selectedTag, setSelectedTag] = useState(null)
 
   useDiscordPresence('Browsing Croco', 'Notes')
 
@@ -86,6 +88,7 @@ export default function Notes() {
   // Trashed notes are excluded everywhere on this page — Trash.jsx is the
   // only place that shows them.
   const liveNotes = useMemo(() => notes.filter(n => !n.trashedAt), [notes])
+  const allTags   = useMemo(() => [...new Set(liveNotes.flatMap(n => n.tags || []))].sort(), [liveNotes])
 
   const filtered = useMemo(() => liveNotes.filter(n => {
     const matchSearch  = n.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -97,8 +100,9 @@ export default function Notes() {
         ? n.starred && !n.archived
         : !n.archived
     const matchProject = project === 'All' ? true : n.projectId === project
-    return matchSearch && matchFilter && matchProject
-  }), [liveNotes, search, filter, project])
+    const matchTag     = !selectedTag || (n.tags || []).includes(selectedTag)
+    return matchSearch && matchFilter && matchProject && matchTag
+  }), [liveNotes, search, filter, project, selectedTag])
 
   const counts = useMemo(() => ({
     All:      liveNotes.filter(n => !n.archived).length,
@@ -168,6 +172,14 @@ export default function Notes() {
           >
             {projectOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
+
+          {allTags.length > 0 && (
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
+              {allTags.map(tag => (
+                <TagChip key={tag} tag={tag} prefix="#" size="md" active={selectedTag === tag} onClick={() => setSelectedTag(selectedTag === tag ? null : tag)} />
+              ))}
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 7 }}>
             <ViewBtn active={view === 'grid'} onClick={() => setView('grid')}><GridIcon /></ViewBtn>
@@ -360,11 +372,7 @@ function NoteCard({ note, onToggleStar, onDelete, onToggleArchive, onOpen }) {
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>
-        {(note.tags || []).map(tag => (
-          <span key={tag} style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, background: 'var(--border)', color: 'var(--dimmer)', padding: '2px 6px', borderRadius: 3 }}>
-            #{tag}
-          </span>
-        ))}
+        {(note.tags || []).map(tag => <TagChip key={tag} tag={tag} prefix="#" />)}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid var(--border)' }}>
@@ -414,11 +422,7 @@ function NoteRow({ note, index, onToggleStar, onDelete, onToggleArchive, onOpen 
       </div>
 
       <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-        {(note.tags || []).slice(0, 2).map(tag => (
-          <span key={tag} style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, background: 'var(--border)', color: 'var(--dimmer)', padding: '2px 6px', borderRadius: 3 }}>
-            #{tag}
-          </span>
-        ))}
+        {(note.tags || []).slice(0, 2).map(tag => <TagChip key={tag} tag={tag} prefix="#" />)}
       </div>
 
       {note.project && (

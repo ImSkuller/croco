@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { VisibilityBadge, CardBtn } from './Exports.jsx'
 import { IDEIcon, StarIcon } from '../../constants/SimpleSvgExports.jsx'
+import TagChip from '../ui/TagChip.jsx'
 
 export default function ProjectCardGrid({ project, isRunning, onToggleFav, onClick }) {
   const [hovered, setHovered] = useState(false)
@@ -61,11 +62,7 @@ export default function ProjectCardGrid({ project, isRunning, onToggleFav, onCli
       {/* Tags */}
       {(project.tags || []).length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 14 }}>
-          {(project.tags || []).slice(0, 4).map(tag => (
-            <span key={tag} style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, background: 'var(--border)', color: 'var(--dim)', padding: '3px 7px', borderRadius: 4 }}>
-              {tag}
-            </span>
-          ))}
+          {(project.tags || []).slice(0, 4).map(tag => <TagChip key={tag} tag={tag} />)}
         </div>
       )}
 

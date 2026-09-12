@@ -71,6 +71,9 @@ pub(crate) use ide::*;
 mod ai_brain;
 pub(crate) use ai_brain::*;
 
+mod tags;
+pub(crate) use tags::*;
+
 mod slack;
 pub(crate) use slack::*;
 
@@ -432,6 +435,8 @@ fn main() {
             brain_encyclopedia_create, brain_encyclopedia_update, brain_encyclopedia_delete, brain_encyclopedia_get, brain_encyclopedia_list,
             brain_project_summary_generate, brain_project_summary_get,
             brain_conversation_get, brain_conversation_delete,
+            // custom tags
+            tags_list, tags_set_color, tags_rename, tags_delete,
             ai_chat, ollama_list_models,
             // slack module (beta)
             settings_set_slack_webhook, slack_webhook_test,

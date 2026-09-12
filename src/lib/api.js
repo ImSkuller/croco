@@ -454,6 +454,18 @@ export const api = {
     getTodayStats:  ()                => invoke('focus_session_get_today_stats'),
   },
 
+  // ── Custom tags ──────────────────────────────────────────────────────────────
+  tags: {
+    /** @returns {Promise<{name:string, projects:number, notes:number, color:string|null}[]>} */
+    list:     ()              => invoke('tags_list'),
+    /** Pass null to clear. @param {string} name @param {string|null} color */
+    setColor: (name, color)   => invoke('tags_set_color', { name, color }),
+    /** Rename everywhere; renaming onto an existing tag merges them. @returns {Promise<{projects:number, notes:number}>} */
+    rename:   (from, into)    => invoke('tags_rename', { from, into }),
+    /** Remove from every project/note + the catalog. @returns {Promise<{projects:number, notes:number}>} */
+    delete:   (name)          => invoke('tags_delete', { name }),
+  },
+
   // ── IDE module (beta) ────────────────────────────────────────────────────────
   ide: {
     /** @param {string} projectId @param {string} relPath @returns {Promise<string>} */

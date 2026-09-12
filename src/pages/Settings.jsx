@@ -9,6 +9,7 @@ import { SHORTCUT_DEFS } from '../lib/shortcuts'
 import StorageSection from '../components/Settings/StorageSection'
 import ObsidianSection from '../components/Settings/ObsidianSection'
 import ModulesSection from '../components/Settings/ModulesSection'
+import TagsSection from '../components/Settings/TagsSection'
 import UpdatesSection from '../components/Settings/UpdatesSection'
 import ShortcutsSection from '../components/Settings/ShortcutsSection'
 import DangerSection from '../components/Settings/DangerSection'
@@ -47,6 +48,7 @@ const NAV_SECTIONS = [
   { id: 'user',       label: 'User',         icon: <UserIcon />    },
   { id: 'paths',      label: 'Paths',        icon: <FolderIcon />  },
   { id: 'defaults',   label: 'Defaults',     icon: <SaveIcon />    },
+  { id: 'tags',       label: 'Tags',         icon: <TagIcon />     },
   { id: 'github',     label: 'GitHub',       icon: <GitIcon />     },
   { id: 'ai',         label: 'AI',           icon: <AIIcon />      },
   { id: 'localApi',   label: 'Local API',    icon: <APIIcon />     },
@@ -1167,6 +1169,9 @@ export default function Settings() {
                 )}
               </>
             )}
+
+            {/* Tags */}
+            {activeSection === 'tags' && <TagsSection />}
 
             {/* Modules */}
             {activeSection === 'modules' && <ModulesSection aiKeysStored={aiKeysStored} />}

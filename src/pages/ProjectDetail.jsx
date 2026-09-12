@@ -27,6 +27,7 @@ import DockerPanel from '../components/ProjectDetail/DockerPanel'
 import EnvPanel from '../components/ProjectDetail/EnvPanel'
 import { useData } from '../lib/store'
 import useDiscordPresence from '../hooks/useDiscordPresence'
+import TagChip from '../components/ui/TagChip'
 
 // Lazy — monaco-editor is several MB and must never sit in the main bundle
 // for users who don't enable the IDE module (see lib/monacoSetup.js).
@@ -724,9 +725,7 @@ export default function ProjectDetail() {
               {project.description || 'No description.'}
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: languages.length > 0 ? 10 : 0 }}>
-              {(project.tags || []).map(tag => (
-                <span key={tag} style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, background: 'var(--border)', color: 'var(--dim)', padding: '2px 7px', borderRadius: 4 }}>{tag}</span>
-              ))}
+              {(project.tags || []).map(tag => <TagChip key={tag} tag={tag} />)}
             </div>
             {languages.length > 0 && (
               <div>
@@ -1464,11 +1463,7 @@ export default function ProjectDetail() {
                   <div style={labelStyle}>Tags</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
                     {editDraft.tags.map(tag => (
-                      <span key={tag} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 5, background: 'rgba(74,158,255,0.1)', border: '1px solid rgba(74,158,255,0.2)', color: '#4a9eff', fontSize: 11, fontFamily: 'Geist Mono, monospace' }}>
-                        {tag}
-                        <button onClick={() => setEditDraft(d => ({ ...d, tags: d.tags.filter(t => t !== tag) }))}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4a9eff', opacity: 0.7, fontSize: 12, lineHeight: 1, padding: 0 }}>×</button>
-                      </span>
+                      <TagChip key={tag} tag={tag} size="md" onRemove={() => setEditDraft(d => ({ ...d, tags: d.tags.filter(t => t !== tag) }))} />
                     ))}
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>

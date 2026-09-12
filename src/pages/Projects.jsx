@@ -13,6 +13,7 @@ import {
 } from '../constants/SimpleSvgExports.jsx'
 import { ProjectCardGrid, ProjectCardList, SearchBox, FilterTab, IconBtn, ViewBtn, TopBtn } from '../components/Projects/Exports.jsx'
 import CloneModal from '../components/Projects/CloneModal.jsx'
+import TagChip from '../components/ui/TagChip.jsx'
 import { useToast } from '../components/Toast/useToast.js'
 import { useKeyboard } from '../hooks/useKeyboard'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
@@ -253,19 +254,7 @@ export default function Projects() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 28px', borderBottom: '1px solid var(--border)', flexShrink: 0, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', marginRight: 2 }}>tag:</span>
           {allTags.map(tag => (
-            <button
-              key={tag}
-              onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-              style={{
-                padding: '2px 9px', borderRadius: 20, fontSize: 11, fontFamily: 'Geist, sans-serif',
-                border: `1px solid ${selectedTag === tag ? 'var(--accent)' : 'var(--border)'}`,
-                background: selectedTag === tag ? 'var(--accent-dim)' : 'transparent',
-                color: selectedTag === tag ? 'var(--accent)' : 'var(--dim)',
-                cursor: 'pointer', transition: 'all 0.12s',
-              }}
-            >
-              {tag}
-            </button>
+            <TagChip key={tag} tag={tag} size="md" active={selectedTag === tag} onClick={() => setSelectedTag(selectedTag === tag ? null : tag)} />
           ))}
           {selectedTag && (
             <button
