@@ -477,7 +477,26 @@ infrastructure):
     turned out to mangle CLI args by prepending `--` to everything in its
     `args` capability — a test-harness quirk, not a product bug; confirmed
     by bypassing it and checking the real resolved path in the activity
-    log at each pipeline stage. Item 12 (community templates) and item 13
-    (E2EE sync) remain — 13 explicitly needs a hosting/architecture
-    decision (relay server vs. peer-to-peer, who operates it, at what
-    cost) that isn't mine to make unilaterally.
+    log at each pipeline stage.
+12. **Community templates** — local-first export/import, not a hosted
+    marketplace (`community/users.json` turned out to be an unrelated
+    curated tag/badge list, not marketplace seed data — see the commit
+    for the full reasoning). e2e-verified: exported a real project with
+    real generated/secret files, confirmed the exclusions, round-tripped
+    the exported JSON into a brand-new second project, confirmed the
+    written files matched byte for byte with node_modules/.env/lockfile
+    still absent.
+
+**Item 13 (optional E2EE sync across machines) is the one item left**,
+and deliberately not started. It's the only item in the whole brief that
+can't be scoped down to something buildable end-to-end in a single
+session without a real product decision first: where synced data lives
+(a relay/cloud service Croco would need to operate and pay for, versus
+peer-to-peer with no server at all), what that costs and who bears it,
+and how it interacts with the "cloud sync as a future paid layer"
+direction already on record in docs/FUTURE_PLANS.md. Building any of that
+unilaterally — picking a hosting model, a protocol, a cost structure —
+would be exactly the kind of irreversible architectural commitment the
+brief's own ground rules say to ask about first, not the same shape as
+"pick a reasonable local-first design" that items 6, 7, and 12 could each
+resolve on their own.
