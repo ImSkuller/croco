@@ -21,7 +21,10 @@ import os from 'node:os'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
 const appPath = path.join(repoRoot, 'src-tauri', 'target', 'release', 'croco.exe')
-const DRIVER_PORT = 4445
+// Must not be 4445: that's tauri-driver's default --native-port for the
+// msedgedriver it spawns, so listening there makes the two collide
+// ("Only one usage of each socket address") and every session hangs.
+const DRIVER_PORT = 4444
 
 function log(msg) { console.log(`[e2e] ${msg}`) }
 

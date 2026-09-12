@@ -189,8 +189,14 @@ async function main() {
     }, { label: 'frontmatter archived flips back to false' })
 
     // ── 4. Delete ────────────────────────────────────────────────────────
+    // notes.delete is a soft delete (Trash) and deliberately leaves the
+    // vault copy alone so a restore doesn't lose it — see notes_delete in
+    // notes_todos.rs. Only a permanent delete removes the file.
     await callApi(driver, 'notes.delete', note.id)
-    await waitFor(() => !fs.existsSync(renamed.path), { label: 'vault file removed after note deletion' })
+    await new Promise(r => setTimeout(r, 800))
+    assert(fs.existsSync(renamed.path), 'vault file kept after moving the note to Trash')
+    await callApi(driver, 'notes.deletePermanently', note.id)
+    await waitFor(() => !fs.existsSync(renamed.path), { label: 'vault file removed after permanent deletion' })
 
     // ── 5. Bulk sync (Sync Now) ──────────────────────────────────────────
     const bulkNote = await callApi(driver, 'notes.create', { title: 'Bulk Sync Note', content: 'Backfill me' })

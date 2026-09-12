@@ -2,7 +2,7 @@
 // session: user-configurable Todo priorities (add/edit/delete via the real
 // Priority Manager UI), the Patterns page's two independent streaks
 // (commit + app-login), and the Settings -> Appearance "Style" picker
-// (Apple applies its html.style-apple class; Pasta Galaxy stays disabled).
+// (Apple applies its html.style-apple class and Default removes it).
 // See .claude/skills/run-croco-e2e/SKILL.md for shared setup/gotchas.
 //
 // Run with: node e2e/verify-priorities-patterns-style.mjs
@@ -171,7 +171,9 @@ async function main() {
     // ── Settings -> Appearance -> Style: Apple applies its html class ────
     await driver.executeScript("location.hash = '#/settings'")
     await driver.findElement(By.xpath("//button[contains(., 'Appearance')]")).click()
-    await waitForBodyText(driver, t => t.includes('Pasta Galaxy'), 'Style picker to render')
+    // Style labels come from src/lib/appearanceStyle.js STYLES — Pasta Galaxy
+    // was retired in Phase 4, so wait for two that actually exist.
+    await waitForBodyText(driver, t => t.includes('Apple') && t.includes('Natural'), 'Style picker to render')
 
     await driver.findElement(By.xpath("//span[text()='Apple']")).click()
     let hasAppleClass = await driver.executeScript("return document.documentElement.classList.contains('style-apple')")
@@ -180,10 +182,6 @@ async function main() {
     const settingsAfterStyle = await callApi(driver, 'settings.get')
     assert(settingsAfterStyle.appearance?.style === 'apple', 'style:"apple" persisted to settings')
     assert(settingsAfterStyle.appearance?.fontBody === 'Inter', 'Apple style curated the Inter font pairing')
-
-    const pastaBtn = await driver.findElement(By.xpath("//span[text()='Pasta Galaxy']/ancestor::button"))
-    const pastaDisabled = await pastaBtn.getAttribute('disabled')
-    assert(pastaDisabled !== null, 'Pasta Galaxy button is disabled (coming soon)')
 
     await driver.findElement(By.xpath("//span[text()='Default']/ancestor::button")).click()
     let hasAppleClassAfter = await driver.executeScript("return document.documentElement.classList.contains('style-apple')")

@@ -136,7 +136,14 @@ async function main() {
     // SectionHeader applies text-transform: uppercase in CSS, and
     // document.body.innerText reflects the rendered (uppercased) text, not
     // the original "Suggestions" string passed as a prop — hence /i here.
-    const text = await waitForBodyText(driver, t => /suggestions/i.test(t), 'Suggestions section to render')
+    // The heading renders before the store's refetch (triggered above) has
+    // landed, so wait for the todo-driven suggestions too rather than
+    // asserting on the first snapshot that happens to contain the heading.
+    const text = await waitForBodyText(
+      driver,
+      t => /suggestions/i.test(t) && /overdue/i.test(t) && /high-priority todos open/i.test(t),
+      'Suggestions section with todo-driven suggestions to render'
+    )
     assert(/suggestions/i.test(text), 'Suggestions section heading is present')
     assert(/commit streak ends today/i.test(text), 'streak-at-risk suggestion rendered')
     assert(/overdue/i.test(text), 'overdue-todo suggestion rendered')
