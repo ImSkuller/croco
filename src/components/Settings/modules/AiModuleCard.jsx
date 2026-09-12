@@ -88,7 +88,7 @@ export default function AiModuleCard({ aiKeysStored }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <FieldLabel>Web Access (Research mode)</FieldLabel>
-              <FieldDesc>Lets Research mode use the provider's own web search tool instead of guessing. Currently available for the Anthropic provider only.</FieldDesc>
+              <FieldDesc>Lets Research mode use the provider's own hosted web search (Anthropic, OpenAI, Gemini) instead of guessing at anything current. Ollama has no search tool and answers from the model alone.</FieldDesc>
             </div>
             <Toggle value={!!ai.webAccess?.enabled} onChange={() => update({ webAccess: { enabled: !ai.webAccess?.enabled } })} />
           </div>

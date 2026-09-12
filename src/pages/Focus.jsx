@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useData, EMPTY_LIST } from '../lib/store'
 import { ClockIcon, PlayIcon, StopIcon, CheckCircleIcon } from '../constants/SimpleSvgExports'
 import { useToast } from '../components/Toast/useToast.js'
@@ -24,7 +24,6 @@ export default function Focus() {
   const [stats, setStats] = useState({ workMinutes: 0, sessionsCompleted: 0 })
   const [projectId, setProjectId] = useState('')
   const [now, setNow] = useState(() => Date.now())
-  const notifiedRef = useRef(false)
 
   const workMinutes = settings?.modules?.focusTimer?.workMinutes ?? 25
   const breakMinutes = settings?.modules?.focusTimer?.breakMinutes ?? 5
@@ -53,25 +52,10 @@ export default function Focus() {
     active ? `${Math.max(0, Math.ceil(remainingMs / 60000))} min left` : null
   )
 
-  // Auto-end + notify once the configured duration elapses. Doesn't touch
-  // remainingMs going negative beyond that — the session just sits ended
-  // until the user starts the next one.
-  useEffect(() => {
-    if (!active || notifiedRef.current) return
-    if (remainingMs > 0) return
-    notifiedRef.current = true
-    window.api?.focus.end(active.id).then(() => {
-      window.api?.notify.sendEvent(
-        'focusEnded',
-        active.kind === 'work' ? 'Focus session complete' : 'Break over',
-        active.kind === 'work' ? 'Time for a break.' : 'Back to it.'
-      ).catch(() => {})
-      refresh()
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remainingMs, active])
-
-  useEffect(() => { notifiedRef.current = false }, [active?.id])
+  // The backend scheduler (focus.rs) ends the session and sends the
+  // notification when the planned end passes — even with this page closed.
+  // This page only needs to refresh when that happens.
+  useEffect(() => window.api?.focus.onEnded?.(() => refresh()), [refresh])
 
   const start = async (kind) => {
     if (!window.api) return

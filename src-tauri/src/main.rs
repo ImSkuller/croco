@@ -274,6 +274,12 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     check_and_send_deadline_reminders(&handle);
     start_deadline_reminder_scheduler(handle.clone());
 
+    // Focus Timer: finish any session that expired while the app was closed
+    // (silently), then keep ending due sessions every few seconds so the
+    // timer works without the Focus page being open — see focus.rs.
+    end_due_focus_sessions(&handle, false);
+    start_focus_scheduler(handle.clone());
+
     // Local HTTP API (Phase 6 item 7): a no-op if settings.api.enabled is
     // false, which is the default — see local_api.rs.
     tauri::async_runtime::spawn(local_api_apply(handle.clone()));
@@ -379,6 +385,7 @@ fn main() {
             github_list_issues, github_list_pull_requests, github_create_issue,
             github_set_issue_state, github_comment_on_issue,
             github_close_pull_request, github_merge_pull_request, github_create_pull_request,
+            github_list_workflow_runs,
             // run
             run_start, run_stop, run_get_running, run_is_running,
             // notes

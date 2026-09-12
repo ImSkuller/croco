@@ -6,7 +6,7 @@
 
 use serde_json::{json, Value};
 use std::fs;
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 
 fn sessions_path(app: &AppHandle) -> std::path::PathBuf {
     crate::projects_data_dir(app).join("focus_sessions.json")
@@ -37,11 +37,20 @@ pub fn focus_session_start(app: AppHandle, project_id: Option<String>, kind: Str
             if let Value::Object(ref mut m) = s { m.insert("endedAt".into(), json!(now)); }
         }
     }
+    // Planned end lives on the session so the backend scheduler (below) can
+    // finish it even when the Focus page — or the whole window — isn't open.
+    let settings = crate::read_settings(&app);
+    let minutes = settings["modules"]["focusTimer"][if kind == "work" { "workMinutes" } else { "breakMinutes" }]
+        .as_i64()
+        .unwrap_or(if kind == "work" { 25 } else { 5 })
+        .max(1);
+    let planned_end = (chrono::Utc::now() + chrono::Duration::minutes(minutes)).to_rfc3339();
     let session = json!({
         "id": uuid::Uuid::new_v4().to_string(),
         "projectId": project_id,
         "kind": kind, // "work" | "break"
         "startedAt": now,
+        "plannedEndsAt": planned_end,
         "endedAt": null,
     });
     sessions.insert(0, session.clone());
@@ -70,6 +79,47 @@ pub fn focus_session_end(app: AppHandle, id: String) -> Result<Value, String> {
         crate::activity_log(&app, "focus.session_completed", json!({ "projectId": ended["projectId"] }));
     }
     Ok(ended)
+}
+
+/// Ends any active session whose planned end has passed. `notify` is false
+/// on the startup catch-up (a session that expired while the app was
+/// closed is stale, not news) and true from the running scheduler, where
+/// it fires the focusEnded desktop notification and a `focus:ended` event
+/// so an open Focus page refreshes. This is what makes the timer survive
+/// leaving the page — the countdown UI is display only.
+pub fn end_due_focus_sessions(app: &AppHandle, notify: bool) {
+    let now = chrono::Utc::now();
+    let due: Vec<Value> = read_sessions(app).into_iter()
+        .filter(|s| s["endedAt"].is_null())
+        .filter(|s| s["plannedEndsAt"].as_str()
+            .and_then(|t| chrono::DateTime::parse_from_rfc3339(t).ok())
+            .map(|t| t <= now)
+            .unwrap_or(false))
+        .collect();
+    for s in due {
+        let Some(id) = s["id"].as_str() else { continue };
+        if focus_session_end(app.clone(), id.to_string()).is_err() { continue; }
+        let _ = app.emit("focus:ended", &s);
+        if notify {
+            let work = s["kind"].as_str() == Some("work");
+            crate::notify_event(
+                app,
+                "focusEnded",
+                if work { "Focus session complete" } else { "Break over" },
+                if work { "Time for a break." } else { "Back to it." },
+                false,
+            );
+        }
+    }
+}
+
+pub fn start_focus_scheduler(app: AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+            end_due_focus_sessions(&app, true);
+        }
+    });
 }
 
 #[tauri::command]

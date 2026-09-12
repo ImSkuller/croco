@@ -452,6 +452,8 @@ export const api = {
     getHistory:     (limit)           => invoke('focus_session_get_history', { limit }),
     /** @returns {Promise<{workMinutes:number, sessionsCompleted:number}>} */
     getTodayStats:  ()                => invoke('focus_session_get_today_stats'),
+    /** Fired by the backend scheduler when a session reaches its planned end (even with the Focus page closed). @param {(session: any) => void} cb @returns {() => void} */
+    onEnded:        (cb)              => sub('focus:ended', cb),
   },
 
   // ── Custom tags ──────────────────────────────────────────────────────────────
@@ -625,6 +627,8 @@ export const api = {
     mergePullRequest: (id, number, mergeMethod) => invoke('github_merge_pull_request', { id, number, mergeMethod }),
     /** @param {string} id @param {string} title @param {string} head @param {string} base @param {string} body @param {boolean} draft @returns {Promise<any>} */
     createPullRequest: (id, title, head, base, body, draft) => invoke('github_create_pull_request', { id, title, head, base, body, draft }),
+    /** Recent GitHub Actions runs. @param {string} id @param {number} [limit] @returns {Promise<any[]>} */
+    listWorkflowRuns: (id, limit) => invoke('github_list_workflow_runs', { id, limit }),
   },
 
   // ── Storage ──────────────────────────────────────────────────────────────────

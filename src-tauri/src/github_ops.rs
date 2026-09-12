@@ -312,6 +312,29 @@ pub async fn github_create_pull_request(app: AppHandle, id: String, title: Strin
     Ok(json!({ "ok": true, "url": response["html_url"], "number": response["number"] }))
 }
 
+/// Recent GitHub Actions workflow runs (CI status) — read-only.
+/// `conclusion` is null while a run is still queued/in progress.
+#[tauri::command]
+pub async fn github_list_workflow_runs(app: AppHandle, id: String, limit: Option<u32>) -> Result<Vec<Value>, String> {
+    let limit = limit.unwrap_or(15).clamp(1, 50);
+    let body = github_get(&app, &id, &format!("/actions/runs?per_page={limit}")).await?;
+    let arr = body["workflow_runs"].as_array().cloned().unwrap_or_default();
+    Ok(arr.into_iter().map(|r| json!({
+        "id": r["id"],
+        "name": r["name"],
+        "displayTitle": r["display_title"],
+        "status": r["status"],           // queued | in_progress | completed
+        "conclusion": r["conclusion"],   // success | failure | cancelled | skipped | timed_out | null
+        "branch": r["head_branch"],
+        "event": r["event"],
+        "runNumber": r["run_number"],
+        "htmlUrl": r["html_url"],
+        "createdAt": r["created_at"],
+        "updatedAt": r["updated_at"],
+        "headSha": r["head_sha"].as_str().map(|s| s.chars().take(7).collect::<String>()),
+    })).collect())
+}
+
 // Each parameter is one field of the IPC payload the frontend sends for
 // this command — grouping them into a struct would just move the same
 // count into a nested object without reducing real complexity.

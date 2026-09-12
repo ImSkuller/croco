@@ -12,7 +12,10 @@ use tauri::AppHandle;
 
 const ANTHROPIC_MODEL: &str = "claude-3-5-haiku-20241022";
 const OPENAI_MODEL: &str = "gpt-4o-mini";
-const GEMINI_MODEL: &str = "gemini-1.5-flash";
+// gemini-1.5-* was retired in 2025; 2.0-flash is the GA equivalent and is
+// also the first tier where Google's hosted search tool is plain
+// `google_search` (1.5 used the older `google_search_retrieval` shape).
+const GEMINI_MODEL: &str = "gemini-2.0-flash";
 
 fn build_prompt(diff: &str) -> String {
     format!(
@@ -218,12 +221,49 @@ async fn call_anthropic_chat(key: &str, system: &str, history: &[Value], web_sea
     Ok(text)
 }
 
-async fn call_openai_chat(key: &str, system: &str, history: &[Value]) -> Result<String, String> {
+async fn call_openai_chat(key: &str, system: &str, history: &[Value], web_search: bool) -> Result<String, String> {
+    let client = reqwest::Client::new();
+    if web_search {
+        // OpenAI's hosted web search only exists on the Responses API (Chat
+        // Completions has no equivalent), so Research mode with web access
+        // takes this path and everything else stays on chat/completions.
+        // Same caveat as the Anthropic tool: verify `web_search_preview`
+        // against current docs if it starts failing.
+        let input: Vec<Value> = history.iter()
+            .map(|m| json!({ "role": anthropic_role(m["role"].as_str().unwrap_or("user")), "content": m["text"].as_str().unwrap_or("") }))
+            .collect();
+        let resp = client
+            .post("https://api.openai.com/v1/responses")
+            .bearer_auth(key)
+            .header("User-Agent", crate::UA)
+            .json(&json!({ "model": OPENAI_MODEL, "instructions": system, "input": input, "tools": [{ "type": "web_search_preview" }] }))
+            .timeout(std::time::Duration::from_secs(90))
+            .send()
+            .await
+            .map_err(|_| "Could not reach OpenAI's API.".to_string())?;
+        let status = resp.status();
+        let body: Value = resp.json().await.map_err(|_| "OpenAI returned an unreadable response.".to_string())?;
+        if !status.is_success() {
+            let msg = body["error"]["message"].as_str().unwrap_or("request failed");
+            return Err(format!("OpenAI API error: {msg}"));
+        }
+        // `output` interleaves web_search_call items with message items;
+        // collect every output_text block from the message ones.
+        let text = body["output"].as_array()
+            .map(|items| items.iter()
+                .filter(|i| i["type"] == "message")
+                .flat_map(|i| i["content"].as_array().cloned().unwrap_or_default())
+                .filter_map(|c| c["text"].as_str().map(str::to_string))
+                .collect::<Vec<_>>()
+                .join("\n"))
+            .unwrap_or_default();
+        if text.is_empty() { return Err("OpenAI's response didn't include a message.".into()); }
+        return Ok(text);
+    }
     let mut messages = vec![json!({ "role": "system", "content": system })];
     for m in history {
         messages.push(json!({ "role": anthropic_role(m["role"].as_str().unwrap_or("user")), "content": m["text"].as_str().unwrap_or("") }));
     }
-    let client = reqwest::Client::new();
     let resp = client
         .post("https://api.openai.com/v1/chat/completions")
         .bearer_auth(key)
@@ -244,7 +284,7 @@ async fn call_openai_chat(key: &str, system: &str, history: &[Value]) -> Result<
         .ok_or_else(|| "OpenAI's response didn't include a message.".to_string())
 }
 
-async fn call_gemini_chat(key: &str, system: &str, history: &[Value]) -> Result<String, String> {
+async fn call_gemini_chat(key: &str, system: &str, history: &[Value], web_search: bool) -> Result<String, String> {
     let contents: Vec<Value> = history.iter()
         .map(|m| json!({ "role": gemini_role(m["role"].as_str().unwrap_or("user")), "parts": [{ "text": m["text"].as_str().unwrap_or("") }] }))
         .collect();
@@ -254,10 +294,15 @@ async fn call_gemini_chat(key: &str, system: &str, history: &[Value]) -> Result<
         .post(&url)
         .header("x-goog-api-key", key)
         .header("User-Agent", crate::UA)
-        .json(&json!({
-            "systemInstruction": { "parts": [{ "text": system }] },
-            "contents": contents,
-        }))
+        .json(&{
+            let mut body = json!({
+                "systemInstruction": { "parts": [{ "text": system }] },
+                "contents": contents,
+            });
+            // Google's hosted search grounding — 2.0+ tool shape.
+            if web_search { body["tools"] = json!([{ "google_search": {} }]); }
+            body
+        })
         .timeout(std::time::Duration::from_secs(60))
         .send()
         .await
@@ -351,10 +396,11 @@ pub async fn ai_chat(app: AppHandle, mode: String, provider: String, project_id:
     } else {
         let key = crate::get_secret(&app, &format!("ai_key_{provider}"))
             .ok_or_else(|| format!("No API key set for {provider} — add one in Settings → AI."))?;
+        let search = mode == "research" && web_access;
         match provider.as_str() {
-            "anthropic" => call_anthropic_chat(&key, &system_prompt, &outgoing, mode == "research" && web_access).await?,
-            "openai"    => call_openai_chat(&key, &system_prompt, &outgoing).await?,
-            "gemini"    => call_gemini_chat(&key, &system_prompt, &outgoing).await?,
+            "anthropic" => call_anthropic_chat(&key, &system_prompt, &outgoing, search).await?,
+            "openai"    => call_openai_chat(&key, &system_prompt, &outgoing, search).await?,
+            "gemini"    => call_gemini_chat(&key, &system_prompt, &outgoing, search).await?,
             other => return Err(format!("Unknown AI provider: {other}")),
         }
     };
