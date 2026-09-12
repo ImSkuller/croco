@@ -83,6 +83,7 @@ export default function NoteEditor() {
     window.api.projects.getAll().then(setProjects).catch(console.error)
   }, [])
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- focus the editor once on mount only, not on every view-mode change
   useEffect(() => { if (viewMode !== 'preview') editorRef.current?.focus() }, [])
 
   const wordCount   = content.trim() ? content.trim().split(/\s+/).length : 0

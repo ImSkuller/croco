@@ -37,7 +37,11 @@ export default function InsightsPanel({ projects }) {
       .finally(() => setLoadingDates(false))
   }, [scope])
 
-  const commitDates = scope === 'overall' ? (profile?.commitDates || []) : (projectDates || [])
+  const overallDates = profile?.commitDates
+  const commitDates = useMemo(
+    () => scope === 'overall' ? (overallDates || []) : (projectDates || []),
+    [scope, overallDates, projectDates]
+  )
   const streak = useMemo(() => computeDateStreak(commitDates), [commitDates])
 
   return (

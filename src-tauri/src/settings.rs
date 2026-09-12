@@ -121,7 +121,10 @@ pub fn default_settings() -> Value {
             // (notify_desktop_permission_granted) regardless of this flag.
             "deadlineReminders": {
                 "enabled": true
-            }
+            },
+            // Hidden (private-path) projects stay off the Dashboard unless
+            // the user opts in — archived ones never show there.
+            "showHiddenOnDashboard": false
         },
         // Modules (v2.0) — optional, beta, off-by-default features gated
         // behind Settings → Modules rather than always-on parts of the app.

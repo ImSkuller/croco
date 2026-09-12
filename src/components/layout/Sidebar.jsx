@@ -13,6 +13,7 @@ import { modKeyHint } from '../../lib/platform'
 import { refreshCapabilitiesOnLaunch } from '../../lib/capabilities'
 import { applyTheme, THEMES, getThemeAccentSwatch } from '../../lib/theme'
 import CrocoGame from '../CrocoGame/CrocoGame.jsx'
+import CloneModal from '../Projects/CloneModal.jsx'
 
 const TYPE_COLOR = {
   project: 'var(--blue)',
@@ -34,6 +35,17 @@ const STATIC_PAGES = [
   { type: 'page', label: 'GitHub',     sub: 'page', to: '/github',     icon: <GithubIcon /> },
   { type: 'page', label: 'Trash',      sub: 'page', to: '/trash',      icon: <TrashIcon /> },
 ]
+
+// Beta module pages only exist while their module is on — same flags the
+// sidebar nav uses, so Ctrl+K never offers a route RequireModule would
+// bounce straight back off.
+function modulePages({ ai, ide, focus }) {
+  const pages = []
+  if (ai)    pages.push({ type: 'page', label: 'AI',    sub: 'page · beta', to: '/ai',    icon: <AIIcon /> })
+  if (ide)   pages.push({ type: 'page', label: 'IDE',   sub: 'page · beta', to: '/ide',   icon: <IDEIcon /> })
+  if (focus) pages.push({ type: 'page', label: 'Focus', sub: 'page · beta', to: '/focus', icon: <ClockIcon /> })
+  return pages
+}
 
 function playBabum() {
   try {
@@ -63,6 +75,7 @@ export default function Sidebar() {
   const toast    = useToast()
 
   const [open,         setOpen]         = useState(false)
+  const [showClone,    setShowClone]    = useState(false)
   const [hasUpdate,    setHasUpdate]    = useState(false)
   const [showGame,     setShowGame]     = useState(false)
   const profileClicksRef               = useRef(0)
@@ -198,6 +211,7 @@ export default function Sidebar() {
   const actionItems = useMemo(() => [
     { type: 'action', label: 'New Project',   sub: 'action', icon: <PlusCircleIcon />, action: () => navigate('/projects/new') },
     { type: 'action', label: 'Import Folder', sub: 'action', icon: <ImportIcon />,     action: handleImportFolder },
+    { type: 'action', label: 'Clone from GitHub', sub: 'action', icon: <GithubIcon />, action: () => setShowClone(true) },
     { type: 'action', label: 'New Note',      sub: 'action', icon: <NoteIcon2 />,      action: () => navigate('/note-editor') },
     { type: 'action', label: 'New Todo',      sub: 'action', icon: <CheckCircleIcon />, action: () => navigate('/todos') },
     { type: 'action', label: 'Switch Theme',  sub: 'action', icon: <PaletteIcon />,    action: handleCycleTheme },
@@ -235,7 +249,8 @@ export default function Sidebar() {
       icon:  t.emoji || <CheckCircleIcon />,
     })),
     ...STATIC_PAGES,
-  ], [actionItems, projects, notes, todos])
+    ...modulePages({ ai: aiModuleOn, ide: ideModuleOn, focus: focusModuleOn }),
+  ], [actionItems, projects, notes, todos, aiModuleOn, ideModuleOn, focusModuleOn])
 
   return (
     <>
@@ -398,6 +413,7 @@ export default function Sidebar() {
 
       {open && <SearchPalette items={searchItems} onClose={() => setOpen(false)} onGame={() => { setOpen(false); setShowGame(true) }} onEasterEggs={() => { setOpen(false); navigate('/easter-eggs') }} onBabum={() => { setOpen(false); playBabum() }} onLeetcode={() => { setOpen(false); window.api?.system.openExternal('https://leetcode.com/problemset/') }} />}
       {showGame && <CrocoGame onClose={() => setShowGame(false)} />}
+      {showClone && <CloneModal defaultParent={settings?.paths?.publicProjects} onClose={() => setShowClone(false)} />}
     </>
   )
 }

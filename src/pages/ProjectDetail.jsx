@@ -151,6 +151,7 @@ export default function ProjectDetail() {
     if (window.api) {
       window.api.run.isRunning(projectId).then(r => setIsRunning(!!r)).catch(() => {})
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- full reload only when the route's project changes; `load` reads projectId itself
   }, [projectId])
 
   async function load() {
@@ -216,6 +217,7 @@ export default function ProjectDetail() {
       })
     }
     if (tab !== 'settings') setEditDraft(null)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- lazy per-tab loads keyed on tab/project only; the loaded/loading flags are read to skip refetches, not to retrigger
   }, [tab, project])
 
   async function loadReadme() {

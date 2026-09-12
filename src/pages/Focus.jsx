@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useData, EMPTY_LIST } from '../lib/store'
 import { ClockIcon, PlayIcon, StopIcon, CheckCircleIcon } from '../constants/SimpleSvgExports'
 import { useToast } from '../components/Toast/useToast.js'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 function formatElapsed(ms) {
   const total = Math.max(0, Math.floor(ms / 1000))
@@ -46,6 +47,11 @@ export default function Focus() {
   const targetMs = active ? (active.kind === 'work' ? workMinutes : breakMinutes) * 60 * 1000 : 0
   const elapsedMs = active ? now - new Date(active.startedAt).getTime() : 0
   const remainingMs = targetMs - elapsedMs
+
+  useDiscordPresence(
+    active ? (active.kind === 'work' ? 'Focusing' : 'On a break') : 'Focus Timer',
+    active ? `${Math.max(0, Math.ceil(remainingMs / 60000))} min left` : null
+  )
 
   // Auto-end + notify once the configured duration elapses. Doesn't touch
   // remainingMs going negative beyond that — the session just sits ended

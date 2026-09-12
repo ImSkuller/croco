@@ -67,9 +67,13 @@ export default function Dashboard() {
   const dateStr  = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', year: 'numeric' })
 
   const userName    = settings?.user?.name || 'there'
-  // Trashed items are excluded from every Dashboard widget — Trash is a
-  // dedicated recovery view, not something that leaks into the home page.
-  const liveProjects = projects.filter(p => !p.trashedAt)
+  // Trashed and archived items are excluded from every Dashboard widget —
+  // Trash is a dedicated recovery view, archived projects live under the
+  // Projects page's collapsible section — and hidden (private-path)
+  // projects stay off the home page unless explicitly opted in (Settings →
+  // Behaviour → "Show hidden projects on the Dashboard").
+  const showHidden = !!settings?.app?.showHiddenOnDashboard
+  const liveProjects = projects.filter(p => !p.trashedAt && !p.archived && (showHidden || p.visibility !== 'hidden'))
   const liveTodos     = todos.filter(t => !t.trashedAt)
   const recents     = liveProjects.slice(0, 5)
   const favourites  = liveProjects.filter(p => p.favourite)
@@ -87,10 +91,17 @@ export default function Dashboard() {
     }
   }
   const langTotal  = Object.values(langMap).reduce((s, l) => s + l.total, 0) || 1
-  const languages  = Object.values(langMap)
+  // Every language is kept (they sum to 100% by construction) — the old
+  // top-5 cap silently dropped languages. Anything under 1% is folded into
+  // a single "Other" entry so the legend stays readable.
+  const rankedLangs = Object.values(langMap)
     .sort((a, b) => b.total - a.total)
-    .slice(0, 5)
     .map(l => ({ ...l, pct: Math.round((l.total / langTotal) * 100) }))
+  const bigLangs   = rankedLangs.filter(l => l.pct >= 1)
+  const otherTotal = rankedLangs.filter(l => l.pct < 1).reduce((s, l) => s + l.total, 0)
+  const languages  = otherTotal > 0
+    ? [...bigLangs, { name: 'Other', color: 'var(--dimmer)', total: otherTotal, pct: Math.max(1, Math.round((otherTotal / langTotal) * 100)) }]
+    : bigLangs
 
   const publicCount  = liveProjects.filter(p => p.visibility === 'public').length
   const hiddenCount  = liveProjects.filter(p => p.visibility === 'hidden').length

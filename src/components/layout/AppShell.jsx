@@ -20,6 +20,7 @@ export default function AppShell() {
       if (!s?.app?.onboarded) navigate('/onboarding', { replace: true })
       setOverrides(s?.app?.shortcuts || {})
     }).catch(() => {}).finally(() => setChecked(true))
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- first-launch check runs exactly once per mount by design
   }, [])
 
   // Listen for shortcut changes saved from Settings page

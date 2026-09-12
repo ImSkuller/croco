@@ -160,6 +160,7 @@ export default function Settings() {
 
   // Desktop notifications for schedules/deadlines
   const [deadlineRemindersEnabled, setDeadlineRemindersEnabled] = useState(true)
+  const [showHiddenOnDashboard, setShowHiddenOnDashboard] = useState(false)
   const [desktopPermissionGranted, setDesktopPermissionGranted] = useState(null) // null (unknown yet) | bool
 
   // Obsidian vault sync
@@ -283,6 +284,7 @@ export default function Settings() {
     setAutoBackupRetention(s.app?.autoBackup?.retentionCount || 7)
     setAutoBackupLastAt(s.app?.autoBackup?.lastBackupAt || null)
     setDeadlineRemindersEnabled(s.app?.deadlineReminders?.enabled ?? true)
+    setShowHiddenOnDashboard(!!s.app?.showHiddenOnDashboard)
   }, [])
 
   useEffect(() => {
@@ -399,6 +401,14 @@ export default function Settings() {
     } finally {
       setAutoBackupBusy(false)
     }
+  }
+
+  const handleShowHiddenToggle = () => {
+    setShowHiddenOnDashboard(prev => {
+      const next = !prev
+      window.api?.settings.update({ app: { showHiddenOnDashboard: next } }).catch(() => {})
+      return next
+    })
   }
 
   const handleDeadlineRemindersToggle = () => {
@@ -1426,6 +1436,16 @@ export default function Settings() {
                         onClick={() => { if (launchOnStartup !== opt.id) toggleLaunchOnStartup() }}
                       />
                     ))}
+                  </div>
+                </SettingsCard>
+
+                <SettingsCard>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <FieldLabel>Show hidden projects on the Dashboard</FieldLabel>
+                      <FieldDesc>Hidden (private-path) projects stay off the home page by default. Archived projects never show there either way.</FieldDesc>
+                    </div>
+                    <Toggle value={showHiddenOnDashboard} onChange={handleShowHiddenToggle} />
                   </div>
                 </SettingsCard>
 
