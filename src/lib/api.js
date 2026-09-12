@@ -456,8 +456,8 @@ export const api = {
 
   // ── Discord module (beta) ────────────────────────────────────────────────────
   discord: {
-    /** Silent no-op unless modules.discord.richPresence is on. @param {string} projectName @returns {Promise<void>} */
-    setActivity:   (projectName) => invoke('discord_set_activity', { projectName }),
+    /** Silent no-op unless modules.discord.richPresence is on. @param {string} details @param {string} [state] @returns {Promise<void>} */
+    setPresence:   (details, state) => invoke('discord_set_presence', { details, state }),
     /** @returns {Promise<void>} */
     clearActivity: ()            => invoke('discord_clear_activity'),
     /** @returns {Promise<void>} throws with a message on failure */

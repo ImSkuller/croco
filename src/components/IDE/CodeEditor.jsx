@@ -4,6 +4,7 @@ import { applyCrocoMonacoTheme } from '../../lib/monacoSetup' // self-hosts Mona
 import { FolderIcon, FolderOpenIcon, FileIcon, SaveIcon } from '../../constants/SimpleSvgExports'
 import { useToast } from '../Toast/useToast.js'
 import { useData } from '../../lib/store'
+import useDiscordPresence from '../../hooks/useDiscordPresence'
 
 const DEFAULT_EDITOR_PREFS = {
   fontSize: 13, tabSize: 2, insertSpaces: true, wordWrap: 'off',
@@ -70,7 +71,7 @@ function TreeNode({ node, depth, openPath, onOpenFile, expanded, toggleExpanded 
 // Embedded lightweight editor (Monaco — the engine VS Code itself is built
 // on), not real VS Code — no extensions, no debugger. Shared between the
 // standalone /ide page and ProjectDetail's "Code" tab.
-export default function CodeEditor({ projectId }) {
+export default function CodeEditor({ projectId, projectName }) {
   const toast = useToast()
   const settings = useData('settings')
   const [tree, setTree] = useState(null)
@@ -116,6 +117,15 @@ export default function CodeEditor({ projectId }) {
   }, [projectId, toast])
 
   const activeTab = tabs.find(t => t.rel === activeRel) || null
+
+  // Discord Rich Presence — overrides whatever the parent page (IDE.jsx or
+  // ProjectDetail) set, since this fires after them on mount/update. Only
+  // takes over once a file is actually open; otherwise the parent's more
+  // generic "Using the IDE" / "Editing <project>" context stands.
+  useDiscordPresence(
+    activeTab ? `Editing ${activeTab.name}` : null,
+    projectName ? `in ${projectName}` : null
+  )
 
   const handleChange = (value) => {
     if (!activeRel) return

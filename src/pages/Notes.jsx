@@ -4,6 +4,7 @@ import { PlusIcon, GridIcon, ListViewIcon, SearchIcon, StarIcon, TrashIcon, Pack
 import { ViewBtn } from '../components/Projects/Exports'
 import { useKeyboard } from '../hooks/useKeyboard'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 const FILTERS = ['All', 'Starred', 'Archived']
 
@@ -13,6 +14,8 @@ export default function Notes() {
   const [search,   setSearch]   = useState('')
   const [filter,   setFilter]   = useState('All')
   const [project,  setProject]  = useState('All')
+
+  useDiscordPresence('Browsing Croco', 'Notes')
 
   useKeyboard({
     '/':      () => searchRef.current?.focus(),

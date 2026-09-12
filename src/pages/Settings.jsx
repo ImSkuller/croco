@@ -12,6 +12,7 @@ import ModulesSection from '../components/Settings/ModulesSection'
 import UpdatesSection from '../components/Settings/UpdatesSection'
 import ShortcutsSection from '../components/Settings/ShortcutsSection'
 import DangerSection from '../components/Settings/DangerSection'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 const codeStyle = {
   fontFamily:   'Geist Mono, monospace',
@@ -67,6 +68,7 @@ const SHELL_OPTIONS = {
 export default function Settings() {
   const toast = useToast()
   const [activeSection, setActiveSection] = useState('user')
+  useDiscordPresence('In Settings', NAV_SECTIONS.find(s => s.id === activeSection)?.label)
   const [saved,         setSaved]         = useState(false)
   const [loading,       setLoading]       = useState(true)
 

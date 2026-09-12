@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { marked } from 'marked'
 import { ArrowLeftIcon, StarIcon, TagIcon, FolderIcon, CheckIcon } from '../constants/SimpleSvgExports'
 import { modKeyHint } from '../lib/platform'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 marked.setOptions({ gfm: true, breaks: true })
 
@@ -34,6 +35,8 @@ export default function NoteEditor() {
   const { noteId } = useParams()
   const editorRef  = useRef(null)
   const previewRef = useRef(null)
+
+  useDiscordPresence('Writing a note')
 
   const [title,     setTitle]     = useState('Untitled Note')
   const [content,   setContent]   = useState('')

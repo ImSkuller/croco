@@ -18,6 +18,7 @@ import { useKeyboard } from '../hooks/useKeyboard'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
 import { EmptyState } from '../components/ui/EmptyState.jsx'
 import { Button } from '../components/ui/Button.jsx'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 const FILTERS = ['All', 'Public', 'Hidden', 'Favourites', 'Running', 'Archived']
 const SORTS   = ['Last Opened', 'Name', 'Last Commit', 'Status']
@@ -55,6 +56,8 @@ export default function Projects() {
   const projects = useData('projects') || EMPTY_LIST
   const loading  = useData('projects') === null
   const settings = useData('settings')
+
+  useDiscordPresence('Browsing Croco', `Viewing ${filter} Projects`)
 
   useKeyboard({
     '/':       () => searchRef.current?.focus(),

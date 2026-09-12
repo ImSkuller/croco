@@ -1,0 +1,61 @@
+import { useEffect, useRef } from 'react'
+import { useData } from '../../lib/store'
+import { getDiscordContext, subscribeDiscordContext } from '../../lib/discordPresence'
+
+const IDLE_THRESHOLD_MS = 5 * 60 * 1000 // 5 minutes of no input → "Idle"
+const IDLE_CHECK_MS = 15 * 1000
+const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart']
+
+// Mounted once in AppShell — the only thing that actually calls
+// window.api.discord.setPresence. Owns idle detection; page-level context
+// (what the user is doing) comes from lib/discordPresence.js, written to by
+// useDiscordPresence() calls scattered across pages.
+export default function DiscordPresenceManager() {
+  const settings = useData('settings')
+  const enabled = !!settings?.modules?.discord?.enabled && !!settings?.modules?.discord?.richPresence?.enabled
+  const lastActivityRef = useRef(0)
+  const lastSentRef = useRef(null) // { details, state } | null
+  const idleRef = useRef(false)
+
+  useEffect(() => {
+    const bump = () => { lastActivityRef.current = Date.now() }
+    bump()
+    ACTIVITY_EVENTS.forEach(evt => window.addEventListener(evt, bump, { passive: true }))
+    return () => ACTIVITY_EVENTS.forEach(evt => window.removeEventListener(evt, bump))
+  }, [])
+
+  useEffect(() => {
+    if (!window.api) return
+    if (!enabled) {
+      lastSentRef.current = null
+      window.api.discord.clearActivity().catch(() => {})
+      return
+    }
+
+    const send = (details, state) => {
+      const next = { details, state: state || null }
+      const prev = lastSentRef.current
+      if (prev && prev.details === next.details && prev.state === next.state) return
+      lastSentRef.current = next
+      window.api.discord.setPresence(next.details, next.state || undefined).catch(() => {})
+    }
+
+    const evaluate = () => {
+      const idleNow = Date.now() - lastActivityRef.current >= IDLE_THRESHOLD_MS
+      idleRef.current = idleNow
+      if (idleNow) {
+        send('Idle', null)
+      } else {
+        const ctx = getDiscordContext()
+        send(ctx.details, ctx.state)
+      }
+    }
+
+    evaluate()
+    const unsubscribe = subscribeDiscordContext(() => { if (!idleRef.current) evaluate() })
+    const interval = setInterval(evaluate, IDLE_CHECK_MS)
+    return () => { unsubscribe(); clearInterval(interval) }
+  }, [enabled])
+
+  return null
+}

@@ -126,8 +126,8 @@ async function main() {
     assert(settingsAfter.modules.focusTimer.workMinutes === 30, 'focusTimer workMinutes persisted')
 
     // ── Discord: rich presence is a silent no-op with no Discord running ──
-    const setActivity = await callApi(driver, 'discord.setActivity', 'E2E Test Project')
-    assert(setActivity.ok, `discord_set_activity resolves without throwing even with no Discord client running (got: ${setActivity.error})`)
+    const setPresence = await callApi(driver, 'discord.setPresence', 'Editing E2E Test Project', 'Overview')
+    assert(setPresence.ok, `discord_set_presence resolves without throwing even with no Discord client running (got: ${setPresence.error})`)
     const clearActivity = await callApi(driver, 'discord.clearActivity')
     assert(clearActivity.ok, `discord_clear_activity resolves without throwing (got: ${clearActivity.error})`)
 

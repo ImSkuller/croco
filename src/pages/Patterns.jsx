@@ -12,10 +12,12 @@ import NotesRhythmCard from '../components/Patterns/NotesRhythmCard'
 import CommitHeatmapCard from '../components/Patterns/CommitHeatmapCard'
 import WeeklyTrendCard from '../components/Patterns/WeeklyTrendCard'
 import LanguageMixCard from '../components/Patterns/LanguageMixCard'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 const COMMIT_SCAN_TTL_MS = 5 * 60 * 1000 // rescan git logs at most every 5 min on auto-visit
 
 export default function Patterns() {
+  useDiscordPresence('Browsing Croco', 'Patterns')
   const profile  = useData('personality')
   const projects = useData('projects') || EMPTY_LIST
   const ensure   = useDataStore(s => s.ensure)

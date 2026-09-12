@@ -6,11 +6,14 @@ import { useToast } from '../components/Toast/useToast.js'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
 import { applyStyle } from '../lib/appearanceStyle.js'
 import { Button } from '../components/ui/Button.jsx'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const toast    = useToast()
   const [recentCommits,  setRecentCommits]  = useState([])
+
+  useDiscordPresence('Browsing Croco', 'Dashboard')
 
   // Instant render from the shared cache; refreshes in the background
   const projects = useData('projects') || EMPTY_LIST

@@ -7,6 +7,7 @@ import { ScheduleRow, ScheduleModal } from '../components/Schedules/Exports'
 import { useKeyboard } from '../hooks/useKeyboard'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
 import { normalizePriorities, hexToRgba, slugifyPriorityId } from '../lib/todoPriorities'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 const FILTERS = ['All', 'Active', 'Completed']
 const SCHEDULE_FILTERS = ['Upcoming', 'Overdue', 'Completed', 'All']
@@ -17,6 +18,7 @@ function scheduleDueMs(s) {
 }
 
 export default function Todo() {
+  useDiscordPresence('Browsing Croco', 'Todo')
   const [search,      setSearch]      = useState('')
   const [filter,      setFilter]      = useState('All')
   const [priority,    setPriority]    = useState('All')

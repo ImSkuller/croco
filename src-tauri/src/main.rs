@@ -402,7 +402,7 @@ fn main() {
             // personality / work-habits tracking
             personality_get_profile, personality_backfill_from_activity, personality_scan_commits, personality_track_app_open,
             // discord module (beta)
-            discord_set_activity, discord_clear_activity, settings_set_discord_webhook, discord_webhook_test,
+            discord_set_presence, discord_clear_activity, settings_set_discord_webhook, discord_webhook_test,
             // ide module (beta)
             ide_read_file, ide_write_file,
             // ai module (beta) — storage brain

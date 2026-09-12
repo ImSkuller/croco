@@ -7,8 +7,10 @@ import {
 } from '../constants/SimpleSvgExports'
 import { CardBtn, ViewBtn } from '../components/Projects/Exports'
 import { useData, patchData, refreshData } from '../lib/store'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 export default function Favourites() {
+  useDiscordPresence('Browsing Croco', 'Favourites')
   const navigate  = useNavigate()
   const [search,     setSearch]     = useState('')
   const [view,       setView]       = useState('grid')

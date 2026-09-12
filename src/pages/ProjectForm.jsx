@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeftIcon, FolderIcon, GithubIcon, CheckCircleIcon, EyeIcon, EyeOffIcon, AlertTriangleIcon, WindowIcon, DatabaseIcon, TerminalIcon, PackageIcon, GameIcon, UploadCloudIcon, XCircleIcon } from '../constants/SimpleSvgExports'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 // Templates carry an `icon` key (from templates_list() in system.rs) rather
 // than a hand-drawn brand logo per language/framework — keeps the picker
@@ -52,6 +53,7 @@ const CATEGORY_COLOR = {
 export default function ProjectForm() {
   const navigate  = useNavigate()
   const location  = useLocation()
+  useDiscordPresence('Browsing Croco', 'Creating a Project')
 
   const [emoji,        setEmoji]        = useState('📁')
   const [name,         setName]         = useState(() => location.state?.prefill?.name || '')

@@ -71,11 +71,17 @@ fn disconnect_locked() {
     *CONNECTED_AT.lock().unwrap_or_else(|e| e.into_inner()) = None;
 }
 
-/// Sets "Editing `<project_name>`" on the user's Discord profile. A silent
-/// no-op (Ok) whenever the module/sub-toggle is off or Discord isn't
-/// reachable — Rich Presence is cosmetic, never worth an error toast.
+/// Sets the two-line Rich Presence text — `details` (top line, what the
+/// user is doing: "Editing Croco", "Using the IDE", "Idle", ...) and
+/// `state` (second line, further detail: a tab name, an open file, an AI
+/// mode, ...). The frontend owns all of the "what page/context am I in"
+/// logic (see `useDiscordPresence` + `DiscordPresenceManager`, which also
+/// handles idle detection) — this command just relays whatever two lines
+/// it's given to Discord. A silent no-op (Ok) whenever the module/sub-
+/// toggle is off or Discord isn't reachable — Rich Presence is cosmetic,
+/// never worth an error toast.
 #[tauri::command]
-pub async fn discord_set_activity(app: AppHandle, project_name: String) -> Result<(), String> {
+pub async fn discord_set_presence(app: AppHandle, details: String, state: Option<String>) -> Result<(), String> {
     if !rich_presence_enabled(&app) {
         return Ok(());
     }
@@ -86,12 +92,13 @@ pub async fn discord_set_activity(app: AppHandle, project_name: String) -> Resul
         let started_at = CONNECTED_AT.lock().unwrap_or_else(|e| e.into_inner()).unwrap_or_else(|| chrono::Utc::now().timestamp());
         let mut guard = RPC_CLIENT.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(client) = guard.as_mut() {
-            let details = format!("Editing {project_name}");
-            let activity = Activity::new()
-                .state("via Croco")
+            let mut activity = Activity::new()
                 .details(&details)
                 .timestamps(Timestamps::new().start(started_at))
                 .assets(Assets::new().large_image("croco_logo").large_text("Croco"));
+            if let Some(s) = state.as_deref().filter(|s| !s.is_empty()) {
+                activity = activity.state(s);
+            }
             // A failed set_activity almost always means the connection died
             // underneath us (Discord closed) — drop it so the next call
             // reconnects from scratch instead of retrying a dead socket.

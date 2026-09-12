@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast/useToast.js'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 import {
   EditIcon, RefreshIcon, CheckCircleIcon, DownloadIcon, BulbIcon,
   NoteIcon2, EraserIcon, UndoIcon, SaveIcon,
@@ -147,6 +148,7 @@ function IdeaCard({ idea, onUse }) {
 }
 
 export default function Ideas() {
+  useDiscordPresence('Browsing Croco', 'Ideas')
   const navigate = useNavigate()
   const toast    = useToast()
 

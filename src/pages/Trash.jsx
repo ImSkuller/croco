@@ -5,6 +5,7 @@ import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
 import { EmptyState } from '../components/ui/EmptyState.jsx'
 import { Button } from '../components/ui/Button.jsx'
 import ConfirmModal from '../components/ProjectDetail/ConfirmModal'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 // Must match TRASH_RETENTION_DAYS in src-tauri/src/main.rs — there is no
 // single source of truth shared between Rust and JS for a plain constant
@@ -25,6 +26,7 @@ function daysLeft(trashedAt) {
 }
 
 export default function Trash() {
+  useDiscordPresence('Browsing Croco', 'Trash')
   const navigate = useNavigate()
   const [modal,       setModal]       = useState(null) // { type, id, title } | 'empty-all' | null
   const [modalLoading, setModalLoading] = useState(false)

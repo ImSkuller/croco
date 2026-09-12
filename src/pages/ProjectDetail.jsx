@@ -26,6 +26,7 @@ import ConfirmModal from '../components/ProjectDetail/ConfirmModal'
 import DockerPanel from '../components/ProjectDetail/DockerPanel'
 import EnvPanel from '../components/ProjectDetail/EnvPanel'
 import { useData } from '../lib/store'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 // Lazy — monaco-editor is several MB and must never sit in the main bundle
 // for users who don't enable the IDE module (see lib/monacoSetup.js).
@@ -128,14 +129,6 @@ export default function ProjectDetail() {
   useEffect(() => {
     try { setPinnedNoteIds(JSON.parse(localStorage.getItem(`croco:pinned-notes:${projectId}`) || '[]')) } catch { setPinnedNoteIds([]) }
   }, [projectId])
-
-  // Discord Rich Presence (beta module) — silent no-op on the backend side
-  // if the module/sub-toggle is off or Discord isn't running.
-  useEffect(() => {
-    if (!window.api || !project?.name) return
-    window.api.discord.setActivity(project.name).catch(() => {})
-    return () => { window.api.discord.clearActivity().catch(() => {}) }
-  }, [project?.name])
 
   const togglePinNote = (noteId) => {
     setPinnedNoteIds(prev => {
@@ -465,6 +458,33 @@ export default function ProjectDetail() {
     '9': () => setTab('danger'),
   })
 
+  const TABS = [
+    { id: 'overview',  label: 'Overview' },
+    { id: 'git',       label: 'Git', badge: gitStatus && !gitStatus.clean ? gitStatus.total : null },
+    { id: 'terminal',  label: 'Terminal', badge: isRunning ? '●' : null, badgeStyle: 'green' },
+    { id: 'readme',    label: 'README' },
+    { id: 'deps',      label: 'Deps' },
+    { id: 'files',     label: 'Files' },
+    ...(ideModuleOn ? [{ id: 'code', label: 'Code', badge: 'β', badgeStyle: 'green' }] : []),
+    ...(dockerModuleOn ? [{ id: 'docker', label: 'Docker', badge: 'β', badgeStyle: 'green' }] : []),
+    ...(envModuleOn ? [{ id: 'env', label: 'Env', badge: 'β', badgeStyle: 'green' }] : []),
+    { id: 'todos',     label: 'Todos' },
+    { id: 'notes',     label: 'Notes' },
+    { id: 'settings',  label: 'Settings' },
+    { id: 'danger',    label: 'Danger', danger: true },
+  ]
+
+  // Discord Rich Presence (beta module) — CodeEditor takes over with a more
+  // specific "editing <file>" state while the Code tab is open (see its own
+  // useDiscordPresence call, which fires after this one on mount); this is
+  // the fallback for every other tab. Placed before the early returns below
+  // since hooks can't be called conditionally — safe either way since it
+  // no-ops on a null project.
+  useDiscordPresence(
+    project?.name ? `Editing ${project.name}` : null,
+    TABS.find(t => t.id === tab)?.label
+  )
+
   // ── Loading / not found ──────────────────────────────────
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10 }}>
@@ -516,22 +536,6 @@ export default function ProjectDetail() {
       setDepsOutput(`Error: ${e.message}`)
     } finally { setDepsOp(null) }
   }
-
-  const TABS = [
-    { id: 'overview',  label: 'Overview' },
-    { id: 'git',       label: 'Git', badge: gitStatus && !gitStatus.clean ? gitStatus.total : null },
-    { id: 'terminal',  label: 'Terminal', badge: isRunning ? '●' : null, badgeStyle: 'green' },
-    { id: 'readme',    label: 'README' },
-    { id: 'deps',      label: 'Deps' },
-    { id: 'files',     label: 'Files' },
-    ...(ideModuleOn ? [{ id: 'code', label: 'Code', badge: 'β', badgeStyle: 'green' }] : []),
-    ...(dockerModuleOn ? [{ id: 'docker', label: 'Docker', badge: 'β', badgeStyle: 'green' }] : []),
-    ...(envModuleOn ? [{ id: 'env', label: 'Env', badge: 'β', badgeStyle: 'green' }] : []),
-    { id: 'todos',     label: 'Todos' },
-    { id: 'notes',     label: 'Notes' },
-    { id: 'settings',  label: 'Settings' },
-    { id: 'danger',    label: 'Danger', danger: true },
-  ]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -760,7 +764,7 @@ export default function ProjectDetail() {
         // inside the 820px-wide scrolling wrapper below.
         <div style={{ flex: 1, overflow: 'hidden' }}>
           <Suspense fallback={<div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--dimmer)', fontSize: 13 }}>Loading editor…</div>}>
-            <CodeEditor key={project.id} projectId={project.id} />
+            <CodeEditor key={project.id} projectId={project.id} projectName={project.name} />
           </Suspense>
         </div>
       ) : (

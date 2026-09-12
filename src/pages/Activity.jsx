@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RefreshIcon, TrashIcon, ActivityIcon, GithubIcon, PlayIcon, StopIcon, FolderIcon, IDEIcon, CheckCircleIcon, NoteIcon2, PaletteIcon, ClockIcon } from '../constants/SimpleSvgExports'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 // Group-based filter — each group maps to one or more event types
 const FILTER_GROUPS = [
@@ -64,6 +65,7 @@ function groupByDay(entries) {
 }
 
 export default function Activity() {
+  useDiscordPresence('Browsing Croco', 'Activity')
   const navigate = useNavigate()
   const [entries,  setEntries]  = useState([])
   const [loading,  setLoading]  = useState(true)

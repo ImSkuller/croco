@@ -1,6 +1,7 @@
 import { useState, useMemo, lazy, Suspense } from 'react'
 import { useData, EMPTY_LIST } from '../lib/store'
 import { FolderIcon } from '../constants/SimpleSvgExports'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 // Lazy — monaco-editor is several MB and must never sit in the main bundle
 // for users who don't enable the IDE module (see lib/monacoSetup.js).
@@ -15,6 +16,8 @@ export default function IDE() {
 
   const activeProjects = useMemo(() => projects.filter(p => !p.trashedAt && !p.archived), [projects])
   const selected = activeProjects.find(p => p.id === projectId) || null
+
+  useDiscordPresence('Using the IDE', selected ? `Browsing ${selected.name}` : null)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -41,7 +44,7 @@ export default function IDE() {
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {selected ? (
           <Suspense fallback={<CodeEditorLoading />}>
-            <CodeEditor key={selected.id} projectId={selected.id} />
+            <CodeEditor key={selected.id} projectId={selected.id} projectName={selected.name} />
           </Suspense>
         ) : (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--dimmer)' }}>

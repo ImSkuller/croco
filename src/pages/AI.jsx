@@ -5,6 +5,7 @@ import { useToast } from '../components/Toast/useToast.js'
 import ChatPanel from '../components/AI/ChatPanel'
 import MemoryBrowser from '../components/AI/MemoryBrowser'
 import ApiKeyField from '../components/Settings/modules/ApiKeyField'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 const MODES = [
   { id: 'chat',     label: 'Chat' },
@@ -41,6 +42,13 @@ export default function AI() {
   const providerReady = provider === 'ollama'
     ? !!settings?.modules?.ai?.ollama?.model
     : !!aiKeysStored[provider]
+
+  const activeLabel = MODES.find(m => m.id === active)?.label || SECTIONS.find(s => s.id === active)?.label
+  const scopedProject = activeProjects.find(p => p.id === projectId)
+  useDiscordPresence(
+    isModeTab ? `${activeLabel} mode` : `Browsing ${activeLabel}`,
+    isModeTab && scopedProject ? `on ${scopedProject.name}` : null
+  )
 
   const handleProviderChange = (p) => {
     setProvider(p)

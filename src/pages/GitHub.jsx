@@ -5,6 +5,7 @@ import ReleasesTagsPanel from '../components/GitHub/ReleasesTagsPanel'
 import ChangelogPanel from '../components/GitHub/ChangelogPanel'
 import InsightsPanel from '../components/GitHub/InsightsPanel'
 import IssuesPrsPanel from '../components/GitHub/IssuesPrsPanel'
+import useDiscordPresence from '../hooks/useDiscordPresence'
 
 const TABS = [
   { id: 'overview',  label: 'Overview' },
@@ -28,6 +29,7 @@ export default function GitHubPage() {
   const [tab, setTab] = useState('overview')
 
   const linkedProjects = projects.filter(p => p.github && !p.archived)
+  useDiscordPresence('Browsing Croco', `GitHub — ${TABS.find(t => t.id === tab)?.label}`)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
