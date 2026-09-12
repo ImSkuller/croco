@@ -7,6 +7,7 @@ import StreakCard from '../components/Patterns/StreakCard'
 import CommitRhythmCard from '../components/Patterns/CommitRhythmCard'
 import TodoCompletionCard from '../components/Patterns/TodoCompletionCard'
 import ProjectAttentionCard from '../components/Patterns/ProjectAttentionCard'
+import ProjectTimeCard from '../components/Patterns/ProjectTimeCard'
 import NotesRhythmCard from '../components/Patterns/NotesRhythmCard'
 import CommitHeatmapCard from '../components/Patterns/CommitHeatmapCard'
 import WeeklyTrendCard from '../components/Patterns/WeeklyTrendCard'
@@ -86,6 +87,7 @@ export default function Patterns() {
         <NotesRhythmCard notesCreated={profile.notesCreated || 0} notesByWeekday={profile.notesByWeekday || Array(7).fill(0)} />
         <LanguageMixCard projects={projects} />
         <ProjectAttentionCard projectStats={profile.projectStats || {}} projects={projects} />
+        <ProjectTimeCard projectStats={profile.projectStats || {}} projects={projects} />
       </div>
     </div>
   )

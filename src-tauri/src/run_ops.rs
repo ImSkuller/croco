@@ -122,6 +122,7 @@ pub async fn run_start(app: AppHandle, project_id: String, command_type: String,
 
     let pid = child.id();
     running_pids().insert(project_id.clone(), pid);
+    let started_at = std::time::Instant::now();
 
     app.emit("run:started", json!({ "projectId": project_id, "command": cmd })).ok();
     crate::activity_log(&app, "run.started", json!({ "projectId": project_id, "projectName": project_name, "command": cmd }));
@@ -158,6 +159,14 @@ pub async fn run_start(app: AppHandle, project_id: String, command_type: String,
             running_pids().remove(&pid);
             app.emit("run:finished", json!({ "projectId": pid, "exitCode": code })).ok();
             crate::activity_log(&app, "run.finished", json!({ "projectId": pid, "projectName": pname, "exitCode": code }));
+            // Per-project time tracking (Phase 6 item 9): a dev server's
+            // lifetime is an unambiguous start/stop, unlike "how long was
+            // the UI open" — see personality.rs's own note on why session-
+            // length tracking was originally left out. Covers both a normal
+            // exit and a manual run_stop, since both end up waiting on the
+            // same child here.
+            let elapsed_secs = started_at.elapsed().as_secs();
+            crate::personality::track(&app, "project_run_time", json!({ "projectId": pid, "seconds": elapsed_secs }));
             let ok = code == 0;
             emit_toast(&app, &pname, &format!("Process exited (code {})", code), if ok { "success" } else { "error" });
         });
