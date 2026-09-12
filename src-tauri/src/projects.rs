@@ -761,13 +761,61 @@ pub fn projects_get_recents(app: AppHandle, limit: Option<u32>) -> Vec<Value> {
     projects_get_all(app).into_iter().take(limit).collect()
 }
 
+// Merges cached language rows that share a `name` (summing their bytes and
+// recomputing `pct` from the merged total) — the fix for a project.json
+// written before the "merge .js/.jsx into one JavaScript row" logic below
+// existed. That logic only ever ran on a *fresh* scan; a project whose
+// languages were cached by an older build kept its stale, split rows
+// forever, since the cache-hit path just returned them as-is. Returns
+// `None` when nothing needed merging, so the caller can skip re-writing
+// the file for the (now common) case where the cache is already clean.
+fn merge_duplicate_language_names(cached: &[Value]) -> Option<Vec<Value>> {
+    let mut order: Vec<String> = Vec::new();
+    let mut by_name: HashMap<String, (u64, String, String)> = HashMap::new(); // name -> (bytes, ext, color)
+    let mut saw_duplicate = false;
+    for row in cached {
+        let Some(name) = row["name"].as_str() else { continue };
+        let bytes = row["count"].as_u64().unwrap_or(0);
+        if let Some(existing) = by_name.get_mut(name) {
+            existing.0 += bytes;
+            saw_duplicate = true;
+        } else {
+            order.push(name.to_string());
+            let ext = row["ext"].as_str().unwrap_or("").to_string();
+            let color = row["color"].as_str().unwrap_or("#888").to_string();
+            by_name.insert(name.to_string(), (bytes, ext, color));
+        }
+    }
+    if !saw_duplicate { return None; }
+    let total: u64 = by_name.values().map(|(bytes, _, _)| bytes).sum();
+    // filter_map, not map+unwrap: every `name` in `order` was inserted into
+    // `by_name` at the same time, so the lookup can't actually miss — this
+    // module denies clippy::unwrap_used, so skip (rather than panic on) the
+    // theoretical case instead of asserting it away with .unwrap().
+    let mut merged: Vec<(String, u64, String, String)> = order.into_iter()
+        .filter_map(|name| by_name.remove(&name).map(|(bytes, ext, color)| (name, bytes, ext, color)))
+        .collect();
+    merged.sort_by_key(|(_, bytes, _, _)| std::cmp::Reverse(*bytes));
+    Some(merged.into_iter().map(|(name, bytes, ext, color)| {
+        let pct = if total == 0 { 0 } else { (bytes as f64 / total as f64 * 100.0).round() as u32 };
+        json!({ "ext": ext, "name": name, "count": bytes, "color": color, "pct": pct })
+    }).collect())
+}
+
 #[tauri::command]
 pub async fn projects_detect_languages(app: AppHandle, id: String) -> Vec<Value> {
     if crate::validate_safe_id(&id).is_err() { return vec![]; }
     let project = match get_project(&app, &id) { Some(p) => p, None => return vec![] };
-    // Return cached result if already stored in project data
+    // Return cached result if already stored in project data — healing it
+    // first if it's stale data from before languages were merged by name.
     if let Some(arr) = project["languages"].as_array() {
-        if !arr.is_empty() { return arr.clone(); }
+        if !arr.is_empty() {
+            if let Some(healed) = merge_duplicate_language_names(arr) {
+                let _ = projects_edit(app, id, json!({ "languages": healed.clone() }));
+                return healed;
+            }
+            return arr.clone();
+        }
     }
     let root = project_root_str(&project);
     let mut ext_counts: HashMap<String, u64> = HashMap::new();
@@ -1180,5 +1228,59 @@ mod template_export_tests {
         let mut total_bytes = 0u64;
         let result = collect_template_files(&dir.0, &dir.0, &mut files, &mut total_bytes);
         assert!(result.is_err());
+    }
+}
+
+// Regression coverage for a real bug: every project's cached `languages`
+// array (written before .js/.jsx and .ts/.tsx were merged by name) had
+// split rows that collided as React keys in the frontend — see
+// docs/git-github-upgrade-plan.md-adjacent session notes. The merge itself
+// already worked for a *fresh* scan; the cache-hit path just never ran it.
+#[cfg(test)]
+mod language_merge_tests {
+    use super::*;
+
+    #[test]
+    fn leaves_already_clean_data_untouched() {
+        let clean = vec![
+            json!({ "ext": ".rs", "name": "Rust", "count": 100, "color": "#ce422b", "pct": 100 }),
+        ];
+        assert!(merge_duplicate_language_names(&clean).is_none());
+    }
+
+    #[test]
+    fn merges_split_extensions_of_the_same_language() {
+        let stale = vec![
+            json!({ "ext": ".ts",  "name": "TypeScript", "count": 80, "color": "#3178c6", "pct": 80 }),
+            json!({ "ext": ".json","name": "JSON",       "count": 20, "color": "#888",    "pct": 20 }),
+            json!({ "ext": ".tsx", "name": "TypeScript", "count": 20, "color": "#3178c6", "pct": 20 }),
+        ];
+        let merged = merge_duplicate_language_names(&stale).expect("should detect the TypeScript duplicate");
+        let names: Vec<&str> = merged.iter().map(|r| r["name"].as_str().unwrap()).collect();
+        // Every name appears exactly once — this is the actual React-key
+        // bug: two "TypeScript" entries in the array.
+        let unique: std::collections::HashSet<&str> = names.iter().copied().collect();
+        assert_eq!(names.len(), unique.len(), "no language name should repeat after merging");
+
+        let ts = merged.iter().find(|r| r["name"] == "TypeScript").unwrap();
+        assert_eq!(ts["count"].as_u64(), Some(100)); // 80 + 20
+        assert_eq!(ts["pct"].as_u64(), Some(83));    // 100 / 120 rounded
+    }
+
+    #[test]
+    fn percentages_still_sum_to_100_after_merging() {
+        let stale = vec![
+            json!({ "ext": ".js",  "name": "JavaScript", "count": 15, "color": "#f7df1e", "pct": 25 }),
+            json!({ "ext": ".css", "name": "CSS",        "count": 13, "color": "#264de4", "pct": 21 }),
+            json!({ "ext": ".rs",  "name": "Rust",       "count": 13, "color": "#ce422b", "pct": 21 }),
+            json!({ "ext": ".json","name": "JSON",       "count": 10, "color": "#888",    "pct": 16 }),
+            json!({ "ext": ".js2", "name": "JavaScript", "count": 7,  "color": "#f7df1e", "pct": 11 }),
+        ];
+        let merged = merge_duplicate_language_names(&stale).expect("should detect the JavaScript duplicate");
+        let sum: u64 = merged.iter().map(|r| r["pct"].as_u64().unwrap_or(0)).sum();
+        // Rounding each row independently can land the total a point or two
+        // off 100 (as the real pre-fix data actually did) — this just
+        // guards against something wildly wrong, not exact rounding.
+        assert!((99..=101).contains(&sum), "percentages should still roughly sum to 100, got {sum}");
     }
 }
