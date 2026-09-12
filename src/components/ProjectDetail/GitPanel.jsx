@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import {
   GithubIcon, CommitIcon, DownloadIcon, RefreshIcon, BranchIcon, ExternalLinkIcon,
-  PackageIcon, CheckIcon, XCircleIcon, AIIcon,
+  PackageIcon, CheckIcon, XCircleIcon, AIIcon, TrashIcon,
 } from '../../constants/SimpleSvgExports'
+import OpenPrModal from './OpenPrModal'
 import { authorColor, initials } from '../../lib/projectDetailHelpers'
 import { useData } from '../../lib/store'
 import InfoSection from './InfoSection'
@@ -22,10 +23,17 @@ export default function GitPanel({
   pulling, handlePull, pushing, handlePush,
   setPublishName, setPublishDesc, setPublishError, setPublishModal,
   branchOp, branchOpen, setBranchOpen, newBranch, setNewBranch, handleCreateBranch, handleSwitchBranch,
+  handleDeleteBranch, dirtySwitch, setDirtySwitch,
 }) {
   const settings = useData('settings')
   const aiEnabled = !!settings?.ai?.commitMessages?.enabled
   const [generatingMsg, setGeneratingMsg] = useState(false)
+  const [amendCommit, setAmendCommit] = useState(false)
+  const [prOpen, setPrOpen] = useState(false)
+  // Same click-to-arm pattern as discard, for branch deletion.
+  const [deleteArmed, setDeleteArmed] = useState(null)
+  const headPushed = !!gitStatus?.headPushed
+  const canOpenPr = !!project.github && aheadBehind && !aheadBehind.unavailable && !!gitStatus?.branch
   // Two-step confirm (click to arm, click again to actually discard) rather
   // than a native confirm() dialog — matches the click-again pattern used
   // elsewhere in Settings for destructive-but-quick actions, and it's an
@@ -262,7 +270,27 @@ export default function GitPanel({
               <ExternalLinkIcon />
               {pushing ? 'Pushing…' : aheadCount > 0 ? `Push (↑ ${aheadCount})` : 'Push (synced)'}
             </button>
+
+            {canOpenPr && (
+              <button onClick={() => setPrOpen(true)} title="Open a pull request from this branch on GitHub"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 'var(--r-md)',
+                  border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)',
+                  fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer', transition: 'all var(--transition-fast)',
+                }}>
+                <BranchIcon /> Open PR
+              </button>
+            )}
           </div>
+
+          {prOpen && (
+            <OpenPrModal
+              projectId={projectId}
+              headBranch={gitStatus.branch}
+              fallbackBase={settings?.defaults?.gitBranch || 'main'}
+              onClose={() => setPrOpen(false)}
+            />
+          )}
 
           {/* Commit panel */}
           {showCommit && (
@@ -313,23 +341,40 @@ export default function GitPanel({
                   color: commitResult.ok ? '#4aff91' : '#ff4444',
                 }}>
                   {commitResult.ok
-                    ? <><CheckIcon size={12} /> {commitResult.pushed ? 'Committed and pushed to remote' : 'Committed (push skipped — no remote or push failed)'}</>
+                    ? <><CheckIcon size={12} /> {commitResult.pushed ? 'Committed and pushed to remote' : commitResult.pushRequested === false ? 'Committed locally' : 'Committed (push skipped — no remote or push failed)'}</>
                     : <><XCircleIcon size={12} /> {commitResult.message}</>}
                 </div>
               )}
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button onClick={() => { setShowCommit(false); setCommitMsg(''); setCommitResult(null) }}
-                  style={{ padding: '7px 14px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <label
+                  title={headPushed ? 'The last commit is already on the remote — amending it would rewrite shared history' : 'Replace the last commit instead of adding a new one'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: headPushed ? 'var(--dimmer)' : 'var(--dim)', cursor: headPushed ? 'not-allowed' : 'pointer', marginRight: 'auto' }}
+                >
+                  <input type="checkbox" checked={amendCommit} disabled={headPushed} onChange={e => setAmendCommit(e.target.checked)} />
+                  Amend last commit
+                </label>
+                <button onClick={() => { setShowCommit(false); setCommitMsg(''); setCommitResult(null); setAmendCommit(false) }}
+                  style={{ padding: '7px 14px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
                   Cancel
                 </button>
-                <button onClick={handleCommit} disabled={!commitMsg.trim() || committing}
+                <button onClick={() => handleCommit(false, amendCommit)} disabled={!commitMsg.trim() || committing}
+                  title="Commit locally without pushing"
                   style={{
-                    padding: '7px 16px', borderRadius: 7, border: 'none',
+                    padding: '7px 14px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
+                    background: 'var(--card)', color: commitMsg.trim() && !committing ? 'var(--text)' : 'var(--dimmer)',
+                    fontSize: 12, fontWeight: 500, fontFamily: 'Geist, sans-serif',
+                    cursor: commitMsg.trim() && !committing ? 'pointer' : 'not-allowed',
+                  }}>
+                  {amendCommit ? 'Amend' : 'Commit'}
+                </button>
+                <button onClick={() => handleCommit(true, amendCommit)} disabled={!commitMsg.trim() || committing}
+                  style={{
+                    padding: '7px 16px', borderRadius: 'var(--r-md)', border: 'none',
                     background: commitMsg.trim() && !committing ? 'var(--orange)' : 'var(--dimmer)',
                     color: '#fff', fontSize: 12, fontWeight: 500, fontFamily: 'Geist, sans-serif',
                     cursor: commitMsg.trim() && !committing ? 'pointer' : 'not-allowed',
                   }}>
-                  {committing ? 'Committing…' : 'Commit & Push'}
+                  {committing ? 'Committing…' : amendCommit ? 'Amend & Push' : 'Commit & Push'}
                 </button>
               </div>
             </div>
@@ -337,25 +382,70 @@ export default function GitPanel({
 
           {/* Branch switcher */}
           <InfoSection label="Branches">
+            {dirtySwitch && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10,
+                padding: '9px 12px', borderRadius: 'var(--r-md)',
+                background: 'rgba(255,107,53,0.06)', border: '1px solid rgba(255,107,53,0.25)',
+              }}>
+                <span style={{ fontSize: 12, color: 'var(--text)', flex: 1, minWidth: 200 }}>
+                  Uncommitted changes are blocking the switch to <span style={{ fontFamily: 'Geist Mono, monospace', color: 'var(--orange)' }}>{dirtySwitch.branch}</span>.
+                </span>
+                <button onClick={() => handleSwitchBranch(dirtySwitch.branch, true)} disabled={!!branchOp}
+                  style={{ padding: '5px 12px', borderRadius: 'var(--r-sm)', border: 'none', background: 'var(--orange)', color: '#fff', fontSize: 11, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+                  {branchOp === 'switching' ? 'Switching…' : 'Stash & switch'}
+                </button>
+                <button onClick={() => setDirtySwitch(null)}
+                  style={{ padding: '5px 10px', borderRadius: 'var(--r-sm)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+                  Dismiss
+                </button>
+              </div>
+            )}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
               {branches.map(b => (
-                <button key={b.name}
-                  onClick={() => !b.current && !branchOp && handleSwitchBranch(b.name)}
-                  disabled={b.current || !!branchOp}
-                  style={{
-                    fontFamily: 'Geist Mono, monospace', fontSize: 11, padding: '4px 10px', borderRadius: 5,
-                    background: b.current ? 'rgba(255,107,53,0.1)' : 'var(--card)',
-                    border: `1px solid ${b.current ? 'rgba(255,107,53,0.3)' : 'var(--border)'}`,
-                    color: b.current ? 'var(--orange)' : 'var(--dim)',
-                    cursor: b.current ? 'default' : 'pointer',
-                    transition: 'all 0.12s',
-                  }}
-                  onMouseEnter={e => { if (!b.current) e.currentTarget.style.borderColor = 'var(--border-bright)' }}
-                  onMouseLeave={e => { if (!b.current) e.currentTarget.style.borderColor = 'var(--border)' }}
-                >
-                  {b.current ? '● ' : '○ '}{b.name}
-                  {branchOp === 'switching' && !b.current ? ' …' : ''}
-                </button>
+                <div key={b.name} style={{ display: 'inline-flex', alignItems: 'stretch' }}>
+                  <button
+                    onClick={() => !b.current && !branchOp && handleSwitchBranch(b.name)}
+                    disabled={b.current || !!branchOp}
+                    style={{
+                      fontFamily: 'Geist Mono, monospace', fontSize: 11, padding: '4px 10px',
+                      borderRadius: b.current ? 'var(--r-sm)' : 'var(--r-sm) 0 0 var(--r-sm)',
+                      background: b.current ? 'rgba(255,107,53,0.1)' : 'var(--card)',
+                      border: `1px solid ${b.current ? 'rgba(255,107,53,0.3)' : 'var(--border)'}`,
+                      color: b.current ? 'var(--orange)' : 'var(--dim)',
+                      cursor: b.current ? 'default' : 'pointer',
+                      transition: 'all var(--transition-fast)',
+                    }}
+                    onMouseEnter={e => { if (!b.current) e.currentTarget.style.borderColor = 'var(--border-bright)' }}
+                    onMouseLeave={e => { if (!b.current) e.currentTarget.style.borderColor = 'var(--border)' }}
+                  >
+                    {b.current ? '● ' : '○ '}{b.name}
+                    {branchOp === 'switching' && !b.current ? ' …' : ''}
+                  </button>
+                  {!b.current && (
+                    deleteArmed === b.name ? (
+                      <>
+                        <button onClick={() => { setDeleteArmed(null); handleDeleteBranch(b.name, false) }} title="Delete the local branch only"
+                          style={{ fontSize: 10, padding: '0 8px', border: '1px solid #ff4444', borderLeft: 'none', background: 'rgba(255,68,68,0.12)', color: '#ff4444', cursor: 'pointer', fontFamily: 'Geist Mono, monospace' }}>
+                          local
+                        </button>
+                        <button onClick={() => { setDeleteArmed(null); handleDeleteBranch(b.name, true) }} title="Delete locally and on origin"
+                          style={{ fontSize: 10, padding: '0 8px', borderRadius: '0 var(--r-sm) var(--r-sm) 0', border: '1px solid #ff4444', borderLeft: 'none', background: 'rgba(255,68,68,0.2)', color: '#ff4444', cursor: 'pointer', fontFamily: 'Geist Mono, monospace' }}>
+                          + remote
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => { setDeleteArmed(b.name); setTimeout(() => setDeleteArmed(prev => (prev === b.name ? null : prev)), 4000) }}
+                        title="Delete branch"
+                        disabled={!!branchOp}
+                        style={{ display: 'flex', alignItems: 'center', padding: '0 6px', borderRadius: '0 var(--r-sm) var(--r-sm) 0', border: '1px solid var(--border)', borderLeft: 'none', background: 'var(--card)', color: 'var(--dimmer)', cursor: 'pointer', transition: 'color var(--transition-fast)' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#ff4444'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'var(--dimmer)'}
+                      ><TrashIcon size={10} /></button>
+                    )
+                  )}
+                </div>
               ))}
 
               {/* New branch */}

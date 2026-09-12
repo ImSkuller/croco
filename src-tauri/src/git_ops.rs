@@ -107,6 +107,12 @@ pub async fn git_status(app: AppHandle, id: String) -> Result<Value, String> {
     let branch = run_git(&["rev-parse", "--abbrev-ref", "HEAD"], &cwd)
         .unwrap_or_else(|_| "main".into());
     let parsed = parse_git_status_short(&status_out);
+    // Whether HEAD already exists on any remote-tracking branch — the UI
+    // disables "amend" when it does, since amending a pushed commit forces
+    // a history rewrite on the next push.
+    let head_pushed = run_git(&["branch", "-r", "--contains", "HEAD"], &cwd)
+        .map(|out| !out.trim().is_empty())
+        .unwrap_or(false);
     Ok(json!({
         "branch": branch,
         "modified": parsed.modified,
@@ -114,6 +120,7 @@ pub async fn git_status(app: AppHandle, id: String) -> Result<Value, String> {
         "staged": parsed.staged,
         "clean": parsed.total == 0,
         "total": parsed.total,
+        "headPushed": head_pushed,
     }))
 }
 
@@ -365,11 +372,20 @@ pub async fn build_commit_diff(app: &AppHandle, id: &str) -> Result<String, Stri
     Ok(diff)
 }
 
+// `push` defaults to true (the original one-click "Commit & Push" flow and
+// the local HTTP API both rely on that); `amend` rewrites HEAD instead of
+// adding a commit and is refused when HEAD is already on a remote, since
+// the follow-up push would then need --force.
 #[tauri::command]
-pub async fn git_commit(app: AppHandle, id: String, msg: String) -> Result<Value, String> {
+pub async fn git_commit(app: AppHandle, id: String, msg: String, push: Option<bool>, amend: Option<bool>) -> Result<Value, String> {
     let cwd     = project_root(&app, &id)?;
     let status  = git_status(app.clone(), id.clone()).await?;
-    if status["clean"].as_bool().unwrap_or(false) {
+    let push    = push.unwrap_or(true);
+    let amend   = amend.unwrap_or(false);
+    if amend && status["headPushed"].as_bool().unwrap_or(false) {
+        return Err("The last commit is already pushed — amending it would rewrite shared history.".into());
+    }
+    if status["clean"].as_bool().unwrap_or(false) && !amend {
         return Ok(json!({ "ok": false, "message": "Nothing to commit" }));
     }
     let message = msg.trim().to_string();
@@ -378,12 +394,22 @@ pub async fn git_commit(app: AppHandle, id: String, msg: String) -> Result<Value
     // Otherwise fall back to staging everything (preserves the one-click
     // "commit all" flow for anyone who doesn't bother with per-file staging).
     let has_staged = status["staged"].as_array().map(|a| !a.is_empty()).unwrap_or(false);
-    if !has_staged {
+    if !has_staged && !status["clean"].as_bool().unwrap_or(false) {
         run_git(&["add", "."], &cwd)?;
     }
-    run_git(&["commit", "-m", &message], &cwd)?;
+    if amend {
+        run_git(&["commit", "--amend", "-m", &message], &cwd)?;
+    } else {
+        run_git(&["commit", "-m", &message], &cwd)?;
+    }
     sync_last_commit_date(&app, &id, &cwd, true);
     let branch = status["branch"].as_str().unwrap_or("main").to_string();
+    if !push {
+        crate::activity_log(&app, "git.committed", json!({ "projectId": id, "message": message, "pushed": false, "amend": amend }));
+        crate::personality::track(&app, "commit", json!({ "projectId": id }));
+        crate::emit_toast(&app, if amend { "Commit amended" } else { "Committed" }, &message, "success");
+        return Ok(json!({ "ok": true, "pushed": false }));
+    }
     match push_with_auth_fallback(&app, &id, &cwd, &branch) {
         Ok(_) => {
             crate::activity_log(&app, "git.committed", json!({ "projectId": id, "message": message, "pushed": true }));
@@ -431,16 +457,82 @@ pub async fn git_get_branches(app: AppHandle, id: String) -> Result<Vec<Value>, 
     }).collect())
 }
 
+// A dirty working tree is the common reason a checkout refuses; rather
+// than surfacing git's raw "would be overwritten by checkout" text, report
+// `dirty: true` so the UI can offer "Stash & switch" — which is what
+// `stash = true` does (stash incl. untracked → checkout → pop). A pop that
+// conflicts leaves the stash entry in place and says so, nothing is lost.
 #[tauri::command]
-pub async fn git_switch_branch(app: AppHandle, id: String, branch: String) -> Result<Value, String> {
-    run_git(&["checkout", &branch], &project_root(&app, &id)?)?;
-    Ok(json!({ "ok": true }))
+pub async fn git_switch_branch(app: AppHandle, id: String, branch: String, stash: Option<bool>) -> Result<Value, String> {
+    let cwd = project_root(&app, &id)?;
+    if stash.unwrap_or(false) {
+        let label = format!("croco: switching to {branch}");
+        run_git(&["stash", "push", "-u", "-m", &label], &cwd)?;
+        if let Err(e) = run_git(&["checkout", &branch], &cwd) {
+            let _ = run_git(&["stash", "pop"], &cwd); // put the work back where it was
+            return Err(e);
+        }
+        return match run_git(&["stash", "pop"], &cwd) {
+            Ok(_) => Ok(json!({ "ok": true, "stashed": true })),
+            Err(e) => Ok(json!({ "ok": true, "stashed": true, "popConflict": true, "message": e })),
+        };
+    }
+    match run_git(&["checkout", &branch], &cwd) {
+        Ok(_) => Ok(json!({ "ok": true })),
+        Err(e) => {
+            let lower = e.to_lowercase();
+            if lower.contains("would be overwritten") || lower.contains("local changes") || lower.contains("uncommitted changes") {
+                Ok(json!({ "ok": false, "dirty": true, "message": e }))
+            } else {
+                Err(e)
+            }
+        }
+    }
 }
 
 #[tauri::command]
 pub async fn git_create_branch(app: AppHandle, id: String, branch: String) -> Result<Value, String> {
     run_git(&["checkout", "-b", &branch], &project_root(&app, &id)?)?;
     Ok(json!({ "ok": true }))
+}
+
+// Local delete uses `-d` (refuses if unmerged) — a force-delete of
+// unmerged work is exactly the kind of thing that should need a terminal.
+// Remote delete goes through the same token fallback as push.
+#[tauri::command]
+pub async fn git_delete_branch(app: AppHandle, id: String, branch: String, remote: Option<bool>) -> Result<Value, String> {
+    let cwd = project_root(&app, &id)?;
+    let current = run_git(&["rev-parse", "--abbrev-ref", "HEAD"], &cwd).unwrap_or_default();
+    if current == branch {
+        return Err("Switch to another branch before deleting the current one.".into());
+    }
+    run_git(&["branch", "-d", &branch], &cwd)
+        .map_err(|e| if e.contains("not fully merged") { format!("{branch} has unmerged commits — merge it first, or delete it from a terminal with `git branch -D`.") } else { e })?;
+    let mut remote_deleted = false;
+    if remote.unwrap_or(false) {
+        let refspec = format!(":refs/heads/{branch}");
+        let result = match run_git(&["push", "origin", &refspec], &cwd) {
+            Ok(o) => Ok(o),
+            Err(first_err) => {
+                let token = crate::stored_github_token(&app).unwrap_or_default();
+                let gh = crate::get_project(&app, &id)
+                    .and_then(|p| p["github"].as_str().map(|s| s.to_string()))
+                    .unwrap_or_default();
+                if token.is_empty() || gh.is_empty() {
+                    Err(first_err)
+                } else {
+                    let authed = format!("https://{}@github.com/{}.git", token, gh);
+                    run_git(&["push", &authed, &refspec], &cwd).map_err(|e| e.replace(&token, "***"))
+                }
+            }
+        };
+        match result {
+            Ok(_) => remote_deleted = true,
+            Err(e) => return Ok(json!({ "ok": true, "remoteDeleted": false, "remoteError": e })),
+        }
+    }
+    crate::activity_log(&app, "git.branch_deleted", json!({ "projectId": id, "branch": branch, "remote": remote_deleted }));
+    Ok(json!({ "ok": true, "remoteDeleted": remote_deleted }))
 }
 
 #[tauri::command]

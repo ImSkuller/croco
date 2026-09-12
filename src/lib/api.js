@@ -203,18 +203,21 @@ export const api = {
     syncAllLastCommitDates: ()    => invoke('git_sync_all_last_commit_dates'),
     /** @param {string} id @returns {Promise<any>} */
     status:         (id)         => invoke('git_status',           { id }),
-    /** @param {string} id @param {string} msg @returns {Promise<any>} */
-    commit:         (id, msg)    => invoke('git_commit',           { id, msg }),
+    /** @param {string} id @param {string} msg @param {boolean} [push=true] @param {boolean} [amend=false] @returns {Promise<any>} */
+    commit:         (id, msg, push, amend) => invoke('git_commit', { id, msg, push, amend }),
     /** @param {string} id @param {number} [limit] @returns {Promise<any[]>} */
     getLog:         (id, limit)  => invoke('git_get_log',          { id, limit }),
     /** @param {string} root @returns {Promise<boolean>} */
     isRepo:         (root)       => invoke('git_is_repo',          { root }),
     /** @param {string} id @returns {Promise<any[]>} */
     getBranches:    (id)         => invoke('git_get_branches',     { id }),
-    /** @param {string} id @param {string} branch @returns {Promise<any>} */
-    switchBranch:   (id, branch) => invoke('git_switch_branch',    { id, branch }),
+    /** Resolves {ok:false, dirty:true} instead of rejecting when uncommitted changes block the checkout — pass stash=true to stash → switch → pop.
+     * @param {string} id @param {string} branch @param {boolean} [stash] @returns {Promise<any>} */
+    switchBranch:   (id, branch, stash) => invoke('git_switch_branch', { id, branch, stash }),
     /** @param {string} id @param {string} branch @returns {Promise<any>} */
     createBranch:   (id, branch) => invoke('git_create_branch',    { id, branch }),
+    /** Local delete is `-d` (refuses unmerged work); remote=true also deletes it on origin. @param {string} id @param {string} branch @param {boolean} [remote] @returns {Promise<any>} */
+    deleteBranch:   (id, branch, remote) => invoke('git_delete_branch', { id, branch, remote }),
     /** @param {string} id @returns {Promise<any>} */
     push:           (id)         => invoke('git_push',             { id }),
     /** @param {string} id @returns {Promise<any>} */

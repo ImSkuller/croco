@@ -363,7 +363,7 @@ fn main() {
             git_stage_files, git_unstage_files, git_diff_file,
             git_get_ahead_behind,
             git_stash_save, git_stash_list, git_stash_apply, git_stash_pop, git_stash_drop,
-            git_discard_file, git_clone_repo,
+            git_discard_file, git_clone_repo, git_delete_branch,
             // ai
             ai_generate_commit_message,
             // local api

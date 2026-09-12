@@ -83,7 +83,8 @@ export default function ProjectDetail() {
   const [pushing,      setPushing]      = useState(false)
   const [branchOpen,   setBranchOpen]   = useState(false)
   const [newBranch,    setNewBranch]    = useState('')
-  const [branchOp,     setBranchOp]     = useState(null) // 'switching'|'creating'
+  const [branchOp,     setBranchOp]     = useState(null) // 'switching'|'creating'|'deleting'
+  const [dirtySwitch,  setDirtySwitch]  = useState(null) // { branch, message } when a checkout was blocked by uncommitted changes
 
   const [readme,       setReadme]       = useState(null)  // null|{content,filename}|false
   const [readmeLoading, setReadmeLoading] = useState(false)
@@ -260,12 +261,12 @@ export default function ProjectDetail() {
     if (u) setProject(u)
   }
 
-  async function handleCommit() {
+  async function handleCommit(push = true, amend = false) {
     if (!commitMsg.trim() || !window.api) return
     setCommitting(true); setCommitResult(null)
     try {
-      const r = await window.api.git.commit(project.id, commitMsg)
-      setCommitResult(r)
+      const r = await window.api.git.commit(project.id, commitMsg, push, amend)
+      setCommitResult({ ...r, pushRequested: push })
       if (r.ok) {
         setCommitMsg(''); setShowCommit(false)
         const [st, log] = await Promise.all([
@@ -355,21 +356,46 @@ export default function ProjectDetail() {
     } finally { setPushing(false) }
   }
 
-  async function handleSwitchBranch(branchName) {
+  async function refreshBranchState() {
+    const [st, log, brs] = await Promise.all([
+      window.api.git.status(project.id).catch(() => null),
+      window.api.git.getLog(project.id, 30).catch(() => []),
+      window.api.git.getBranches(project.id).catch(() => []),
+    ])
+    setGitStatus(st); setGitLog(log); setBranches(brs)
+  }
+
+  async function handleSwitchBranch(branchName, stash = false) {
     if (!window.api || branchOp) return
     setBranchOp('switching')
     try {
-      await window.api.git.switchBranch(project.id, branchName)
-      const [st, log, brs] = await Promise.all([
-        window.api.git.status(project.id).catch(() => null),
-        window.api.git.getLog(project.id, 30).catch(() => []),
-        window.api.git.getBranches(project.id).catch(() => []),
-      ])
-      setGitStatus(st); setGitLog(log); setBranches(brs)
+      const r = await window.api.git.switchBranch(project.id, branchName, stash)
+      if (r?.dirty) {
+        // Uncommitted changes block the checkout — GitPanel offers
+        // "Stash & switch", which calls back in here with stash=true.
+        setDirtySwitch({ branch: branchName, message: r.message })
+        return
+      }
+      setDirtySwitch(null)
+      await refreshBranchState()
       setBranchOpen(false)
-      toast.success('Switched branch', branchName)
+      if (r?.popConflict) toast.warning('Switched, but the stash didn\'t apply cleanly', 'Your changes are still in the stash list — resolve and pop from the Stash section.')
+      else toast.success('Switched branch', r?.stashed ? `${branchName} — changes carried over` : branchName)
     } catch (e) {
       toast.error('Branch switch failed', e.message)
+    } finally { setBranchOp(null) }
+  }
+
+  async function handleDeleteBranch(branchName, remote = false) {
+    if (!window.api || branchOp) return
+    setBranchOp('deleting')
+    try {
+      const r = await window.api.git.deleteBranch(project.id, branchName, remote)
+      await refreshBranchState()
+      if (remote && !r?.remoteDeleted) toast.warning(`Deleted ${branchName} locally`, `Remote delete failed: ${r?.remoteError || 'unknown error'}`)
+      else toast.success('Deleted branch', remote ? `${branchName} (local + origin)` : branchName)
+    } catch (e) {
+      toast.error('Delete branch failed', e.message)
     } finally { setBranchOp(null) }
   }
 
@@ -855,6 +881,7 @@ export default function ProjectDetail() {
               setPublishName={setPublishName} setPublishDesc={setPublishDesc} setPublishError={setPublishError} setPublishModal={setPublishModal}
               branchOp={branchOp} branchOpen={branchOpen} setBranchOpen={setBranchOpen} newBranch={newBranch} setNewBranch={setNewBranch}
               handleCreateBranch={handleCreateBranch} handleSwitchBranch={handleSwitchBranch}
+              handleDeleteBranch={handleDeleteBranch} dirtySwitch={dirtySwitch} setDirtySwitch={setDirtySwitch}
             />
           )}
 
