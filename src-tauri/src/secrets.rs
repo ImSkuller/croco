@@ -27,7 +27,17 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::AppHandle;
 
-const SERVICE: &str = "xyz.skuller.croco";
+// Keyring service name. Namespaced when CROCO_DATA_DIR is set (see
+// main.rs::app_data_dir) so an e2e run that stores a fake webhook URL or AI
+// key can never overwrite the user's real credentials, even if it crashes
+// before its cleanup.
+fn service() -> &'static str {
+    if std::env::var("CROCO_DATA_DIR").map(|d| !d.trim().is_empty()).unwrap_or(false) {
+        "xyz.skuller.croco.test"
+    } else {
+        "xyz.skuller.croco"
+    }
+}
 
 static FALLBACK_ACTIVE: Lazy<Mutex<bool>> = Lazy::new(|| Mutex::new(false));
 
@@ -40,7 +50,7 @@ fn mark_fallback() {
 }
 
 fn entry(account: &str) -> Option<keyring::Entry> {
-    keyring::Entry::new(SERVICE, account).ok()
+    keyring::Entry::new(service(), account).ok()
 }
 
 /// Probes the OS credential store once at startup (rather than waiting for

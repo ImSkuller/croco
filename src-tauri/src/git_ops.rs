@@ -202,9 +202,17 @@ fn push_with_auth_fallback(app: &AppHandle, id: &str, cwd: &str, branch: &str) -
             // remote URL), and git sometimes echoes the remote URL back in
             // its own error text.
             let first_err = first_err.replace(&token, "***");
-            run_git(&["push", "-u", &authed, &format!("HEAD:{}", branch)], cwd)
+            // No -u here: `git push -u <url> HEAD:branch` "succeeds" but
+            // records the literal URL as the upstream, after which `@{u}`
+            // no longer resolves ("not stored as a remote-tracking branch")
+            // and ahead/behind reads as "no remote" forever. Point tracking
+            // at the real named remote explicitly instead — origin is always
+            // configured here, the retry only bypasses it for auth.
+            let out = run_git(&["push", &authed, &format!("HEAD:{}", branch)], cwd)
                 .map_err(|e| e.replace(&token, "***"))
-                .map_err(|e| format!("{} (token retry: {})", first_err, e))
+                .map_err(|e| format!("{} (token retry: {})", first_err, e))?;
+            let _ = run_git(&["branch", &format!("--set-upstream-to=origin/{}", branch), branch], cwd);
+            Ok(out)
         }
     }
 }

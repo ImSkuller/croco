@@ -12,6 +12,35 @@ use serde_json::{json, Value};
 use std::fs;
 use tauri::AppHandle;
 
+// Startup guard for the failure mode that looked like "I lost all my data":
+// settings.app.storageBackend says "json" but croco.db (in the same data
+// dir) holds *more* projects than project-details/ does — i.e. the backend
+// got flipped without the SQLite→JSON export running (a crashed e2e run,
+// a hand-edited settings.json, ...). Nothing is deleted in that state, the
+// app just reads the wrong store; surface it instead of hiding it. Runs
+// once per launch, read-only. The toast is delayed because the webview
+// isn't listening for events yet at setup time.
+pub fn warn_if_storage_backend_mismatch(app: &AppHandle) {
+    if crate::is_sqlite_enabled(app) { return; }
+    if !crate::db_path(app).exists() || crate::open_db(app).is_err() { return; }
+    let db_projects = crate::db_get_all("projects").len();
+    let json_projects = fs::read_dir(crate::project_details_dir(app))
+        .map(|rd| rd.flatten().filter(|e| e.path().extension().and_then(|x| x.to_str()) == Some("json")).count())
+        .unwrap_or(0);
+    if db_projects <= json_projects { return; }
+    crate::activity_log(app, "storage.backend_mismatch", json!({ "dbProjects": db_projects, "jsonProjects": json_projects }));
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_secs(6)).await;
+        crate::emit_toast(
+            &app,
+            "Storage backend mismatch",
+            &format!("The SQLite database has {db_projects} projects but JSON storage only has {json_projects}. Check Settings → Storage — you may be on the wrong backend."),
+            "warning",
+        );
+    });
+}
+
 #[tauri::command]
 pub async fn migrate_to_sqlite(app: AppHandle) -> Result<Value, String> {
     crate::open_db(&app)?;

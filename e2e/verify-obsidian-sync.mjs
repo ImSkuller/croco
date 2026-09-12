@@ -28,7 +28,6 @@ const repoRoot = path.resolve(__dirname, '..')
 // "connection refused" page and window.api never gets set. Release builds
 // always load the bundled `frontendDist` assets, so they run standalone.
 const appPath = path.join(repoRoot, 'src-tauri', 'target', 'release', 'croco.exe')
-const settingsPath = path.join(process.env.APPDATA, 'xyz.skuller.croco', 'settings.json')
 const DRIVER_PORT = 4444
 
 function log(msg) { console.log(`[e2e] ${msg}`) }
@@ -79,9 +78,7 @@ function findMdFile(dir, predicate) {
 
 async function main() {
   if (!fs.existsSync(appPath)) throw new Error(`App binary not found at ${appPath} — run \`npm run tauri:build\` first (a plain \`cargo build --release\` is not enough, see .claude/skills/run-croco-e2e/SKILL.md).`)
-  if (!fs.existsSync(settingsPath)) throw new Error(`Croco settings.json not found at ${settingsPath} — launch the app once first.`)
 
-  const originalSettings = fs.readFileSync(settingsPath, 'utf8')
   const tmpDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'croco-e2e-data-'))
   const tmpVaultDir = fs.mkdtempSync(path.join(os.tmpdir(), 'croco-e2e-vault-'))
   log(`temp data dir:  ${tmpDataDir}`)
@@ -96,7 +93,7 @@ async function main() {
   // settings.update() call after boot — otherwise, for SQLite-backed
   // installs, every note operation would silently keep hitting the real
   // database despite the override "succeeding".
-  const originalParsed = JSON.parse(originalSettings)
+  const originalParsed = { app: { onboarded: true } } // fresh isolated profile — the real settings.json is never read or written (CROCO_DATA_DIR)
   const isolatedSettings = {
     ...originalParsed,
     app: {
@@ -105,12 +102,12 @@ async function main() {
       obsidian: { enabled: true, vaultPath: tmpVaultDir, lastSyncAt: null },
     },
   }
-  fs.writeFileSync(settingsPath, JSON.stringify(isolatedSettings, null, 2))
+  fs.writeFileSync(path.join(tmpDataDir, 'settings.json'), JSON.stringify(isolatedSettings, null, 2))
   log('wrote isolated settings.json (temp dataPath + vault) before launching the app')
 
   log('starting tauri-driver...')
   const driverLog = []
-  const driverProc = spawn('tauri-driver', ['--port', String(DRIVER_PORT)], { stdio: ['ignore', 'pipe', 'pipe'] })
+  const driverProc = spawn('tauri-driver', ['--port', String(DRIVER_PORT)], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, CROCO_DATA_DIR: tmpDataDir } })
   driverProc.stdout.on('data', d => { driverLog.push(String(d)); if (process.env.E2E_VERBOSE) process.stdout.write(`[tauri-driver] ${d}`) })
   driverProc.stderr.on('data', d => { driverLog.push(String(d)); if (process.env.E2E_VERBOSE) process.stderr.write(`[tauri-driver] ${d}`) })
   await new Promise((resolve, reject) => {
@@ -218,7 +215,6 @@ async function main() {
     log('restoring original settings.json and shutting down...')
     try { if (driver) await driver.quit() } catch (e) { log(`driver.quit() error (non-fatal): ${e.message}`) }
     driverProc.kill()
-    fs.writeFileSync(settingsPath, originalSettings)
     fs.rmSync(tmpDataDir, { recursive: true, force: true })
     fs.rmSync(tmpVaultDir, { recursive: true, force: true })
   }

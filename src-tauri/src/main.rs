@@ -155,7 +155,19 @@ fn no_window(_cmd: &mut Command) {}
 
 // ─── Path helpers ──────────────────────────────────────────────────────────────
 
+// CROCO_DATA_DIR overrides the whole data root (settings.json, secrets
+// fallback, brain, backups, and — with no app.dataPath set — projects/notes/
+// todos too). Exists for the e2e scripts, which used to *rewrite the user's
+// real settings.json* to point at a temp dataPath and restore it in a
+// `finally` — a hard kill mid-run skipped the restore and left the real
+// profile on a temp path / the wrong storage backend. With this, a test
+// process never touches the real profile at all.
 fn app_data_dir(app: &AppHandle) -> PathBuf {
+    if let Ok(dir) = std::env::var("CROCO_DATA_DIR") {
+        if !dir.trim().is_empty() {
+            return PathBuf::from(dir);
+        }
+    }
     app.path()
         .app_data_dir()
         .unwrap_or_else(|_| dirs::data_local_dir().unwrap_or_default().join("croco"))
@@ -237,6 +249,9 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     migrate_avatar_out_of_settings(&handle);
     // Must run after migrate_secrets_to_keyring — see its own doc comment.
     migrate_away_dead_ai_api_config(&handle);
+
+    // Storage sanity — see data_transfer.rs::warn_if_storage_backend_mismatch.
+    warn_if_storage_backend_mismatch(&handle);
 
     // Undo/trash (Phase 6): permanently remove anything past its retention
     // window. Safe to run on every launch — a no-op when nothing has aged out.

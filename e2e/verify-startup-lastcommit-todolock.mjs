@@ -22,7 +22,6 @@ import os from 'node:os'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
 const appPath = path.join(repoRoot, 'src-tauri', 'target', 'release', 'croco.exe')
-const settingsPath = path.join(process.env.APPDATA, 'xyz.skuller.croco', 'settings.json')
 const DRIVER_PORT = 4444
 
 function log(msg) { console.log(`[e2e] ${msg}`) }
@@ -65,19 +64,17 @@ async function waitForApiReady(driver) {
 
 async function main() {
   if (!fs.existsSync(appPath)) throw new Error(`App binary not found at ${appPath} — run \`npm run tauri:build\` first.`)
-  if (!fs.existsSync(settingsPath)) throw new Error(`Croco settings.json not found at ${settingsPath} — launch the app once first.`)
 
-  const originalSettings = fs.readFileSync(settingsPath, 'utf8')
   const tmpDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'croco-e2e-data-'))
   const tmpGitDir = fs.mkdtempSync(path.join(os.tmpdir(), 'croco-e2e-git-'))
   log(`temp data dir: ${tmpDataDir}`)
 
-  const originalParsed = JSON.parse(originalSettings)
+  const originalParsed = { app: { onboarded: true } } // fresh isolated profile — the real settings.json is never read or written (CROCO_DATA_DIR)
   const isolatedSettings = { ...originalParsed, app: { ...originalParsed.app, dataPath: tmpDataDir, storageBackend: 'json' } }
-  fs.writeFileSync(settingsPath, JSON.stringify(isolatedSettings, null, 2))
+  fs.writeFileSync(path.join(tmpDataDir, 'settings.json'), JSON.stringify(isolatedSettings, null, 2))
   log('wrote isolated settings.json (temp dataPath, json backend) before launching the app')
 
-  const driverProc = spawn('tauri-driver', ['--port', String(DRIVER_PORT)], { stdio: ['ignore', 'pipe', 'pipe'] })
+  const driverProc = spawn('tauri-driver', ['--port', String(DRIVER_PORT)], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, CROCO_DATA_DIR: tmpDataDir } })
   driverProc.stdout.on('data', d => { if (process.env.E2E_VERBOSE) process.stdout.write(`[tauri-driver] ${d}`) })
   driverProc.stderr.on('data', d => { if (process.env.E2E_VERBOSE) process.stderr.write(`[tauri-driver] ${d}`) })
   await new Promise((resolve, reject) => {
@@ -239,7 +236,6 @@ async function main() {
     log('restoring original settings.json and shutting down...')
     try { if (driver) await driver.quit() } catch (e) { log(`driver.quit() error (non-fatal): ${e.message}`) }
     driverProc.kill()
-    fs.writeFileSync(settingsPath, originalSettings)
     for (const d of [tmpDataDir, tmpGitDir]) fs.rmSync(d, { recursive: true, force: true })
   }
 

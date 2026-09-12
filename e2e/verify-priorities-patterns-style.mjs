@@ -17,7 +17,6 @@ import os from 'node:os'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
 const appPath = path.join(repoRoot, 'src-tauri', 'target', 'release', 'croco.exe')
-const settingsPath = path.join(process.env.APPDATA, 'xyz.skuller.croco', 'settings.json')
 const DRIVER_PORT = 4444
 
 function log(msg) { console.log(`[e2e] ${msg}`) }
@@ -70,13 +69,11 @@ async function getConsoleErrors(driver) {
 
 async function main() {
   if (!fs.existsSync(appPath)) throw new Error(`App binary not found at ${appPath} — run \`npm run tauri:build\` first.`)
-  if (!fs.existsSync(settingsPath)) throw new Error(`Croco settings.json not found at ${settingsPath} — launch the app once first.`)
 
-  const originalSettings = fs.readFileSync(settingsPath, 'utf8')
   const tmpDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'croco-e2e-data-'))
   log(`temp data dir: ${tmpDataDir}`)
 
-  const originalParsed = JSON.parse(originalSettings)
+  const originalParsed = { app: { onboarded: true } } // fresh isolated profile — the real settings.json is never read or written (CROCO_DATA_DIR)
   // Also reset todos.priorities to the real defaults — app.dataPath isolation
   // only isolates project/note/todo data, not this global settings.json, so
   // a dev machine with real prior usage (e.g. a manually-added "Highest"
@@ -91,10 +88,10 @@ async function main() {
     app: { ...originalParsed.app, dataPath: tmpDataDir },
     todos: { ...originalParsed.todos, priorities: defaultPriorities },
   }
-  fs.writeFileSync(settingsPath, JSON.stringify(isolatedSettings, null, 2))
+  fs.writeFileSync(path.join(tmpDataDir, 'settings.json'), JSON.stringify(isolatedSettings, null, 2))
   log('wrote isolated settings.json (temp dataPath + default priorities) before launching the app')
 
-  const driverProc = spawn('tauri-driver', ['--port', String(DRIVER_PORT)], { stdio: ['ignore', 'pipe', 'pipe'] })
+  const driverProc = spawn('tauri-driver', ['--port', String(DRIVER_PORT)], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, CROCO_DATA_DIR: tmpDataDir } })
   await new Promise((resolve, reject) => {
     const onErr = e => reject(e)
     driverProc.once('error', onErr)
@@ -207,7 +204,6 @@ async function main() {
     log('restoring original settings.json and shutting down...')
     try { if (driver) await driver.quit() } catch (e) { log(`driver.quit() error (non-fatal): ${e.message}`) }
     driverProc.kill()
-    fs.writeFileSync(settingsPath, originalSettings)
     fs.rmSync(tmpDataDir, { recursive: true, force: true })
   }
 }

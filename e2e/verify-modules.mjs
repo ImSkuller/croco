@@ -22,7 +22,6 @@ import os from 'node:os'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
 const appPath = path.join(repoRoot, 'src-tauri', 'target', 'release', 'croco.exe')
-const settingsPath = path.join(process.env.APPDATA, 'xyz.skuller.croco', 'settings.json')
 const DRIVER_PORT = 4739 // distinct from verify-obsidian-sync.mjs's port in case both ever run close together
 
 function log(msg) { console.log(`[e2e] ${msg}`) }
@@ -59,22 +58,20 @@ async function callApiOk(driver, dotted, ...args) {
 
 async function main() {
   if (!fs.existsSync(appPath)) throw new Error(`App binary not found at ${appPath} — run \`npm run tauri:build\` first.`)
-  if (!fs.existsSync(settingsPath)) throw new Error(`Croco settings.json not found at ${settingsPath} — launch the app once first.`)
 
-  const originalSettings = fs.readFileSync(settingsPath, 'utf8')
   const tmpDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'croco-e2e-modules-data-'))
   const tmpProjectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'croco-e2e-modules-proj-'))
   log(`temp data dir: ${tmpDataDir}`)
   log(`temp project dir: ${tmpProjectDir}`)
 
-  const originalParsed = JSON.parse(originalSettings)
+  const originalParsed = { app: { onboarded: true } } // fresh isolated profile — the real settings.json is never read or written (CROCO_DATA_DIR)
   const isolatedSettings = { ...originalParsed, app: { ...originalParsed.app, dataPath: tmpDataDir } }
-  fs.writeFileSync(settingsPath, JSON.stringify(isolatedSettings, null, 2))
+  fs.writeFileSync(path.join(tmpDataDir, 'settings.json'), JSON.stringify(isolatedSettings, null, 2))
   log('wrote isolated settings.json (temp dataPath) before launching the app')
 
   log('starting tauri-driver...')
   const driverLog = []
-  const driverProc = spawn('tauri-driver', ['--port', String(DRIVER_PORT)], { stdio: ['ignore', 'pipe', 'pipe'] })
+  const driverProc = spawn('tauri-driver', ['--port', String(DRIVER_PORT)], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, CROCO_DATA_DIR: tmpDataDir } })
   driverProc.stdout.on('data', d => { driverLog.push(String(d)); if (process.env.E2E_VERBOSE) process.stdout.write(`[tauri-driver] ${d}`) })
   driverProc.stderr.on('data', d => { driverLog.push(String(d)); if (process.env.E2E_VERBOSE) process.stderr.write(`[tauri-driver] ${d}`) })
   await new Promise((resolve, reject) => {
@@ -145,7 +142,7 @@ async function main() {
     const settingsAfterWebhook = await callApiOk(driver, 'settings.get')
     assert(settingsAfterWebhook.modules.discord.webhook.urlStored === true, 'webhook urlStored flag flips true after saving')
     assert(JSON.stringify(settingsAfterWebhook).includes('fake-token-for-e2e') === false, 'raw webhook URL never comes back through settings_get')
-    const rawSettingsFile = fs.readFileSync(settingsPath, 'utf8')
+    const rawSettingsFile = fs.readFileSync(path.join(tmpDataDir, 'settings.json'), 'utf8')
     assert(!rawSettingsFile.includes('fake-token-for-e2e'), 'raw webhook URL never persisted to settings.json on disk')
 
     // ── IDE: file tree + read/write with path-traversal guard ────────────
@@ -291,7 +288,6 @@ async function main() {
     try { if (driver) await callApi(driver, 'settings.setSlackWebhook', '') } catch { /* best-effort */ }
     try { if (driver) await driver.quit() } catch (e) { log(`driver.quit() error (non-fatal): ${e.message}`) }
     driverProc.kill()
-    fs.writeFileSync(settingsPath, originalSettings)
     fs.rmSync(tmpDataDir, { recursive: true, force: true })
     fs.rmSync(tmpProjectDir, { recursive: true, force: true })
   }
