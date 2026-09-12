@@ -757,6 +757,151 @@ pub async fn git_get_commit_dates(app: AppHandle, id: String, limit: Option<u32>
     Ok(out.lines().filter(|l| !l.is_empty()).map(|s| s.to_string()).collect())
 }
 
+// ─── Stash ──────────────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn git_stash_save(app: AppHandle, id: String, message: Option<String>) -> Result<Value, String> {
+    let cwd = project_root(&app, &id)?;
+    let msg = message.unwrap_or_default();
+    let msg = msg.trim();
+    let out = if msg.is_empty() {
+        run_git(&["stash", "push"], &cwd)?
+    } else {
+        run_git(&["stash", "push", "-m", msg], &cwd)?
+    };
+    Ok(json!({ "ok": true, "output": out }))
+}
+
+#[tauri::command]
+pub async fn git_stash_list(app: AppHandle, id: String) -> Result<Vec<Value>, String> {
+    let cwd = project_root(&app, &id)?;
+    let out = run_git(&["stash", "list", "--format=%s|%cr"], &cwd)?;
+    Ok(out.lines().filter(|l| !l.is_empty()).enumerate().map(|(i, line)| {
+        let parts: Vec<&str> = line.splitn(2, '|').collect();
+        let message = parts.first().copied().unwrap_or("");
+        let when = parts.get(1).copied().unwrap_or("");
+        json!({ "index": i, "message": message, "when": when })
+    }).collect())
+}
+
+#[tauri::command]
+pub async fn git_stash_apply(app: AppHandle, id: String, index: usize) -> Result<Value, String> {
+    let cwd = project_root(&app, &id)?;
+    run_git(&["stash", "apply", &format!("stash@{{{}}}", index)], &cwd)?;
+    Ok(json!({ "ok": true }))
+}
+
+#[tauri::command]
+pub async fn git_stash_pop(app: AppHandle, id: String, index: usize) -> Result<Value, String> {
+    let cwd = project_root(&app, &id)?;
+    run_git(&["stash", "pop", &format!("stash@{{{}}}", index)], &cwd)?;
+    Ok(json!({ "ok": true }))
+}
+
+#[tauri::command]
+pub async fn git_stash_drop(app: AppHandle, id: String, index: usize) -> Result<Value, String> {
+    let cwd = project_root(&app, &id)?;
+    run_git(&["stash", "drop", &format!("stash@{{{}}}", index)], &cwd)?;
+    Ok(json!({ "ok": true }))
+}
+
+// ─── Discard changes ────────────────────────────────────────────────────────
+
+/// Discards a single file's changes — `git checkout -- <path>` for a
+/// tracked modification, or a direct filesystem delete for an untracked
+/// file (git has no single-file "clean" without `-f`, which would also
+/// need the same care). Path-traversal-guarded the same way
+/// `ide.rs::resolve_in_project` guards IDE saves — this is a destructive,
+/// irreversible action, not just an edit.
+#[tauri::command]
+pub async fn git_discard_file(app: AppHandle, id: String, path: String, kind: String) -> Result<Value, String> {
+    let cwd = project_root(&app, &id)?;
+    if kind == "untracked" {
+        let root_canon = Path::new(&cwd).canonicalize().map_err(|e| e.to_string())?;
+        let target_canon = Path::new(&cwd).join(&path).canonicalize()
+            .map_err(|_| "File not found".to_string())?;
+        if !target_canon.starts_with(&root_canon) {
+            return Err("That path is outside the project.".into());
+        }
+        fs::remove_file(&target_canon).map_err(|e| e.to_string())?;
+    } else {
+        run_git(&["checkout", "--", &path], &cwd)?;
+    }
+    Ok(json!({ "ok": true }))
+}
+
+// ─── Clone ──────────────────────────────────────────────────────────────────
+
+// Extracts an "owner/repo" string from any of the URL shapes GitHub
+// actually hands out (https, https with .git, ssh) — used only to build a
+// token-authenticated retry URL, same fallback shape push/pull/fetch use.
+fn extract_owner_repo(url: &str) -> Option<String> {
+    let cleaned = url.trim().trim_end_matches(".git").trim_end_matches('/');
+    let rest = cleaned
+        .strip_prefix("https://github.com/")
+        .or_else(|| cleaned.strip_prefix("http://github.com/"))
+        .or_else(|| cleaned.strip_prefix("git@github.com:"))?;
+    let parts: Vec<&str> = rest.splitn(2, '/').collect();
+    if parts.len() == 2 && !parts[0].is_empty() && !parts[1].is_empty() {
+        Some(format!("{}/{}", parts[0], parts[1]))
+    } else {
+        None
+    }
+}
+
+/// Clones a repo (full URL, or a bare "owner/repo" shorthand which is
+/// expanded to a GitHub HTTPS URL) into a new folder under `dest_parent`,
+/// named after the repo. Falls back to a token-authenticated URL for
+/// private GitHub repos the same way push/pull/fetch already do. Returns
+/// the new folder's absolute path — the frontend then calls
+/// `projects.import()` on it, exactly like importing a local folder, so
+/// language detection / GitHub-remote detection / etc. all come for free
+/// from that existing command rather than being duplicated here.
+#[tauri::command]
+pub async fn git_clone_repo(app: AppHandle, url: String, dest_parent: String) -> Result<String, String> {
+    let url = url.trim();
+    if url.is_empty() { return Err("Repository URL is required".into()); }
+    let clone_url = if url.contains("://") || url.starts_with("git@") {
+        url.to_string()
+    } else {
+        // "owner/repo" shorthand
+        format!("https://github.com/{}.git", url.trim_matches('/'))
+    };
+
+    let repo_name = clone_url
+        .trim_end_matches('/')
+        .trim_end_matches(".git")
+        .rsplit('/')
+        .next()
+        .filter(|s| !s.is_empty())
+        .ok_or("Could not determine a folder name from that URL")?
+        .to_string();
+
+    let dest = Path::new(&dest_parent).join(&repo_name);
+    if dest.exists() {
+        return Err(format!("A folder named \"{}\" already exists there", repo_name));
+    }
+    fs::create_dir_all(&dest_parent).map_err(|e| e.to_string())?;
+    let dest_str = dest.to_string_lossy().to_string();
+
+    match run_git(&["clone", &clone_url, &dest_str], &dest_parent) {
+        Ok(_) => Ok(dest_str),
+        Err(first_err) => {
+            let token = crate::stored_github_token(&app).unwrap_or_default();
+            let Some(owner_repo) = extract_owner_repo(&clone_url) else { return Err(first_err) };
+            if token.is_empty() {
+                return Err(first_err);
+            }
+            let authed = format!("https://{}@github.com/{}.git", token, owner_repo);
+            let first_err = first_err.replace(&token, "***");
+            run_git(&["clone", &authed, &dest_str], &dest_parent)
+                .map(|_| dest_str)
+                .map_err(|e| e.replace(&token, "***"))
+                .map_err(|e| format!("{} (token retry: {})", first_err, e))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{parse_git_status_short, should_check_commit_sync};

@@ -343,6 +343,8 @@ fn main() {
             git_switch_branch, git_create_branch, git_push, git_get_readme, git_pull,
             git_stage_files, git_unstage_files, git_diff_file,
             git_get_ahead_behind,
+            git_stash_save, git_stash_list, git_stash_apply, git_stash_pop, git_stash_drop,
+            git_discard_file, git_clone_repo,
             // ai
             ai_generate_commit_message,
             // local api
@@ -353,6 +355,8 @@ fn main() {
             // github api (GitHub page: Overview, Releases tabs)
             github_get_repo_info, github_list_releases, github_create_release,
             github_list_issues, github_list_pull_requests, github_create_issue,
+            github_set_issue_state, github_comment_on_issue,
+            github_close_pull_request, github_merge_pull_request, github_create_pull_request,
             // run
             run_start, run_stop, run_get_running, run_is_running,
             // notes

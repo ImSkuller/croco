@@ -233,6 +233,25 @@ export const api = {
     unstageFiles:   (id, paths)  => invoke('git_unstage_files',    { id, paths }),
     /** @param {string} id @param {string} path @param {string} kind @returns {Promise<any>} */
     diffFile:       (id, path, kind) => invoke('git_diff_file',    { id, path, kind }),
+    /** @param {string} id @param {string} path @param {string} kind 'modified'|'untracked' @returns {Promise<any>} */
+    discardFile:    (id, path, kind) => invoke('git_discard_file', { id, path, kind }),
+
+    // Stash
+    /** @param {string} id @param {string} [message] @returns {Promise<any>} */
+    stashSave:  (id, message) => invoke('git_stash_save',  { id, message }),
+    /** @param {string} id @returns {Promise<any[]>} */
+    stashList:  (id)          => invoke('git_stash_list',  { id }),
+    /** @param {string} id @param {number} index @returns {Promise<any>} */
+    stashApply: (id, index)   => invoke('git_stash_apply', { id, index }),
+    /** @param {string} id @param {number} index @returns {Promise<any>} */
+    stashPop:   (id, index)   => invoke('git_stash_pop',   { id, index }),
+    /** @param {string} id @param {number} index @returns {Promise<any>} */
+    stashDrop:  (id, index)   => invoke('git_stash_drop',  { id, index }),
+
+    // Clone an existing repo (URL or "owner/repo") as a new project source —
+    // caller follows this up with projects.import() on the returned path.
+    /** @param {string} url @param {string} destParent @returns {Promise<string>} the cloned folder's absolute path */
+    cloneRepo: (url, destParent) => invoke('git_clone_repo', { url, destParent }),
 
     // Tags & version-diffing — GitHub page (Releases, Changelog, Insights tabs)
     /** @param {string} id @returns {Promise<any[]>} */
@@ -574,6 +593,16 @@ export const api = {
     listPullRequests: (id, state) => invoke('github_list_pull_requests', { id, state }),
     /** @param {string} id @param {string} title @param {string} body @returns {Promise<any>} */
     createIssue:      (id, title, body) => invoke('github_create_issue', { id, title, body }),
+    /** @param {string} id @param {number} number @param {string} state 'open'|'closed' @returns {Promise<any>} */
+    setIssueState:    (id, number, state) => invoke('github_set_issue_state', { id, number, state }),
+    /** @param {string} id @param {number} number @param {string} body @returns {Promise<any>} */
+    commentOnIssue:   (id, number, body) => invoke('github_comment_on_issue', { id, number, body }),
+    /** @param {string} id @param {number} number @returns {Promise<any>} */
+    closePullRequest: (id, number) => invoke('github_close_pull_request', { id, number }),
+    /** @param {string} id @param {number} number @param {string} mergeMethod 'merge'|'squash'|'rebase' @returns {Promise<any>} */
+    mergePullRequest: (id, number, mergeMethod) => invoke('github_merge_pull_request', { id, number, mergeMethod }),
+    /** @param {string} id @param {string} title @param {string} head @param {string} base @param {string} body @param {boolean} draft @returns {Promise<any>} */
+    createPullRequest: (id, title, head, base, body, draft) => invoke('github_create_pull_request', { id, title, head, base, body, draft }),
   },
 
   // ── Storage ──────────────────────────────────────────────────────────────────
