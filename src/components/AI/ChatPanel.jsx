@@ -93,9 +93,10 @@ export default function ChatPanel({ mode, provider, projectId }) {
         ) : messages.map((m, i) => (
           <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
             <div style={{
-              maxWidth: '80%', padding: '10px 14px', borderRadius: 10,
+              maxWidth: '80%', padding: '10px 14px', borderRadius: 'var(--r-lg)',
               background: m.role === 'user' ? 'var(--accent-dim)' : 'var(--card)',
               border: `1px solid ${m.role === 'user' ? 'var(--accent)' : 'var(--border)'}`,
+              backdropFilter: 'var(--panel-blur)', WebkitBackdropFilter: 'var(--panel-blur)',
               fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap', lineHeight: 1.5,
             }}>
               {m.text}
@@ -112,17 +113,17 @@ export default function ChatPanel({ mode, provider, projectId }) {
           onKeyDown={onKeyDown}
           placeholder={MODE_PLACEHOLDER[mode] || MODE_PLACEHOLDER.chat}
           rows={2}
-          style={{ flex: 1, resize: 'none', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: 'var(--text)', fontFamily: 'Geist, sans-serif', outline: 'none' }}
+          style={{ flex: 1, resize: 'none', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '9px 12px', fontSize: 13, color: 'var(--text)', fontFamily: 'Geist, sans-serif', outline: 'none', transition: 'border-color var(--transition-fast)' }}
         />
         <button
           onClick={send}
           disabled={sending || !input.trim()}
           style={{
-            padding: '0 18px', borderRadius: 8, border: 'none',
-            background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600,
+            padding: '0 18px', borderRadius: 'var(--r-md)', border: 'none',
+            background: 'var(--accent)', color: 'var(--accent-text)', fontSize: 12, fontWeight: 600,
             cursor: (sending || !input.trim()) ? 'not-allowed' : 'pointer',
             opacity: (sending || !input.trim()) ? 0.5 : 1,
-            fontFamily: 'Geist, sans-serif',
+            fontFamily: 'Geist, sans-serif', transition: 'opacity var(--transition-fast)',
           }}
         >
           Send

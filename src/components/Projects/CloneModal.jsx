@@ -48,7 +48,7 @@ export default function CloneModal({ defaultParent, onClose }) {
       onClick={e => { if (e.target === e.currentTarget && !busy) onClose() }}
       style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     >
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, maxWidth: 460, width: '90%', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 24, maxWidth: 460, width: '90%', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
           <GithubIcon />
           <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Clone from GitHub</span>
@@ -72,12 +72,12 @@ export default function CloneModal({ defaultParent, onClose }) {
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 22 }}>
           <button onClick={onClose} disabled={busy}
-            style={{ padding: '8px 16px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+            style={{ padding: '8px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
             Cancel
           </button>
           <button onClick={handleClone} disabled={!url.trim() || !parent.trim() || busy}
             style={{
-              padding: '8px 18px', borderRadius: 7, border: 'none',
+              padding: '8px 18px', borderRadius: 'var(--r-md)', border: 'none',
               background: url.trim() && parent.trim() && !busy ? '#24292e' : 'var(--dimmer)', color: '#fff',
               fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif',
               cursor: url.trim() && parent.trim() && !busy ? 'pointer' : 'not-allowed',

@@ -77,17 +77,21 @@ export default function AI() {
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       {/* Left nav */}
-      <div style={{ width: 190, flexShrink: 0, borderRight: '1px solid var(--border)', padding: '16px 10px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{
+        width: 190, flexShrink: 0, padding: '16px 10px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16,
+        borderRight: '1px solid var(--border)', background: 'var(--sidebar-bg)',
+        backdropFilter: 'var(--panel-blur)', WebkitBackdropFilter: 'var(--panel-blur)',
+      }}>
         <div>
           <div style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '0 8px', marginBottom: 6 }}>Modes</div>
           {MODES.map(m => (
-            <button key={m.id} onClick={() => setActive(m.id)} style={navBtnStyle(active === m.id)}>{m.label}</button>
+            <button key={m.id} className="ai-nav-btn" onClick={() => setActive(m.id)} style={navBtnStyle(active === m.id)}>{m.label}</button>
           ))}
         </div>
         <div>
           <div style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '0 8px', marginBottom: 6 }}>Storage Brain</div>
           {SECTIONS.map(s => (
-            <button key={s.id} onClick={() => setActive(s.id)} style={navBtnStyle(active === s.id)}>{s.label}</button>
+            <button key={s.id} className="ai-nav-btn" onClick={() => setActive(s.id)} style={navBtnStyle(active === s.id)}>{s.label}</button>
           ))}
         </div>
       </div>
@@ -124,11 +128,12 @@ export default function AI() {
                     title={p.needsKey && !aiKeysStored[p.id] ? 'No API key stored yet' : ''}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 5,
-                      padding: '5px 10px', borderRadius: 7,
+                      padding: '5px 10px', borderRadius: 'var(--r-md)',
                       border: `1px solid ${provider === p.id ? 'var(--accent)' : 'var(--border)'}`,
                       background: provider === p.id ? 'var(--accent-dim)' : 'transparent',
                       color: provider === p.id ? 'var(--text)' : 'var(--dimmer)',
                       fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif',
+                      transition: 'all var(--transition-fast)',
                     }}
                   >
                     {p.label}
@@ -189,7 +194,7 @@ function SearchResults({ results, onClear }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {results.map(r => (
-            <div key={r.id} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
+            <div key={r.id} className="pm-card" style={{ marginBottom: 0 }}>
               <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{r.title} <span style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>({r.type})</span></div>
               <div style={{ fontSize: 12, color: 'var(--dim)', marginTop: 4 }}>{r.body?.slice(0, 200)}</div>
             </div>
@@ -215,7 +220,7 @@ function ProviderSetup({ provider, aiKeysStored }) {
           <span style={{ fontSize: 13, color: 'var(--dimmer)' }}>No Ollama model selected yet — set it up in Settings → Modules → AI, then come back.</span>
           <button
             onClick={() => window.location.hash = '#/settings'}
-            style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}
+            style={{ padding: '8px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif', transition: 'background var(--transition-fast)' }}
           >
             Open Settings
           </button>
@@ -239,20 +244,22 @@ function ProviderSetup({ provider, aiKeysStored }) {
 
 function navBtnStyle(active) {
   return {
-    display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', borderRadius: 7,
+    display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', borderRadius: 'var(--r-md)',
     border: 'none', cursor: 'pointer', fontSize: 12, fontFamily: 'Geist, sans-serif',
     background: active ? 'var(--card)' : 'transparent',
     color: active ? 'var(--text)' : 'var(--dim)', fontWeight: active ? 500 : 400,
-    marginBottom: 1,
+    marginBottom: 1, transition: 'background var(--transition-fast), color var(--transition-fast)',
   }
 }
 
 const selectStyle = {
   background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--border)',
-  borderRadius: 7, padding: '5px 9px', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
+  borderRadius: 'var(--r-md)', padding: '5px 9px', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
+  transition: 'border-color var(--transition-fast)',
 }
 const iconBtnStyle = {
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  width: 26, height: 26, borderRadius: 6, border: '1px solid var(--border)',
+  width: 26, height: 26, borderRadius: 'var(--r-sm)', border: '1px solid var(--border)',
   background: 'transparent', color: 'var(--dim)', cursor: 'pointer',
+  transition: 'background var(--transition-fast), color var(--transition-fast)',
 }

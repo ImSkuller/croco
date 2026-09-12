@@ -69,38 +69,38 @@ export default function MemoryBrowser({ kind }) {
           value={draft.title}
           onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
           placeholder="Title"
-          style={{ background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: 'var(--text)', fontFamily: 'Geist, sans-serif' }}
+          style={{ background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '9px 12px', fontSize: 13, color: 'var(--text)', fontFamily: 'Geist, sans-serif', transition: 'border-color var(--transition-fast)' }}
         />
         <textarea
           value={draft.body}
           onChange={e => setDraft(d => ({ ...d, body: e.target.value }))}
           placeholder="Write it as markdown — this is exactly what gets saved to the .md file."
           rows={10}
-          style={{ background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: 'var(--text)', fontFamily: 'Geist Mono, monospace', resize: 'vertical' }}
+          style={{ background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '9px 12px', fontSize: 13, color: 'var(--text)', fontFamily: 'Geist Mono, monospace', resize: 'vertical', transition: 'border-color var(--transition-fast)' }}
         />
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <input
             value={draft.tags}
             onChange={e => setDraft(d => ({ ...d, tags: e.target.value }))}
             placeholder="tags, comma, separated"
-            style={{ flex: 1, background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist Mono, monospace' }}
+            style={{ flex: 1, background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '8px 12px', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist Mono, monospace', transition: 'border-color var(--transition-fast)' }}
           />
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--dim)' }}>
             Importance
             <select
               value={draft.importance}
               onChange={e => setDraft(d => ({ ...d, importance: Number(e.target.value) }))}
-              style={{ background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px' }}
+              style={{ background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '4px 8px' }}
             >
               {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </label>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={save} disabled={saving} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+          <button onClick={save} disabled={saving} style={{ padding: '8px 16px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: 'var(--accent-text)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
             {saving ? 'Saving…' : 'Save'}
           </button>
-          <button onClick={() => setEditingId(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+          <button onClick={() => setEditingId(null)} style={{ padding: '8px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
             Cancel
           </button>
         </div>
@@ -112,7 +112,7 @@ export default function MemoryBrowser({ kind }) {
     <div>
       <button
         onClick={startNew}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, padding: '8px 14px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif', transition: 'background var(--transition-fast)' }}
       >
         <PlusCircleIcon size={13} /> New {kind === 'memory' ? 'Memory' : 'Entry'}
       </button>
@@ -124,7 +124,7 @@ export default function MemoryBrowser({ kind }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {entries.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')).map(e => (
-            <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
+            <div key={e.id} className="pm-card" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 0 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{e.title}</div>
                 <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', marginTop: 2 }}>

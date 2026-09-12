@@ -120,7 +120,7 @@ export default function Focus() {
             <div style={{ fontSize: 11, color: 'var(--dimmer)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Geist Mono, monospace', marginBottom: 8 }}>Recent Sessions</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {history.map(s => (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}>
+                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', fontSize: 12 }}>
                   <span style={{ display: 'flex', color: s.kind === 'work' ? 'var(--accent)' : 'var(--dimmer)' }}><CheckCircleIcon size={13} /></span>
                   <span style={{ color: 'var(--text)', textTransform: 'capitalize' }}>{s.kind}</span>
                   <span style={{ marginLeft: 'auto', color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
@@ -147,15 +147,15 @@ function Stat({ label, value }) {
 
 const selectStyle = {
   background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--border)',
-  borderRadius: 7, padding: '7px 10px', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
+  borderRadius: 'var(--r-md)', padding: '7px 10px', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
 }
 const primaryBtnStyle = {
-  display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 8,
+  display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 'var(--r-lg)',
   border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600,
   cursor: 'pointer', fontFamily: 'Geist, sans-serif',
 }
 const secondaryBtnStyle = {
-  display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 8,
+  display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 'var(--r-lg)',
   border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 12,
   cursor: 'pointer', fontFamily: 'Geist, sans-serif',
 }

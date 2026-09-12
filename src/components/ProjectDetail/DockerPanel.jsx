@@ -68,7 +68,7 @@ export default function DockerPanel({ projectId }) {
             const running = s.status?.toLowerCase().includes('running')
             const busy = busyService === s.name || busyService === '__all__'
             return (
-              <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
+              <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '10px 14px' }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: running ? 'var(--green)' : 'var(--dimmer)', flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{s.name}</div>
@@ -96,7 +96,7 @@ export default function DockerPanel({ projectId }) {
             <span style={{ fontSize: 12, color: 'var(--dim)' }}>Logs — {logsFor}</span>
             <button onClick={() => { setLogsFor(null); setLogs(null) }} style={{ background: 'none', border: 'none', color: 'var(--dimmer)', cursor: 'pointer', fontSize: 11, fontFamily: 'Geist, sans-serif' }}>Close</button>
           </div>
-          <pre style={{ maxHeight: 300, overflow: 'auto', padding: '10px 12px', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11, fontFamily: 'Geist Mono, monospace', color: 'var(--dim)', whiteSpace: 'pre-wrap' }}>
+          <pre style={{ maxHeight: 300, overflow: 'auto', padding: '10px 12px', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', fontSize: 11, fontFamily: 'Geist Mono, monospace', color: 'var(--dim)', whiteSpace: 'pre-wrap' }}>
             {logs ?? 'Loading…'}
           </pre>
         </div>
@@ -106,11 +106,11 @@ export default function DockerPanel({ projectId }) {
 }
 
 const smallBtnStyle = {
-  display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6,
+  display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 'var(--r-sm)',
   border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)',
   fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif',
 }
 const iconBtnStyle = {
   display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26,
-  borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', cursor: 'pointer', flexShrink: 0,
+  borderRadius: 'var(--r-sm)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', cursor: 'pointer', flexShrink: 0,
 }

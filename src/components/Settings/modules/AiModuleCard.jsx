@@ -67,7 +67,7 @@ export default function AiModuleCard({ aiKeysStored }) {
                 {ollamaError ? (
                   <InfoBox>Could not reach Ollama at that host — make sure it's running (`ollama serve`). {ollamaError}</InfoBox>
                 ) : ollamaModels === null ? (
-                  <button onClick={refreshOllamaModels} style={{ padding: '7px 14px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+                  <button onClick={refreshOllamaModels} style={{ padding: '7px 14px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
                     Load installed models
                   </button>
                 ) : ollamaModels.length === 0 ? (

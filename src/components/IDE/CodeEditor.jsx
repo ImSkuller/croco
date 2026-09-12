@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Editor from '@monaco-editor/react'
 import { applyCrocoMonacoTheme } from '../../lib/monacoSetup' // self-hosts Monaco locally instead of the default CDN loader — see that file
-import { FolderIcon, FolderOpenIcon, FileIcon, SaveIcon } from '../../constants/SimpleSvgExports'
+import { FolderIcon, FolderOpenIcon, FileIcon, SaveIcon, RefreshIcon } from '../../constants/SimpleSvgExports'
 import { useToast } from '../Toast/useToast.js'
 import { useData } from '../../lib/store'
 import useDiscordPresence from '../../hooks/useDiscordPresence'
@@ -24,25 +24,52 @@ const LANG_BY_EXT = {
 }
 function langForExt(ext) { return LANG_BY_EXT[ext] || 'plaintext' }
 
+// A little VS Code-style per-extension color coding for file icons — purely
+// cosmetic, makes a busy tree scannable at a glance.
+const ICON_COLOR_BY_EXT = {
+  '.js': '#e8c547', '.jsx': '#61dafb', '.mjs': '#e8c547', '.cjs': '#e8c547',
+  '.ts': '#4a9eff', '.tsx': '#4a9eff',
+  '.json': '#e5854f', '.md': '#b48cf2', '.mdx': '#b48cf2',
+  '.rs': '#e5646a', '.py': '#6fdd9a', '.go': '#4ad9d9', '.java': '#e5854f',
+  '.c': '#6aa8f0', '.h': '#6aa8f0', '.cpp': '#6aa8f0', '.hpp': '#6aa8f0', '.cs': '#b48cf2',
+  '.html': '#e5854f', '.css': '#4a9eff', '.scss': '#e56aad', '.less': '#4a9eff',
+  '.yml': '#b48cf2', '.yaml': '#b48cf2', '.toml': '#b48cf2',
+}
+function iconColorForExt(ext) { return ICON_COLOR_BY_EXT[ext] || 'var(--dimmer)' }
+
+function TreeRow({ children, depth, active, onClick }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+        padding: '4px 8px', paddingLeft: 8 + depth * 14, margin: '0 4px',
+        borderRadius: 'var(--r-sm)', fontSize: 12, userSelect: 'none',
+        background: active ? 'var(--accent-dim)' : hovered ? 'var(--hover-bg)' : 'transparent',
+        borderLeft: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
+        transition: 'background var(--transition-fast)',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
 function TreeNode({ node, depth, openPath, onOpenFile, expanded, toggleExpanded }) {
   if (node.type === 'dir') {
     if (node.ignored) return null
     const isOpen = !!expanded[node.rel]
     return (
       <div>
-        <div
-          onClick={() => toggleExpanded(node.rel)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-            padding: '3px 8px', paddingLeft: 8 + depth * 14,
-            fontSize: 12, color: 'var(--dim)', userSelect: 'none',
-          }}
-        >
+        <TreeRow depth={depth} onClick={() => toggleExpanded(node.rel)}>
           <span style={{ display: 'flex', flexShrink: 0, color: 'var(--dimmer)' }}>
             {isOpen ? <FolderOpenIcon size={13} /> : <FolderIcon size={13} />}
           </span>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
-        </div>
+          <span style={{ color: 'var(--dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
+        </TreeRow>
         {isOpen && node.children?.map(child => (
           <TreeNode key={child.rel} node={child} depth={depth + 1} openPath={openPath} onOpenFile={onOpenFile} expanded={expanded} toggleExpanded={toggleExpanded} />
         ))}
@@ -51,20 +78,10 @@ function TreeNode({ node, depth, openPath, onOpenFile, expanded, toggleExpanded 
   }
   const active = node.rel === openPath
   return (
-    <div
-      onClick={() => onOpenFile(node)}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-        padding: '3px 8px', paddingLeft: 8 + depth * 14,
-        fontSize: 12, color: active ? 'var(--text)' : 'var(--dim)',
-        background: active ? 'var(--accent-dim)' : 'transparent',
-        borderLeft: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
-        userSelect: 'none',
-      }}
-    >
-      <span style={{ display: 'flex', flexShrink: 0, color: 'var(--dimmer)' }}><FileIcon size={13} /></span>
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
-    </div>
+    <TreeRow depth={depth} active={active} onClick={() => onOpenFile(node)}>
+      <span style={{ display: 'flex', flexShrink: 0, color: iconColorForExt(node.ext) }}><FileIcon size={13} /></span>
+      <span style={{ color: active ? 'var(--text)' : 'var(--dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
+    </TreeRow>
   )
 }
 
@@ -90,16 +107,19 @@ export default function CodeEditor({ projectId, projectName }) {
     applyCrocoMonacoTheme()
   }, [settings?.appearance?.theme, settings?.appearance?.accentColor, settings?.appearance?.glass])
 
-  // Callers key this component by projectId (see IDE.jsx / ProjectDetail.jsx)
-  // so a project switch remounts fresh — tree/tabs/activeRel all start at
-  // their initial values automatically, no manual reset needed here.
-  useEffect(() => {
+  const loadTree = useCallback((showSpinner) => {
     if (!projectId || !window.api) return
+    if (showSpinner) setLoadingTree(true)
     window.api.projects.getFileTree(projectId)
       .then(setTree)
       .catch(() => setTree([]))
       .finally(() => setLoadingTree(false))
   }, [projectId])
+
+  // Callers key this component by projectId (see IDE.jsx / ProjectDetail.jsx)
+  // so a project switch remounts fresh — tree/tabs/activeRel all start at
+  // their initial values automatically, no manual reset needed here.
+  useEffect(() => { Promise.resolve().then(() => loadTree(true)) }, [loadTree])
 
   const toggleExpanded = useCallback((rel) => {
     setExpanded(prev => ({ ...prev, [rel]: !prev[rel] }))
@@ -175,76 +195,108 @@ export default function CodeEditor({ projectId, projectName }) {
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       {/* File tree */}
-      <div style={{ width: 220, flexShrink: 0, borderRight: '1px solid var(--border)', overflowY: 'auto', padding: '8px 0' }}>
-        {loadingTree ? (
-          <div style={{ padding: 12, fontSize: 12, color: 'var(--dimmer)' }}>Loading…</div>
-        ) : !tree?.length ? (
-          <div style={{ padding: 12, fontSize: 12, color: 'var(--dimmer)' }}>No files</div>
-        ) : tree.map(node => (
-          <TreeNode key={node.rel} node={node} depth={0} openPath={activeRel} onOpenFile={openFile} expanded={expanded} toggleExpanded={toggleExpanded} />
-        ))}
+      <div style={{
+        width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column',
+        borderRight: '1px solid var(--border)', background: 'var(--sidebar-bg)',
+        backdropFilter: 'var(--panel-blur)', WebkitBackdropFilter: 'var(--panel-blur)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 6px', flexShrink: 0 }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--dimmer)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Explorer</span>
+          <button
+            onClick={() => loadTree(false)}
+            title="Refresh file tree"
+            style={{ display: 'flex', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', padding: 2, borderRadius: 'var(--r-sm)', transition: 'color var(--transition-fast)' }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--dim)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--dimmer)'}
+          ><RefreshIcon size={12} /></button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 8 }}>
+          {loadingTree ? (
+            <div style={{ padding: '4px 12px', fontSize: 12, color: 'var(--dimmer)' }}>Loading…</div>
+          ) : !tree?.length ? (
+            <div style={{ padding: '4px 12px', fontSize: 12, color: 'var(--dimmer)' }}>No files</div>
+          ) : tree.map(node => (
+            <TreeNode key={node.rel} node={node} depth={0} openPath={activeRel} onOpenFile={openFile} expanded={expanded} toggleExpanded={toggleExpanded} />
+          ))}
+        </div>
       </div>
 
       {/* Editor + tabs */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {tabs.length > 0 && (
-          <div style={{ display: 'flex', overflowX: 'auto', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-            {tabs.map(t => (
-              <div
-                key={t.rel}
-                onClick={() => setActiveRel(t.rel)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
-                  fontSize: 12, cursor: 'pointer', flexShrink: 0,
-                  color: t.rel === activeRel ? 'var(--text)' : 'var(--dim)',
-                  background: t.rel === activeRel ? 'var(--card)' : 'transparent',
-                  borderRight: '1px solid var(--border)',
-                }}
-              >
-                <span>{t.name}</span>
-                {t.dirty && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />}
-                <span onClick={(e) => closeTab(t.rel, e)} style={{ color: 'var(--dimmer)', padding: '0 2px' }}>×</span>
-              </div>
-            ))}
+          <div style={{ display: 'flex', overflowX: 'auto', borderBottom: '1px solid var(--border)', flexShrink: 0, gap: 2, padding: '4px 4px 0' }}>
+            {tabs.map(t => {
+              const isActive = t.rel === activeRel
+              return (
+                <div
+                  key={t.rel}
+                  onClick={() => setActiveRel(t.rel)}
+                  className="ide-tab"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px 7px 12px',
+                    fontSize: 12, cursor: 'pointer', flexShrink: 0,
+                    borderRadius: 'var(--r-sm) var(--r-sm) 0 0',
+                    color: isActive ? 'var(--text)' : 'var(--dim)',
+                    background: isActive ? 'var(--card)' : 'transparent',
+                    borderBottom: `2px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
+                    transition: 'background var(--transition-fast), color var(--transition-fast)',
+                  }}
+                >
+                  <span style={{ display: 'flex', color: iconColorForExt(t.ext) }}><FileIcon size={12} /></span>
+                  <span>{t.name}</span>
+                  {t.dirty && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />}
+                  <span
+                    onClick={(e) => closeTab(t.rel, e)}
+                    title="Close"
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 16, height: 16, borderRadius: 'var(--r-sm)', color: 'var(--dimmer)',
+                      fontSize: 13, lineHeight: 1, transition: 'background var(--transition-fast), color var(--transition-fast)',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.color = 'var(--text)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--dimmer)' }}
+                  >×</span>
+                </div>
+              )
+            })}
           </div>
         )}
 
         {activeTab ? (
-          <>
-            <Editor
-              key={activeTab.rel}
-              height="100%"
-              language={langForExt(activeTab.ext)}
-              value={activeTab.content}
-              theme="croco"
-              onChange={handleChange}
-              onMount={(editor) => { editorRef.current = editor; applyCrocoMonacoTheme() }}
-              options={{
-                fontSize: prefs.fontSize,
-                tabSize: prefs.tabSize,
-                insertSpaces: prefs.insertSpaces,
-                wordWrap: prefs.wordWrap,
-                minimap: { enabled: prefs.minimap },
-                lineNumbers: prefs.lineNumbers,
-                renderWhitespace: prefs.renderWhitespace,
-                cursorBlinking: prefs.cursorBlinking,
-                automaticLayout: true,
-                fontFamily: 'Geist Mono, monospace',
-              }}
-            />
-          </>
+          <Editor
+            key={activeTab.rel}
+            height="100%"
+            language={langForExt(activeTab.ext)}
+            value={activeTab.content}
+            theme="croco"
+            onChange={handleChange}
+            onMount={(editor) => { editorRef.current = editor; applyCrocoMonacoTheme() }}
+            options={{
+              fontSize: prefs.fontSize,
+              tabSize: prefs.tabSize,
+              insertSpaces: prefs.insertSpaces,
+              wordWrap: prefs.wordWrap,
+              minimap: { enabled: prefs.minimap },
+              lineNumbers: prefs.lineNumbers,
+              renderWhitespace: prefs.renderWhitespace,
+              cursorBlinking: prefs.cursorBlinking,
+              automaticLayout: true,
+              fontFamily: 'Geist Mono, monospace',
+            }}
+          />
         ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--dimmer)', fontSize: 13 }}>
-            Select a file to start editing
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--dimmer)' }}>
+            <FileIcon size={28} />
+            <span style={{ fontSize: 13 }}>Select a file to start editing</span>
           </div>
         )}
 
         {activeTab && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 12px', borderTop: '1px solid var(--border)', fontSize: 11, color: 'var(--dimmer)', flexShrink: 0 }}>
-            <span>{activeTab.rel}</span>
+            <span style={{ fontFamily: 'Geist Mono, monospace' }}>{activeTab.rel}</span>
             <span
               onClick={() => saveTab(activeTab.rel)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: activeTab.dirty ? 'pointer' : 'default', color: activeTab.dirty ? 'var(--accent)' : 'var(--dimmer)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: activeTab.dirty ? 'pointer' : 'default', color: activeTab.dirty ? 'var(--accent)' : 'var(--dimmer)', transition: 'color var(--transition-fast)' }}
             >
               <SaveIcon size={11} /> {activeTab.dirty ? 'Save (Ctrl+S)' : 'Saved'}
             </span>

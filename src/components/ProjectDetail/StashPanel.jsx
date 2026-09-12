@@ -75,14 +75,14 @@ export default function StashPanel({ projectId, toast, onChanged }) {
           onKeyDown={e => { if (e.key === 'Enter') handleSave() }}
           placeholder="Stash message (optional)"
           style={{
-            flex: 1, fontSize: 12, padding: '6px 10px', borderRadius: 6,
+            flex: 1, fontSize: 12, padding: '6px 10px', borderRadius: 'var(--r-sm)',
             background: 'var(--base)', border: '1px solid var(--border)', color: 'var(--text)',
             outline: 'none', fontFamily: 'Geist, sans-serif',
           }}
         />
         <button onClick={handleSave} disabled={saving}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6,
+            display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 'var(--r-sm)',
             border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)',
             fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1,
           }}>
@@ -97,22 +97,22 @@ export default function StashPanel({ projectId, toast, onChanged }) {
           {stashes.map(s => (
             <div key={s.index} style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px',
-              background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 7,
+              background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
             }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.message}</div>
                 <div style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>{s.when}</div>
               </div>
               <button onClick={() => handleApply(s.index, false)} disabled={busyIndex === s.index} title="Apply (keep in stash)"
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 5, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 'var(--r-sm)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
                 Apply
               </button>
               <button onClick={() => handleApply(s.index, true)} disabled={busyIndex === s.index} title="Pop (apply and remove)"
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 5, border: '1px solid var(--border)', background: 'transparent', color: '#4aff91', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 'var(--r-sm)', border: '1px solid var(--border)', background: 'transparent', color: '#4aff91', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
                 <DownloadIcon size={11} /> Pop
               </button>
               <button onClick={() => handleDrop(s.index)} disabled={busyIndex === s.index} title="Drop (delete permanently)"
-                style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', borderRadius: 5, border: '1px solid var(--border)', background: 'transparent', color: '#ff4444', cursor: 'pointer' }}>
+                style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', borderRadius: 'var(--r-sm)', border: '1px solid var(--border)', background: 'transparent', color: '#ff4444', cursor: 'pointer' }}>
                 <TrashIcon size={11} />
               </button>
             </div>

@@ -32,8 +32,9 @@ export default function IDE() {
           onChange={e => setProjectId(e.target.value || null)}
           style={{
             marginLeft: 'auto', background: 'var(--card)', color: 'var(--text)',
-            border: '1px solid var(--border)', borderRadius: 7, padding: '6px 10px',
+            border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '6px 10px',
             fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
+            transition: 'border-color var(--transition-fast)',
           }}
         >
           <option value="">Choose a project…</option>

@@ -87,15 +87,15 @@ export default function EnvPanel({ projectId }) {
 }
 
 const inputStyle = {
-  background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 7,
+  background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
   padding: '7px 10px', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist Mono, monospace', outline: 'none',
 }
 const smallBtnStyle = {
-  display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 6,
+  display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 'var(--r-sm)',
   border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)',
   fontSize: 11, fontFamily: 'Geist, sans-serif',
 }
 const iconBtnStyle = {
   display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28,
-  borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', cursor: 'pointer', flexShrink: 0,
+  borderRadius: 'var(--r-sm)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', cursor: 'pointer', flexShrink: 0,
 }
