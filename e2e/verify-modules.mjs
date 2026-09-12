@@ -99,7 +99,7 @@ async function main() {
     // ── Module toggles persist ───────────────────────────────────────────
     await callApiOk(driver, 'settings.update', {
       modules: {
-        discord: { enabled: true, applicationId: '123456789012345678', richPresence: { enabled: true }, webhook: { enabled: true } },
+        discord: { enabled: true, richPresence: { enabled: true }, webhook: { enabled: true } },
         ide: { enabled: true, editor: { fontSize: 16, tabSize: 4, wordWrap: 'on' } },
         ai: { enabled: true, provider: 'anthropic', ollama: { host: 'http://localhost:11434', model: 'llama3.1' } },
         docker: { enabled: true },
@@ -110,7 +110,6 @@ async function main() {
     })
     const settingsAfter = await callApiOk(driver, 'settings.get')
     assert(settingsAfter.modules.discord.enabled === true, 'discord module enabled persisted')
-    assert(settingsAfter.modules.discord.applicationId === '123456789012345678', 'discord applicationId persisted')
     assert(settingsAfter.modules.discord.richPresence.enabled === true, 'discord richPresence persisted')
     assert(settingsAfter.modules.discord.webhook.enabled === true, 'discord webhook sub-toggle persisted')
     assert(settingsAfter.modules.ide.enabled === true, 'ide module enabled persisted')

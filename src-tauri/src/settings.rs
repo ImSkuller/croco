@@ -133,12 +133,6 @@ pub fn default_settings() -> Value {
         "modules": {
             "discord": {
                 "enabled": false,
-                // User-supplied, not compiled in — a hardcoded placeholder
-                // here would mean Rich Presence quietly stays broken until
-                // a code change, for every user, forever. Get one at
-                // discord.com/developers/applications and paste it in
-                // Settings → Modules → Discord.
-                "applicationId": "",
                 "richPresence": { "enabled": false },
                 "webhook": { "enabled": false }
             },

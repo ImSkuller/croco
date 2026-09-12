@@ -20,16 +20,17 @@ use tauri::AppHandle;
 use discord_rich_presence::activity::{Activity, Assets, Timestamps};
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
 
+// Croco's own Discord application — the same one for every install/user,
+// not something each person registers for themselves. Everyone should see
+// the same "Croco" identity (name + icon) in Rich Presence, not a Discord
+// application they had to go create.
+const DISCORD_CLIENT_ID: &str = "1548412009119358997";
+
 static RPC_CLIENT: Lazy<Mutex<Option<DiscordIpcClient>>> = Lazy::new(|| Mutex::new(None));
 // Set once per connection (not per activity update) so the "elapsed time"
 // Discord shows counts from when Croco connected, not from the last project
 // switch.
 static CONNECTED_AT: Lazy<Mutex<Option<i64>>> = Lazy::new(|| Mutex::new(None));
-// Which application id the current connection was opened with — user-
-// supplied (settings.modules.discord.applicationId), not compiled in, so a
-// pasted-in change needs to drop and reopen the IPC connection rather than
-// silently keep talking under the old id.
-static CONNECTED_APP_ID: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
 
 fn modules_discord(app: &AppHandle) -> Value {
     crate::read_settings(app)["modules"]["discord"].clone()
@@ -48,22 +49,16 @@ fn webhook_enabled(app: &AppHandle) -> bool {
 // Connects lazily on first activity update rather than at app launch — most
 // users will never enable this module, so there's no reason to touch
 // Discord's IPC socket unless/until it's actually needed. Silently returns
-// Err (never panics) when Discord isn't running locally, or no application
-// id is configured yet; callers treat that as a no-op, not a surfaced error.
-fn ensure_connected(app_id: &str) -> Result<(), String> {
-    if app_id.is_empty() {
-        return Err("No Discord application id configured".into());
-    }
+// Err (never panics) when Discord isn't running locally; callers treat that
+// as a no-op, not a surfaced error.
+fn ensure_connected() -> Result<(), String> {
     let mut guard = RPC_CLIENT.lock().unwrap_or_else(|e| e.into_inner());
-    let mut connected_id = CONNECTED_APP_ID.lock().unwrap_or_else(|e| e.into_inner());
-    if guard.is_some() && connected_id.as_deref() == Some(app_id) {
+    if guard.is_some() {
         return Ok(());
     }
-    if let Some(mut client) = guard.take() { let _ = client.close(); }
-    let mut client = DiscordIpcClient::new(app_id).map_err(|e| e.to_string())?;
+    let mut client = DiscordIpcClient::new(DISCORD_CLIENT_ID).map_err(|e| e.to_string())?;
     client.connect().map_err(|e| e.to_string())?;
     *guard = Some(client);
-    *connected_id = Some(app_id.to_string());
     *CONNECTED_AT.lock().unwrap_or_else(|e| e.into_inner()) = Some(chrono::Utc::now().timestamp());
     Ok(())
 }
@@ -74,7 +69,6 @@ fn disconnect_locked() {
         let _ = client.close();
     }
     *CONNECTED_AT.lock().unwrap_or_else(|e| e.into_inner()) = None;
-    *CONNECTED_APP_ID.lock().unwrap_or_else(|e| e.into_inner()) = None;
 }
 
 /// Sets "Editing `<project_name>`" on the user's Discord profile. A silent
@@ -85,10 +79,9 @@ pub async fn discord_set_activity(app: AppHandle, project_name: String) -> Resul
     if !rich_presence_enabled(&app) {
         return Ok(());
     }
-    let app_id = crate::read_settings(&app)["modules"]["discord"]["applicationId"].as_str().unwrap_or("").to_string();
     tauri::async_runtime::spawn_blocking(move || {
-        if ensure_connected(&app_id).is_err() {
-            return; // no application id configured, or Discord not running — nothing to do
+        if ensure_connected().is_err() {
+            return; // Discord not running — nothing to do
         }
         let started_at = CONNECTED_AT.lock().unwrap_or_else(|e| e.into_inner()).unwrap_or_else(|| chrono::Utc::now().timestamp());
         let mut guard = RPC_CLIENT.lock().unwrap_or_else(|e| e.into_inner());
