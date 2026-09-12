@@ -530,7 +530,9 @@ pub async fn projects_create(app: AppHandle, data: Value) -> Result<Value, Strin
 
     // 5. Create GitHub repo
     if data["createGithubRepo"].as_bool().unwrap_or(false) {
-        let token    = settings["user"]["github"]["token"].as_str().unwrap_or("").to_string();
+        // See git_ops.rs's projects_publish_to_github for the same fix and
+        // why: the real token only ever lives in the OS keyring.
+        let token    = crate::stored_github_token(&app).unwrap_or_default();
         let username = settings["user"]["github"]["username"].as_str().unwrap_or("").to_string();
         if !token.is_empty() && !username.is_empty() {
             let proj_slug = project["slug"].as_str().unwrap_or("").to_string();
@@ -834,8 +836,9 @@ pub async fn projects_delete_github_repo(app: AppHandle, id: String) -> Result<V
     crate::validate_safe_id(&id)?;
     let project  = get_project(&app, &id).ok_or("Project not found")?;
     let github   = project["github"].as_str().ok_or("No GitHub repository linked")?;
-    let settings = crate::read_settings(&app);
-    let token    = settings["user"]["github"]["token"].as_str().ok_or("No GitHub token in Settings → User")?;
+    // See git_ops.rs's projects_publish_to_github for the same fix and why:
+    // the real token only ever lives in the OS keyring.
+    let token    = crate::stored_github_token(&app).ok_or("No GitHub token in Settings → User")?;
     let parts: Vec<&str> = github.splitn(2, '/').collect();
     if parts.len() < 2 { return Err(format!("Invalid repo format: {}", github)); }
     let (owner, repo) = (parts[0], parts[1]);

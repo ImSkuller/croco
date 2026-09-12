@@ -179,7 +179,13 @@ fn parse_git_status_short(output: &str) -> GitStatusLines {
 // configured, retry with a token-authenticated URL so pushes work even when no
 // system credential helper is set up.
 fn push_with_auth_fallback(app: &AppHandle, id: &str, cwd: &str, branch: &str) -> Result<String, String> {
-    match run_git(&["push", "origin", branch], cwd) {
+    // Always -u: a branch that already has upstream tracking treats this as
+    // a no-op (git just reconfirms it), but a branch pushed for the first
+    // time (e.g. one just created via GitPanel's "+ new") would otherwise
+    // never get tracking set up — leaving git_get_ahead_behind's `@{u}`
+    // lookup permanently unresolvable and the UI stuck showing "no remote
+    // configured" even though the push succeeded.
+    match run_git(&["push", "-u", "origin", branch], cwd) {
         Ok(out) => Ok(out),
         Err(first_err) => {
             let token = crate::stored_github_token(app).unwrap_or_default();
@@ -196,7 +202,7 @@ fn push_with_auth_fallback(app: &AppHandle, id: &str, cwd: &str, branch: &str) -
             // remote URL), and git sometimes echoes the remote URL back in
             // its own error text.
             let first_err = first_err.replace(&token, "***");
-            run_git(&["push", &authed, &format!("HEAD:{}", branch)], cwd)
+            run_git(&["push", "-u", &authed, &format!("HEAD:{}", branch)], cwd)
                 .map_err(|e| e.replace(&token, "***"))
                 .map_err(|e| format!("{} (token retry: {})", first_err, e))
         }
@@ -528,7 +534,12 @@ pub async fn projects_publish_to_github(
 ) -> Result<Value, String> {
     crate::validate_safe_id(&id)?;
     let settings = crate::read_settings(&app);
-    let token = settings["user"]["github"]["token"].as_str().unwrap_or("").to_string();
+    // The real token lives only in the OS keyring (strip_secrets removes it
+    // from every read_settings() call) — read it the same way github_ops.rs
+    // already does everywhere else. This used to read
+    // settings["user"]["github"]["token"], a field that never exists in
+    // settings.json at all, so this command could never succeed.
+    let token = crate::stored_github_token(&app).unwrap_or_default();
     if token.is_empty() { return Err("No GitHub token — add one in Settings → User".into()); }
 
     let repo = crate::create_github_repo(&repo_name, private, &token).await?;
