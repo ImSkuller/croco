@@ -17,7 +17,7 @@ export default function IDE() {
   const activeProjects = useMemo(() => projects.filter(p => !p.trashedAt && !p.archived), [projects])
   const selected = activeProjects.find(p => p.id === projectId) || null
 
-  useDiscordPresence('Using the IDE', selected ? `Browsing ${selected.name}` : null)
+  useDiscordPresence('Using the IDE', selected ? `Browsing ${selected.name}` : null, selected?.github ? selected.githubUrl : null)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -45,7 +45,7 @@ export default function IDE() {
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {selected ? (
           <Suspense fallback={<CodeEditorLoading />}>
-            <CodeEditor key={selected.id} projectId={selected.id} projectName={selected.name} />
+            <CodeEditor key={selected.id} projectId={selected.id} projectName={selected.name} projectGithubUrl={selected.github ? selected.githubUrl : null} />
           </Suspense>
         ) : (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--dimmer)' }}>

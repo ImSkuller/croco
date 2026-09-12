@@ -47,7 +47,8 @@ export default function AI() {
   const scopedProject = activeProjects.find(p => p.id === projectId)
   useDiscordPresence(
     isModeTab ? `${activeLabel} mode` : `Browsing ${activeLabel}`,
-    isModeTab && scopedProject ? `on ${scopedProject.name}` : null
+    isModeTab && scopedProject ? `on ${scopedProject.name}` : null,
+    isModeTab && scopedProject?.github ? scopedProject.githubUrl : null
   )
 
   const handleProviderChange = (p) => {

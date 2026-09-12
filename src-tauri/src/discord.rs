@@ -17,7 +17,7 @@ use serde_json::{json, Value};
 use std::sync::Mutex;
 use tauri::AppHandle;
 
-use discord_rich_presence::activity::{Activity, Assets, Timestamps};
+use discord_rich_presence::activity::{Activity, Assets, Button, Timestamps};
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
 
 // Croco's own Discord application — the same one for every install/user,
@@ -76,12 +76,19 @@ fn disconnect_locked() {
 /// `state` (second line, further detail: a tab name, an open file, an AI
 /// mode, ...). The frontend owns all of the "what page/context am I in"
 /// logic (see `useDiscordPresence` + `DiscordPresenceManager`, which also
-/// handles idle detection) — this command just relays whatever two lines
-/// it's given to Discord. A silent no-op (Ok) whenever the module/sub-
-/// toggle is off or Discord isn't reachable — Rich Presence is cosmetic,
-/// never worth an error toast.
+/// handles idle detection) — this command just relays whatever it's given
+/// to Discord. A silent no-op (Ok) whenever the module/sub-toggle is off
+/// or Discord isn't reachable — Rich Presence is cosmetic, never worth an
+/// error toast.
+///
+/// `github_url` (the project's real html_url, not the "owner/repo" string
+/// — see project.githubUrl) adds a "View on GitHub" button when present.
+/// Discord never shows a viewer their own activity's buttons back to
+/// them — only other people looking at the profile see it — so this is
+/// unverifiable by testing solo; that's a Discord client behavior, not a
+/// bug here.
 #[tauri::command]
-pub async fn discord_set_presence(app: AppHandle, details: String, state: Option<String>) -> Result<(), String> {
+pub async fn discord_set_presence(app: AppHandle, details: String, state: Option<String>, github_url: Option<String>) -> Result<(), String> {
     if !rich_presence_enabled(&app) {
         return Ok(());
     }
@@ -98,6 +105,9 @@ pub async fn discord_set_presence(app: AppHandle, details: String, state: Option
                 .assets(Assets::new().large_image("croco_logo").large_text("Croco"));
             if let Some(s) = state.as_deref().filter(|s| !s.is_empty()) {
                 activity = activity.state(s);
+            }
+            if let Some(url) = github_url.as_deref().filter(|u| !u.is_empty()) {
+                activity = activity.buttons(vec![Button::new("View on GitHub", url)]);
             }
             // A failed set_activity almost always means the connection died
             // underneath us (Discord closed) — drop it so the next call

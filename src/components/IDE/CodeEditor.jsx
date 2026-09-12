@@ -88,7 +88,7 @@ function TreeNode({ node, depth, openPath, onOpenFile, expanded, toggleExpanded 
 // Embedded lightweight editor (Monaco — the engine VS Code itself is built
 // on), not real VS Code — no extensions, no debugger. Shared between the
 // standalone /ide page and ProjectDetail's "Code" tab.
-export default function CodeEditor({ projectId, projectName }) {
+export default function CodeEditor({ projectId, projectName, projectGithubUrl }) {
   const toast = useToast()
   const settings = useData('settings')
   const [tree, setTree] = useState(null)
@@ -144,7 +144,8 @@ export default function CodeEditor({ projectId, projectName }) {
   // generic "Using the IDE" / "Editing <project>" context stands.
   useDiscordPresence(
     activeTab ? `Editing ${activeTab.name}` : null,
-    projectName ? `in ${projectName}` : null
+    projectName ? `in ${projectName}` : null,
+    projectGithubUrl
   )
 
   const handleChange = (value) => {

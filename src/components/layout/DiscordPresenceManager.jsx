@@ -14,7 +14,7 @@ export default function DiscordPresenceManager() {
   const settings = useData('settings')
   const enabled = !!settings?.modules?.discord?.enabled && !!settings?.modules?.discord?.richPresence?.enabled
   const lastActivityRef = useRef(0)
-  const lastSentRef = useRef(null) // { details, state } | null
+  const lastSentRef = useRef(null) // { details, state, githubUrl } | null
   const idleRef = useRef(false)
 
   useEffect(() => {
@@ -32,22 +32,22 @@ export default function DiscordPresenceManager() {
       return
     }
 
-    const send = (details, state) => {
-      const next = { details, state: state || null }
+    const send = (details, state, githubUrl) => {
+      const next = { details, state: state || null, githubUrl: githubUrl || null }
       const prev = lastSentRef.current
-      if (prev && prev.details === next.details && prev.state === next.state) return
+      if (prev && prev.details === next.details && prev.state === next.state && prev.githubUrl === next.githubUrl) return
       lastSentRef.current = next
-      window.api.discord.setPresence(next.details, next.state || undefined).catch(() => {})
+      window.api.discord.setPresence(next.details, next.state || undefined, next.githubUrl || undefined).catch(() => {})
     }
 
     const evaluate = () => {
       const idleNow = Date.now() - lastActivityRef.current >= IDLE_THRESHOLD_MS
       idleRef.current = idleNow
       if (idleNow) {
-        send('Idle', null)
+        send('Idle', null, null)
       } else {
         const ctx = getDiscordContext()
-        send(ctx.details, ctx.state)
+        send(ctx.details, ctx.state, ctx.githubUrl)
       }
     }
 

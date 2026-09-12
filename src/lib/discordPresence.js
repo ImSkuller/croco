@@ -13,13 +13,18 @@
 // IDE") just needs to be the one whose effect fires last/most recently,
 // which is already true for any mounted child relative to its parent.
 
-const DEFAULT_CONTEXT = { details: 'Browsing Croco', state: null }
+const DEFAULT_CONTEXT = { details: 'Browsing Croco', state: null, githubUrl: null }
 
 let currentContext = DEFAULT_CONTEXT
 const listeners = new Set()
 
-export function setDiscordContext(details, state = null) {
-  currentContext = { details, state }
+// githubUrl is the project's real html_url (project.githubUrl — NOT
+// project.github, which is only the "owner/repo" string) — when present,
+// DiscordPresenceManager attaches a "View on GitHub" button. Discord never
+// shows a viewer their own activity's buttons back to them, only other
+// people looking at the profile see it, so this can't be verified solo.
+export function setDiscordContext(details, state = null, githubUrl = null) {
+  currentContext = { details, state, githubUrl }
   listeners.forEach(l => l(currentContext))
 }
 

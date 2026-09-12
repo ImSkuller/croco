@@ -482,7 +482,8 @@ export default function ProjectDetail() {
   // no-ops on a null project.
   useDiscordPresence(
     project?.name ? `Editing ${project.name}` : null,
-    TABS.find(t => t.id === tab)?.label
+    TABS.find(t => t.id === tab)?.label,
+    project?.github ? project?.githubUrl : null
   )
 
   // ── Loading / not found ──────────────────────────────────
@@ -764,7 +765,7 @@ export default function ProjectDetail() {
         // inside the 820px-wide scrolling wrapper below.
         <div style={{ flex: 1, overflow: 'hidden' }}>
           <Suspense fallback={<div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--dimmer)', fontSize: 13 }}>Loading editor…</div>}>
-            <CodeEditor key={project.id} projectId={project.id} projectName={project.name} />
+            <CodeEditor key={project.id} projectId={project.id} projectName={project.name} projectGithubUrl={project.github ? project.githubUrl : null} />
           </Suspense>
         </div>
       ) : (
