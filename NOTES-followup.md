@@ -467,3 +467,17 @@ infrastructure):
    stop), not UI session length (personality.rs already documented why
    that's ambiguous under the close-to-tray default — left as-is,
    extended rather than revisited). New `ProjectTimeCard` on Patterns.
+11. **`croco://` deep links** — `tauri-plugin-deep-link`, cold-start only
+    (see the item-10-adjacent note above on why redirecting into an
+    already-running instance is out of scope here too — same missing
+    single-instance plugin). `croco://project/<id>`, `croco://note/<id>`,
+    `croco://todos`. e2e-verified by spawning the compiled binary
+    directly with a raw URL argument (exactly how Windows invokes a
+    registered protocol handler) rather than through tauri-driver, which
+    turned out to mangle CLI args by prepending `--` to everything in its
+    `args` capability — a test-harness quirk, not a product bug; confirmed
+    by bypassing it and checking the real resolved path in the activity
+    log at each pipeline stage. Item 12 (community templates) and item 13
+    (E2EE sync) remain — 13 explicitly needs a hosting/architecture
+    decision (relay server vs. peer-to-peer, who operates it, at what
+    cost) that isn't mine to make unilaterally.
