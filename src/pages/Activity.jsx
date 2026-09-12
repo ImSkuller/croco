@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RefreshIcon, TrashIcon, ActivityIcon, GithubIcon, PlayIcon, StopIcon, FolderIcon, IDEIcon, CheckCircleIcon, NoteIcon2, PaletteIcon, ClockIcon } from '../constants/SimpleSvgExports'
 import useDiscordPresence from '../hooks/useDiscordPresence'
+import { EmptyState } from '../components/ui/EmptyState'
 
 // Group-based filter — each group maps to one or more event types
 const FILTER_GROUPS = [
@@ -153,11 +154,11 @@ export default function Activity() {
           )}
 
           {!loading && filtered.length === 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', gap: 12 }}>
-              <div style={{ color: 'var(--dimmer)', opacity: 0.4 }}><ActivityIcon /></div>
-              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--dim)' }}>No activity yet</div>
-              <div style={{ fontSize: 12, color: 'var(--dimmer)' }}>Create a project, make a commit, or run a process to see events here.</div>
-            </div>
+            <EmptyState
+              icon={<ActivityIcon size={30} />}
+              title="No activity yet"
+              body="Create a project, make a commit, or run a process to see events here."
+            />
           )}
 
           {!loading && grouped.map(([day, dayEntries]) => (

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast/useToast.js'
 import useDiscordPresence from '../hooks/useDiscordPresence'
+import { EmptyState } from '../components/ui/EmptyState'
 import {
   EditIcon, RefreshIcon, CheckCircleIcon, DownloadIcon, BulbIcon,
   NoteIcon2, EraserIcon, UndoIcon, SaveIcon,
@@ -495,11 +496,11 @@ export default function Ideas() {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div className="pm-page" style={{ padding: 28 }}>
           {filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 12 }}><BulbIcon size={32} /></div>
-              <div style={{ fontSize: 14, color: 'var(--dim)' }}>No ideas match your filters</div>
-              <div style={{ fontSize: 12, color: 'var(--dimmer)', marginTop: 6 }}>Try a different category or search term</div>
-            </div>
+            <EmptyState
+              icon={<BulbIcon size={32} />}
+              title="No ideas match your filters"
+              body="Try a different category or search term."
+            />
           ) : (
             <div className="pm-grid-3">
               {filtered.map((idea, i) => (

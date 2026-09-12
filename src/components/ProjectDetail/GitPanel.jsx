@@ -10,6 +10,7 @@ import InfoSection from './InfoSection'
 import Chip from './Chip'
 import Spinner from './Spinner'
 import DiffView from './DiffView'
+import { EmptyState } from '../ui/EmptyState'
 import StashPanel from './StashPanel'
 
 export default function GitPanel({
@@ -68,11 +69,11 @@ export default function GitPanel({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {!isRepo ? (
-        <div style={{ textAlign: 'center', padding: '60px 0' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><PackageIcon size={28} /></div>
-          <div style={{ fontSize: 13, color: 'var(--dim)', marginBottom: 6 }}>No git repository at project path</div>
-          <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', marginBottom: 16 }}>{project.paths?.projectRoot}</div>
-          <button
+        <EmptyState compact mono
+          icon={<PackageIcon size={24} />}
+          title="No git repository at project path"
+          body={project.paths?.projectRoot}
+          action={<button
             disabled={initingRepo}
             onClick={async () => {
               setInitingRepo(true)
@@ -95,8 +96,8 @@ export default function GitPanel({
             style={{ padding: '8px 18px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: initingRepo ? 'not-allowed' : 'pointer', opacity: initingRepo ? 0.6 : 1 }}
           >
             {initingRepo ? 'Initialising…' : 'Initialize Repository'}
-          </button>
-        </div>
+          </button>}
+        />
       ) : gitLoading ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '40px 0' }}>
           <Spinner size={14} />

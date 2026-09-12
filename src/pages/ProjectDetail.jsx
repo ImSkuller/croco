@@ -28,6 +28,7 @@ import EnvPanel from '../components/ProjectDetail/EnvPanel'
 import { useData } from '../lib/store'
 import useDiscordPresence from '../hooks/useDiscordPresence'
 import TagChip from '../components/ui/TagChip'
+import { EmptyState } from '../components/ui/EmptyState'
 
 // Lazy — monaco-editor is several MB and must never sit in the main bundle
 // for users who don't enable the IDE module (see lib/monacoSetup.js).
@@ -912,16 +913,12 @@ export default function ProjectDetail() {
                   <span style={{ fontSize: 12, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Reading dependencies…</span>
                 </div>
               ) : !deps || deps.type === 'unknown' ? (
-                <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><PackageIcon size={28} /></div>
-                  <div style={{ fontSize: 13, color: 'var(--dim)', marginBottom: 4 }}>No dependency file found</div>
-                  <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
-                    Expected package.json, requirements.txt, go.mod, or Cargo.toml
-                  </div>
-                  <button onClick={loadDeps} style={{ marginTop: 14, padding: '7px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
-                    Refresh
-                  </button>
-                </div>
+                <EmptyState compact mono
+                  icon={<PackageIcon size={24} />}
+                  title="No dependency file found"
+                  body="Expected package.json, requirements.txt, go.mod, or Cargo.toml"
+                  action={<button onClick={loadDeps} style={{ padding: '7px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>Refresh</button>}
+                />
               ) : (
                 <>
                   {/* Header */}
@@ -1049,12 +1046,12 @@ export default function ProjectDetail() {
                   <span style={{ fontSize: 12, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Reading files…</span>
                 </div>
               ) : !fileTree || fileTree.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><FolderOpenIcon size={28} /></div>
-                  <div style={{ fontSize: 13, color: 'var(--dim)' }}>Project folder is empty</div>
-                  <div style={{ fontSize: 11, color: 'var(--dimmer)', marginTop: 4, fontFamily: 'Geist Mono, monospace' }}>{project.paths?.projectRoot}</div>
-                  <button onClick={loadFiles} style={{ marginTop: 14, padding: '7px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>Refresh</button>
-                </div>
+                <EmptyState compact mono
+                  icon={<FolderOpenIcon size={24} />}
+                  title="Project folder is empty"
+                  body={project.paths?.projectRoot}
+                  action={<button onClick={loadFiles} style={{ padding: '7px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>Refresh</button>}
+                />
               ) : (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -1163,11 +1160,7 @@ export default function ProjectDetail() {
               </div>
 
               {projectTodos.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '50px 0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><CheckCircleIcon size={30} /></div>
-                  <div style={{ fontSize: 13, color: 'var(--dim)' }}>No tasks for this project yet</div>
-                  <div style={{ fontSize: 11, color: 'var(--dimmer)', marginTop: 4 }}>Type above to add one</div>
-                </div>
+                <EmptyState compact icon={<CheckCircleIcon size={24} />} title="No tasks for this project yet" body="Type above to add one." />
               ) : (
                 <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
                   {projectTodos.map((todo, i) => {
@@ -1275,11 +1268,7 @@ export default function ProjectDetail() {
               </button>
 
               {projectNotes.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '50px 0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><NoteIcon2 size={30} /></div>
-                  <div style={{ fontSize: 13, color: 'var(--dim)' }}>No notes for this project yet</div>
-                  <div style={{ fontSize: 11, color: 'var(--dimmer)', marginTop: 4 }}>Click above to create one</div>
-                </div>
+                <EmptyState compact icon={<NoteIcon2 size={24} />} title="No notes for this project yet" body="Click above to create one." />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[...projectNotes]
@@ -1334,11 +1323,7 @@ export default function ProjectDetail() {
                   <span style={{ fontSize: 12, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Loading README…</span>
                 </div>
               ) : readme === false || !readme ? (
-                <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><FileIcon size={28} /></div>
-                  <div style={{ fontSize: 13, color: 'var(--dim)' }}>No README found</div>
-                  <div style={{ fontSize: 11, color: 'var(--dimmer)', marginTop: 4, fontFamily: 'Geist Mono, monospace' }}>Add a README.md to your project root</div>
-                </div>
+                <EmptyState compact mono icon={<FileIcon size={24} />} title="No README found" body="Add a README.md to your project root" />
               ) : (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>

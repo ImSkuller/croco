@@ -418,6 +418,31 @@ export default function Sidebar() {
   )
 }
 
+// Subsequence match with a simple score: 0 = no match; substring hits score
+// highest (prefix best of all), then consecutive-run and word-start
+// bonuses for scattered matches. Cheap enough to run per keystroke over a
+// few hundred palette items with no memoisation.
+function fuzzyScore(q, text) {
+  if (!q) return 1
+  const t = (text || '').toLowerCase()
+  if (!t) return 0
+  const idx = t.indexOf(q)
+  if (idx === 0) return 100
+  if (idx > 0) return 80 - Math.min(idx, 20)
+  let ti = 0, score = 0, prev = -2
+  for (let qi = 0; qi < q.length; qi++) {
+    const c = q[qi]
+    const found = t.indexOf(c, ti)
+    if (found === -1) return 0
+    score += 2
+    if (found === prev + 1) score += 3                       // consecutive run
+    if (found === 0 || /[\s\-_/.]/.test(t[found - 1])) score += 4 // word start
+    prev = found
+    ti = found + 1
+  }
+  return Math.min(score, 60)
+}
+
 function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetcode }) {
   const navigate    = useNavigate()
   const inputRef    = useRef(null)
@@ -432,12 +457,14 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
   const isLeetcodeQuery   = q === 'croco:leetcode'
   const isSpecialQuery    = isGameQuery || isEasterEggQuery || isBabumQuery || isLeetcodeQuery
 
-  const results = query.trim() && !isSpecialQuery
-    ? items.filter(item =>
-        item.label.toLowerCase().includes(query.toLowerCase()) ||
-        item.sub.toLowerCase().includes(query.toLowerCase()) ||
-        item.type.toLowerCase().includes(query.toLowerCase())
-      )
+  // Fuzzy: "prjset" finds "Project Settings", "gh" finds "GitHub". Ranked
+  // so exact/prefix/substring hits on the label outrank scattered matches.
+  const results = q && !isSpecialQuery
+    ? items
+        .map(item => ({ item, score: Math.max(fuzzyScore(q, item.label) * 2, fuzzyScore(q, item.sub), fuzzyScore(q, item.type)) }))
+        .filter(r => r.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(r => r.item)
     : isSpecialQuery ? [] : items
 
   useEffect(() => { Promise.resolve().then(() => setSelected(0)) }, [query])
