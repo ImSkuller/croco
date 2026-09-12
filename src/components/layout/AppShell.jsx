@@ -30,6 +30,13 @@ export default function AppShell() {
     return () => window.removeEventListener('croco:shortcuts-changed', handler)
   }, [])
 
+  // croco:// deep links (Phase 6 item 11) — the backend resolves the URL
+  // to a router path and emits it once per link; navigate straight there.
+  useEffect(() => {
+    if (!window.api) return
+    return window.api.system.onDeepLink(path => { if (path) navigate(path) })
+  }, [navigate])
+
   // Global keyboard shortcuts
   useEffect(() => {
     let gPressed = false

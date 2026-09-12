@@ -285,6 +285,13 @@ export const api = {
     lookupCommunityUser:    (username) => invoke('system_lookup_community_user',    { githubUsername: username }),
     /** @param {string} username @returns {Promise<any>} */
     validateGithubUsername: (username) => invoke('system_validate_github_username', { username }),
+
+    // croco:// deep links (Phase 6 item 11) — fires with a router path
+    // (e.g. "/projects/<id>") whenever this launch was triggered by, or
+    // later receives, a registered deep link. Rust-side only; no
+    // @tauri-apps/plugin-deep-link needed on this side.
+    /** @param {(path: string) => void} cb @returns {() => void} */
+    onDeepLink: (cb) => sub('deep-link:navigate', cb),
   },
 
   // ── Notes ────────────────────────────────────────────────────────────────────

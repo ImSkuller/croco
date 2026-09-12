@@ -62,6 +62,8 @@ pub(crate) use ai::*;
 mod local_api;
 pub(crate) use local_api::*;
 
+mod deep_link;
+
 // ─── Global state ──────────────────────────────────────────────────────────────
 
 // User-Agent for all GitHub API calls — always matches the app version.
@@ -237,6 +239,9 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     // false, which is the default — see local_api.rs.
     tauri::async_runtime::spawn(local_api_apply(handle.clone()));
 
+    // croco:// deep links (Phase 6 item 11) — see deep_link.rs.
+    deep_link::init(&handle);
+
     // Build tray menu
     let show  = MenuItem::with_id(app, "show",  "Show Window", true, None::<&str>)?;
     let sep   = PredefinedMenuItem::separator(app)?;
@@ -295,6 +300,7 @@ fn main() {
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_deep_link::init())
         .setup(|app| setup_app(app))
         .invoke_handler(tauri::generate_handler![
             // settings
