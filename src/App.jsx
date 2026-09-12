@@ -19,6 +19,10 @@ import ProjectForm from './pages/ProjectForm'
 import Ideas from './pages/Ideas'
 import EasterEggs from './pages/EasterEggs'
 import Trash from './pages/Trash'
+import AI from './pages/AI'
+import IDE from './pages/IDE'
+import Focus from './pages/Focus'
+import RequireModule from './components/layout/RequireModule'
 
 export default function App() {
   useEffect(() => {
@@ -55,6 +59,11 @@ export default function App() {
           <Route path="github" element={<GitHubPage />} />
           <Route path="ideas" element={<Ideas />} />
           <Route path="trash" element={<Trash />} />
+
+          {/* Beta modules — Settings → Modules (see docs/modules-plan.md) */}
+          <Route path="ai"    element={<RequireModule module="ai"><AI /></RequireModule>} />
+          <Route path="ide"   element={<RequireModule module="ide"><IDE /></RequireModule>} />
+          <Route path="focus" element={<RequireModule module="focusTimer"><Focus /></RequireModule>} />
           <Route path="easter-eggs" element={<EasterEggs />} />
           <Route path="note-editor" element={<NoteEditor />} />
           <Route path="note-editor/:noteId" element={<NoteEditor />} />

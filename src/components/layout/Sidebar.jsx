@@ -4,7 +4,7 @@ import { GridIcon, ListIcon, Logo, NoteIcon, SearchIcon, SettingsIcon, TodoIcon 
 import {
   StarIcon, ActivityIcon, TrendIcon, GithubIcon, TrashIcon, HomeIcon, BulbIcon,
   PlusCircleIcon, ImportIcon, PaletteIcon, SaveIcon, FolderIcon, NoteIcon2, CheckCircleIcon,
-  GameIcon, GiftIcon, MusicNoteIcon, PuzzleIcon,
+  GameIcon, GiftIcon, MusicNoteIcon, PuzzleIcon, AIIcon, IDEIcon, ClockIcon,
 } from '../../constants/SimpleSvgExports.jsx'
 import ManagerVersion from '../../constants/versionManager.jsx'
 import { useToast } from '../Toast/useToast.js'
@@ -123,28 +123,36 @@ export default function Sidebar() {
     [projects, notes, todos])
   const initials          = userName ? userName.slice(0, 2).toUpperCase() : '??'
 
-  const NAV = useMemo(() => [
-    {
-      label: 'Menu',
-      items: [
-        { to: '/',            label: 'Dashboard',  badge: null,                    icon: <GridIcon /> },
-        { to: '/projects',    label: 'Projects',   badge: activeProjects || null,   icon: <ListIcon /> },
-        { to: '/favourites',  label: 'Favourites', badge: null,                    icon: <StarIcon filled={false} /> },
-        { to: '/notes',       label: 'Notes',      badge: unarchivedNotes || null,  icon: <NoteIcon /> },
-        { to: '/todos',       label: 'Todo',       badge: openTodosCount || null,   icon: <TodoIcon />, badgeStyle: 'accent' },
-        { to: '/activity',    label: 'Activity',   badge: null,                    icon: <ActivityIcon /> },
-        { to: '/patterns',    label: 'Patterns',   badge: null,                    icon: <TrendIcon /> },
-        { to: '/github',      label: 'GitHub',     badge: null,                    icon: <GithubIcon /> },
-      ],
-    },
-    {
-      label: 'System',
-      items: [
-        { to: '/trash',     label: 'Trash',    badge: trashedCount || null,   icon: <TrashIcon /> },
-        { to: '/settings',  label: 'Settings', badge: hasUpdate ? '↑' : null, icon: <SettingsIcon />, badgeStyle: hasUpdate ? 'accent' : undefined },
-      ],
-    },
-  ], [activeProjects, unarchivedNotes, openTodosCount, trashedCount, hasUpdate])
+  const aiModuleOn    = !!settings?.modules?.ai?.enabled
+  const ideModuleOn   = !!settings?.modules?.ide?.enabled
+  const focusModuleOn = !!settings?.modules?.focusTimer?.enabled
+
+  const NAV = useMemo(() => {
+    const menuItems = [
+      { to: '/',            label: 'Dashboard',  badge: null,                    icon: <GridIcon /> },
+      { to: '/projects',    label: 'Projects',   badge: activeProjects || null,   icon: <ListIcon /> },
+      { to: '/favourites',  label: 'Favourites', badge: null,                    icon: <StarIcon filled={false} /> },
+      { to: '/notes',       label: 'Notes',      badge: unarchivedNotes || null,  icon: <NoteIcon /> },
+      { to: '/todos',       label: 'Todo',       badge: openTodosCount || null,   icon: <TodoIcon />, badgeStyle: 'accent' },
+      { to: '/activity',    label: 'Activity',   badge: null,                    icon: <ActivityIcon /> },
+      { to: '/patterns',    label: 'Patterns',   badge: null,                    icon: <TrendIcon /> },
+      { to: '/github',      label: 'GitHub',     badge: null,                    icon: <GithubIcon /> },
+    ]
+    // Beta modules — only shown once enabled in Settings → Modules.
+    if (aiModuleOn)    menuItems.push({ to: '/ai',    label: 'AI',    badge: 'β', badgeStyle: 'accent', icon: <AIIcon /> })
+    if (ideModuleOn)   menuItems.push({ to: '/ide',   label: 'IDE',   badge: 'β', badgeStyle: 'accent', icon: <IDEIcon /> })
+    if (focusModuleOn) menuItems.push({ to: '/focus', label: 'Focus', badge: 'β', badgeStyle: 'accent', icon: <ClockIcon /> })
+    return [
+      { label: 'Menu', items: menuItems },
+      {
+        label: 'System',
+        items: [
+          { to: '/trash',     label: 'Trash',    badge: trashedCount || null,   icon: <TrashIcon /> },
+          { to: '/settings',  label: 'Settings', badge: hasUpdate ? '↑' : null, icon: <SettingsIcon />, badgeStyle: hasUpdate ? 'accent' : undefined },
+        ],
+      },
+    ]
+  }, [activeProjects, unarchivedNotes, openTodosCount, trashedCount, hasUpdate, aiModuleOn, ideModuleOn, focusModuleOn])
 
   // Command-palette actions — the part that makes Ctrl/Cmd+K an actual
   // command palette rather than just an entity/page search. Each calls the

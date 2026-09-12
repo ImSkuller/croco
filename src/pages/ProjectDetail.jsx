@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeftIcon, StarIcon, IdeLogoIcon, FolderOpenIcon, GithubIcon,
@@ -23,12 +23,23 @@ import FileTreeNodes from '../components/ProjectDetail/FileTreeNodes'
 import TerminalPanel from '../components/ProjectDetail/TerminalPanel'
 import GitPanel from '../components/ProjectDetail/GitPanel'
 import ConfirmModal from '../components/ProjectDetail/ConfirmModal'
+import DockerPanel from '../components/ProjectDetail/DockerPanel'
+import EnvPanel from '../components/ProjectDetail/EnvPanel'
+import { useData } from '../lib/store'
+
+// Lazy — monaco-editor is several MB and must never sit in the main bundle
+// for users who don't enable the IDE module (see lib/monacoSetup.js).
+const CodeEditor = lazy(() => import('../components/IDE/CodeEditor'))
 
 // ── Main ─────────────────────────────────────────────────────
 export default function ProjectDetail() {
   const { projectId } = useParams()
   const navigate      = useNavigate()
   const toast         = useToast()
+  const settings      = useData('settings')
+  const ideModuleOn   = !!settings?.modules?.ide?.enabled
+  const dockerModuleOn = !!settings?.modules?.docker?.enabled
+  const envModuleOn   = !!settings?.modules?.envManager?.enabled
 
   const [project,     setProject]     = useState(null)
   const [languages,   setLanguages]   = useState([])
@@ -117,6 +128,14 @@ export default function ProjectDetail() {
   useEffect(() => {
     try { setPinnedNoteIds(JSON.parse(localStorage.getItem(`croco:pinned-notes:${projectId}`) || '[]')) } catch { setPinnedNoteIds([]) }
   }, [projectId])
+
+  // Discord Rich Presence (beta module) — silent no-op on the backend side
+  // if the module/sub-toggle is off or Discord isn't running.
+  useEffect(() => {
+    if (!window.api || !project?.name) return
+    window.api.discord.setActivity(project.name).catch(() => {})
+    return () => { window.api.discord.clearActivity().catch(() => {}) }
+  }, [project?.name])
 
   const togglePinNote = (noteId) => {
     setPinnedNoteIds(prev => {
@@ -494,6 +513,9 @@ export default function ProjectDetail() {
     { id: 'readme',    label: 'README' },
     { id: 'deps',      label: 'Deps' },
     { id: 'files',     label: 'Files' },
+    ...(ideModuleOn ? [{ id: 'code', label: 'Code', badge: 'β', badgeStyle: 'green' }] : []),
+    ...(dockerModuleOn ? [{ id: 'docker', label: 'Docker', badge: 'β', badgeStyle: 'green' }] : []),
+    ...(envModuleOn ? [{ id: 'env', label: 'Env', badge: 'β', badgeStyle: 'green' }] : []),
     { id: 'todos',     label: 'Todos' },
     { id: 'notes',     label: 'Notes' },
     { id: 'settings',  label: 'Settings' },
@@ -721,6 +743,16 @@ export default function ProjectDetail() {
       </div>
 
       {/* ── Tab content ─────────────────────────────────── */}
+      {tab === 'code' ? (
+        // Full-bleed, fixed-height container — Monaco needs a real sized
+        // parent, unlike every other tab here which is free-flowing text
+        // inside the 820px-wide scrolling wrapper below.
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <Suspense fallback={<div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--dimmer)', fontSize: 13 }}>Loading editor…</div>}>
+            <CodeEditor key={project.id} projectId={project.id} />
+          </Suspense>
+        </div>
+      ) : (
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         <div key={tab} className="pm-tab-content" style={{ maxWidth: 820, padding: '24px 28px' }}>
 
@@ -991,6 +1023,12 @@ export default function ProjectDetail() {
               )}
             </div>
           )}
+
+          {/* ─ DOCKER ────────────────────────────────────── */}
+          {tab === 'docker' && <DockerPanel projectId={project.id} />}
+
+          {/* ─ ENV ───────────────────────────────────────── */}
+          {tab === 'env' && <EnvPanel projectId={project.id} />}
 
           {/* ─ TODOS ─────────────────────────────────────── */}
           {tab === 'todos' && (
@@ -1637,6 +1675,7 @@ export default function ProjectDetail() {
 
         </div>
       </div>
+      )}
 
       {/* ── Confirm modal ────────────────────────────────── */}
       {modal && (

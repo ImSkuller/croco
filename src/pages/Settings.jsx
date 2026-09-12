@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, LockIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon, AIIcon, EyeIcon, EyeOffIcon, APIIcon, CopyIcon, AlertTriangleIcon } from '../constants/SimpleSvgExports'
+import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, LockIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon, AIIcon, EyeIcon, EyeOffIcon, APIIcon, CopyIcon, AlertTriangleIcon, PuzzleIcon } from '../constants/SimpleSvgExports'
 import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, PathInput, IDEOption, ToggleChip, Toggle, InfoBox, SmallBtn, SaveBtn } from '../components/Settings/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { THEMES, applyTheme, getThemeAccentSwatch, normalizeThemeId } from '../lib/theme.js'
@@ -8,6 +8,7 @@ import { lazyLoadAllPickerFonts } from '../lib/lazyGoogleFont.js'
 import { SHORTCUT_DEFS } from '../lib/shortcuts'
 import StorageSection from '../components/Settings/StorageSection'
 import ObsidianSection from '../components/Settings/ObsidianSection'
+import ModulesSection from '../components/Settings/ModulesSection'
 import UpdatesSection from '../components/Settings/UpdatesSection'
 import ShortcutsSection from '../components/Settings/ShortcutsSection'
 import DangerSection from '../components/Settings/DangerSection'
@@ -48,6 +49,7 @@ const NAV_SECTIONS = [
   { id: 'github',     label: 'GitHub',       icon: <GitIcon />     },
   { id: 'ai',         label: 'AI',           icon: <AIIcon />      },
   { id: 'localApi',   label: 'Local API',    icon: <APIIcon />     },
+  { id: 'modules',    label: 'Modules',      icon: <PuzzleIcon />  },
   { id: 'appearance', label: 'Appearance',   icon: <PaletteIcon /> },
   { id: 'behaviour',  label: 'Behaviour',    icon: <TagIcon />     },
   { id: 'storage',    label: 'Storage',      icon: <DatabaseIcon /> },
@@ -1143,6 +1145,9 @@ export default function Settings() {
                 )}
               </>
             )}
+
+            {/* Modules */}
+            {activeSection === 'modules' && <ModulesSection aiKeysStored={aiKeysStored} />}
 
             {/* Appearance */}
             {activeSection === 'appearance' && (
