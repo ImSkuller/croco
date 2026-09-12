@@ -169,6 +169,13 @@ pub async fn run_start(app: AppHandle, project_id: String, command_type: String,
             crate::personality::track(&app, "project_run_time", json!({ "projectId": pid, "seconds": elapsed_secs }));
             let ok = code == 0;
             emit_toast(&app, &pname, &format!("Process exited (code {})", code), if ok { "success" } else { "error" });
+            crate::notify_event(
+                &app,
+                if ok { "runFinished" } else { "runFailed" },
+                &pname,
+                &if ok { "Run finished.".to_string() } else { format!("Run failed (exit code {code}).") },
+                false,
+            );
         });
     }
 

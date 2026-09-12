@@ -399,6 +399,7 @@ fn main() {
             templates_list,
             // notify
             notify_send, notify_send_desktop, notify_desktop_permission_granted, notify_request_desktop_permission,
+            notify_send_event,
             // updates
             updates_check, updates_install, app_exit,
             // github oauth

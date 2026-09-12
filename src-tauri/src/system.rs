@@ -240,6 +240,30 @@ pub fn notify_send_desktop(app: AppHandle, title: String, body: String) -> Resul
         .map_err(|e| e.to_string())
 }
 
+/// Desktop notification gated on a per-event opt-in
+/// (settings.app.notifications.<event>, see default_settings) and on the OS
+/// permission. Callers fire-and-forget; a disabled event or a denied
+/// permission is the normal case, never an error. `only_when_unfocused`
+/// skips the notification while the Croco window is in the foreground —
+/// used for events the user is presumably already watching (an AI reply
+/// on the AI page).
+pub fn notify_event(app: &AppHandle, event: &str, title: &str, body: &str, only_when_unfocused: bool) {
+    let settings = crate::read_settings(app);
+    if settings["app"]["notifications"][event].as_bool() != Some(true) { return; }
+    if !notify_desktop_permission_granted(app.clone()) { return; }
+    if only_when_unfocused {
+        let focused = app.get_webview_window("main").and_then(|w| w.is_focused().ok()).unwrap_or(false);
+        if focused { return; }
+    }
+    let _ = notify_send_desktop(app.clone(), title.to_string(), body.to_string());
+}
+
+#[tauri::command]
+pub fn notify_send_event(app: AppHandle, event: String, title: String, body: String) -> Result<(), String> {
+    notify_event(&app, &event, &title, &body, false);
+    Ok(())
+}
+
 // Reject project IDs that contain path-traversal characters.
 // Valid IDs are UUIDs (hex digits + hyphens) or short alphanumeric slugs.
 pub fn validate_safe_id(id: &str) -> Result<(), String> {

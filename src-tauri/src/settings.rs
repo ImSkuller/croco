@@ -124,7 +124,19 @@ pub fn default_settings() -> Value {
             },
             // Hidden (private-path) projects stay off the Dashboard unless
             // the user opts in — archived ones never show there.
-            "showHiddenOnDashboard": false
+            "showHiddenOnDashboard": false,
+            // Per-event desktop notifications (see system.rs::notify_event).
+            // Failures default on — those are the ones you'd miss while
+            // looking elsewhere; successes default off to avoid noise.
+            // deadlineReminders above stays its own switch.
+            "notifications": {
+                "runFinished": false,
+                "runFailed": true,
+                "pushSucceeded": false,
+                "pushFailed": true,
+                "aiReply": true,
+                "focusEnded": true
+            }
         },
         // Modules (v2.0) — optional, beta, off-by-default features gated
         // behind Settings → Modules rather than always-on parts of the app.

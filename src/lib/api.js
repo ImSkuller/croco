@@ -543,6 +543,8 @@ export const api = {
     requestDesktopPermission:   () => invoke('notify_request_desktop_permission'),
     /** @param {string} title @param {string} body @returns {Promise<void>} */
     sendDesktop:                (title, body) => invoke('notify_send_desktop', { title, body }),
+    /** Desktop notification gated on settings.app.notifications.<event> + OS permission. @param {string} event @param {string} title @param {string} body */
+    sendEvent:                  (event, title, body) => invoke('notify_send_event', { event, title, body }),
   },
 
   // ── Updates ──────────────────────────────────────────────────────────────────

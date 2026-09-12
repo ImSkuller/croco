@@ -61,7 +61,8 @@ export default function Focus() {
     if (remainingMs > 0) return
     notifiedRef.current = true
     window.api?.focus.end(active.id).then(() => {
-      window.api?.notify.sendDesktop(
+      window.api?.notify.sendEvent(
+        'focusEnded',
         active.kind === 'work' ? 'Focus session complete' : 'Break over',
         active.kind === 'work' ? 'Time for a break.' : 'Back to it.'
       ).catch(() => {})

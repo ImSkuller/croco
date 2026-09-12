@@ -415,12 +415,14 @@ pub async fn git_commit(app: AppHandle, id: String, msg: String, push: Option<bo
             crate::activity_log(&app, "git.committed", json!({ "projectId": id, "message": message, "pushed": true }));
             crate::personality::track(&app, "commit", json!({ "projectId": id }));
             crate::emit_toast(&app, "Committed & pushed", &message, "success");
+            crate::notify_event(&app, "pushSucceeded", "Pushed", &message, true);
             Ok(json!({ "ok": true, "pushed": true }))
         }
         Err(e) => {
             crate::activity_log(&app, "git.committed", json!({ "projectId": id, "message": message, "pushed": false }));
             crate::personality::track(&app, "commit", json!({ "projectId": id }));
             crate::emit_toast(&app, "Committed (push failed)", &e, "warning");
+            crate::notify_event(&app, "pushFailed", "Push failed", &e, false);
             Ok(json!({ "ok": true, "pushed": false, "pushError": e }))
         }
     }
@@ -546,9 +548,13 @@ pub async fn git_push(app: AppHandle, id: String) -> Result<Value, String> {
             crate::emit_toast(&app, "Pushed to remote", &name, "success");
             crate::webhook_notify(&app, "Pushed to remote", &format!("**{name}** — branch `{branch}`"));
             crate::slack_webhook_notify(&app, &format!("Pushed to remote: *{name}* (branch `{branch}`)"));
+            crate::notify_event(&app, "pushSucceeded", "Pushed", &format!("{name} — {branch}"), true);
             Ok(json!({ "ok": true }))
         }
-        Err(e) => Ok(json!({ "ok": false, "message": e }))
+        Err(e) => {
+            crate::notify_event(&app, "pushFailed", "Push failed", &e, false);
+            Ok(json!({ "ok": false, "message": e }))
+        }
     }
 }
 

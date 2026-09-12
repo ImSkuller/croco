@@ -361,6 +361,10 @@ pub async fn ai_chat(app: AppHandle, mode: String, provider: String, project_id:
 
     crate::append_conversation(&app, &conversation_id, "user", &message);
     crate::append_conversation(&app, &conversation_id, "assistant", &reply);
+    // Only when Croco isn't the foreground window — if the user is sitting
+    // on the AI page watching, a desktop toast on top is just noise.
+    let preview: String = reply.chars().take(120).collect();
+    crate::notify_event(&app, "aiReply", "AI reply ready", &preview, true);
     crate::activity_log(&app, "ai.chat_message", json!({ "mode": mode, "provider": provider }));
     Ok(reply)
 }

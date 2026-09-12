@@ -161,6 +161,7 @@ export default function Settings() {
   // Desktop notifications for schedules/deadlines
   const [deadlineRemindersEnabled, setDeadlineRemindersEnabled] = useState(true)
   const [showHiddenOnDashboard, setShowHiddenOnDashboard] = useState(false)
+  const [notifPrefs, setNotifPrefs] = useState({})
   const [desktopPermissionGranted, setDesktopPermissionGranted] = useState(null) // null (unknown yet) | bool
 
   // Obsidian vault sync
@@ -285,6 +286,7 @@ export default function Settings() {
     setAutoBackupLastAt(s.app?.autoBackup?.lastBackupAt || null)
     setDeadlineRemindersEnabled(s.app?.deadlineReminders?.enabled ?? true)
     setShowHiddenOnDashboard(!!s.app?.showHiddenOnDashboard)
+    setNotifPrefs(s.app?.notifications || {})
   }, [])
 
   useEffect(() => {
@@ -407,6 +409,14 @@ export default function Settings() {
     setShowHiddenOnDashboard(prev => {
       const next = !prev
       window.api?.settings.update({ app: { showHiddenOnDashboard: next } }).catch(() => {})
+      return next
+    })
+  }
+
+  const handleNotifToggle = (event) => {
+    setNotifPrefs(prev => {
+      const next = { ...prev, [event]: !prev[event] }
+      window.api?.settings.update({ app: { notifications: { [event]: next[event] } } }).catch(() => {})
       return next
     })
   }
@@ -1450,12 +1460,26 @@ export default function Settings() {
                 </SettingsCard>
 
                 <SettingsCard>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: desktopPermissionGranted === false ? 12 : 0 }}>
-                    <div>
-                      <FieldLabel>Deadline Reminders</FieldLabel>
-                      <FieldDesc>Sends a desktop notification when a schedule's due date/time arrives.</FieldDesc>
+                  <FieldLabel>Desktop Notifications</FieldLabel>
+                  <FieldDesc>OS-level notifications (Action Center / Notification Center), one switch per event.</FieldDesc>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12, marginBottom: desktopPermissionGranted === false ? 12 : 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text)' }}>Deadline reminders <span style={{ color: 'var(--dimmer)' }}>— when a schedule's due date/time arrives</span></span>
+                      <Toggle value={deadlineRemindersEnabled} onChange={handleDeadlineRemindersToggle} />
                     </div>
-                    <Toggle value={deadlineRemindersEnabled} onChange={handleDeadlineRemindersToggle} />
+                    {[
+                      { id: 'runFinished',   label: 'Run finished',        desc: 'a project run exits cleanly' },
+                      { id: 'runFailed',     label: 'Run failed',          desc: 'a project run exits with an error' },
+                      { id: 'pushSucceeded', label: 'Push succeeded',      desc: 'only while Croco is in the background' },
+                      { id: 'pushFailed',    label: 'Push failed',         desc: 'auth or network problems on push' },
+                      { id: 'aiReply',       label: 'AI reply ready',      desc: 'only while Croco is in the background' },
+                      { id: 'focusEnded',    label: 'Focus session ended', desc: 'work or break timer completes' },
+                    ].map(n => (
+                      <div key={n.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 12, color: 'var(--text)' }}>{n.label} <span style={{ color: 'var(--dimmer)' }}>— {n.desc}</span></span>
+                        <Toggle value={!!notifPrefs[n.id]} onChange={() => handleNotifToggle(n.id)} />
+                      </div>
+                    ))}
                   </div>
                   {desktopPermissionGranted === false && (
                     <InfoBox>
