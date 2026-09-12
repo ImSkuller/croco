@@ -15,7 +15,7 @@ export default function NotesRhythmCard({ notesCreated, notesByWeekday }) {
           <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <div title={`${WEEKDAY_LABELS[i]}: ${v}`} style={{
               width: '100%', height: `${Math.max(2, (v / max) * 100)}%`,
-              background: v > 0 ? 'var(--accent)' : 'var(--border)', borderRadius: 2, opacity: v > 0 ? 0.85 : 0.4,
+              background: v > 0 ? 'var(--accent)' : 'var(--border)', borderRadius: 'var(--r-sm)', opacity: v > 0 ? 0.85 : 0.4,
             }} />
             <div style={{ fontSize: 9, color: 'var(--dimmer)' }}>{WEEKDAY_LABELS[i][0]}</div>
           </div>

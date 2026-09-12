@@ -213,7 +213,7 @@ export default function CrocoGame({ onClose }) {
           ref={canvasRef}
           width={W}
           height={H}
-          style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, background: '#0b0f1a', cursor: 'pointer', display: 'block' }}
+          style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--r-lg)', background: '#0b0f1a', cursor: 'pointer', display: 'block' }}
           onClick={() => { if (phase === 'idle' || phase === 'dead') start(); else jump() }}
         />
 
@@ -233,7 +233,7 @@ export default function CrocoGame({ onClose }) {
             </div>
             <button
               onClick={start}
-              style={{ padding: '5px 16px', borderRadius: 6, border: 'none', background: '#4aff91', color: '#000', fontSize: 11, fontWeight: 700, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+              style={{ padding: '5px 16px', borderRadius: 'var(--r-md)', border: 'none', background: '#4aff91', color: '#000', fontSize: 11, fontWeight: 700, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
               Restart
             </button>
           </Overlay>
@@ -252,7 +252,7 @@ function Overlay({ children }) {
   return (
     <div style={{
       position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', borderRadius: 12,
+      alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--r-lg)',
       background: 'rgba(11,15,26,0.78)',
     }}>
       {children}

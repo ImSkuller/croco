@@ -18,12 +18,12 @@ export default function ProjectCardList({ project, isRunning, onToggleFav, index
         padding:      '12px 16px',
         background:   hovered ? 'var(--card-hover)' : index % 2 === 0 ? 'var(--card)' : 'transparent',
         border:       `1px solid ${hovered ? 'var(--border-bright)' : 'transparent'}`,
-        borderRadius: 10,
+        borderRadius: 'var(--r-lg)',
         cursor:       'pointer',
         transition:   'all 0.12s',
       }}
     >
-      <div style={{ width: 34, height: 34, borderRadius: 8, background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+      <div style={{ width: 34, height: 34, borderRadius: 'var(--r-md)', background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
         {project.emoji}
       </div>
 
@@ -33,7 +33,7 @@ export default function ProjectCardList({ project, isRunning, onToggleFav, index
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{project.name}</span>
           <VisibilityBadge visibility={project.visibility} />
           {isRunning && (
-            <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', padding: '2px 6px', borderRadius: 20, background: 'rgba(74,255,145,0.15)', color: 'var(--green)' }}>
+            <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', padding: '2px 6px', borderRadius: 'var(--r-xl)', background: 'rgba(74,255,145,0.15)', color: 'var(--green)' }}>
               running
             </span>
           )}
@@ -49,7 +49,7 @@ export default function ProjectCardList({ project, isRunning, onToggleFav, index
       </div>
 
       {/* Language bar */}
-      <div style={{ width: 60, height: 4, background: 'var(--border)', borderRadius: 10, overflow: 'hidden', display: 'flex', flexShrink: 0 }}>
+      <div style={{ width: 60, height: 4, background: 'var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden', display: 'flex', flexShrink: 0 }}>
         {(project.languages || []).map((l, i) => (
           <div key={i} style={{ width: `${l.pct}%`, background: l.color, height: '100%' }} />
         ))}
@@ -71,13 +71,13 @@ export default function ProjectCardList({ project, isRunning, onToggleFav, index
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', gap: 3, opacity: hovered ? 1 : 0, transition: 'opacity 0.12s', flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 3, opacity: hovered ? 1 : 0, transition: 'opacity var(--transition-fast)', flexShrink: 0 }}>
         <CardBtn title="Open in IDE" onClick={e => { e.stopPropagation(); window.api?.projects.openInIDE(project.id) }}><IDEIcon /></CardBtn>
         <CardBtn title="Open Folder" onClick={e => { e.stopPropagation(); window.api?.projects.openFolder(project.id) }}><FolderIcon /></CardBtn>
         <button
           onClick={e => { e.stopPropagation(); onToggleFav(project.id) }}
           title="Favourite"
-          style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 5, border: 'none', cursor: 'pointer', background: 'var(--border)', color: project.favourite ? 'var(--orange)' : 'var(--dim)', transition: 'all 0.12s' }}
+          style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--r-sm)', border: 'none', cursor: 'pointer', background: 'var(--border)', color: project.favourite ? 'var(--orange)' : 'var(--dim)', transition: 'all var(--transition-fast)' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--border-bright)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'var(--border)' }}
         >

@@ -12,7 +12,7 @@ export default function TopBtn({ children, primary, onClick }) {
         alignItems:   'center',
         gap:          6,
         padding:      '6px 12px',
-        borderRadius: 7,
+        borderRadius: 'var(--r-md)',
         fontSize:     12,
         fontWeight:   500,
         cursor:       'pointer',

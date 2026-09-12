@@ -41,7 +41,7 @@ export default function PriorityManagerModal({ priorities, todos, onAdd, onEdit,
         style={{
           width: 440, maxHeight: '80vh', overflowY: 'auto',
           background: 'var(--surface)', border: '1px solid var(--border-bright)',
-          borderRadius: 14, boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
+          borderRadius: 'var(--r-xl)', boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
           animation: 'pmFadeDown 0.15s cubic-bezier(0.16,1,0.3,1) both',
         }}
       >
@@ -64,7 +64,7 @@ export default function PriorityManagerModal({ priorities, todos, onAdd, onEdit,
               {...dragProps(p.id)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                padding: '8px 8px', borderRadius: 8, marginBottom: 4,
+                padding: '8px 8px', borderRadius: 'var(--r-md)', marginBottom: 4,
                 background: dragId === p.id ? 'var(--card-hover)' : 'var(--card)',
                 border: '1px solid var(--border)',
                 cursor: 'grab',
@@ -76,7 +76,7 @@ export default function PriorityManagerModal({ priorities, todos, onAdd, onEdit,
                 type="color"
                 value={p.color}
                 onChange={e => onEdit(p.id, { color: e.target.value })}
-                style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', padding: 0, flexShrink: 0, background: 'var(--card)' }}
+                style={{ width: 22, height: 22, borderRadius: 'var(--r-md)', border: '1px solid var(--border)', cursor: 'pointer', padding: 0, flexShrink: 0, background: 'var(--card)' }}
               />
 
               <input
@@ -84,7 +84,7 @@ export default function PriorityManagerModal({ priorities, todos, onAdd, onEdit,
                 onChange={e => onEdit(p.id, { label: e.target.value })}
                 style={{
                   flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none',
-                  fontSize: 12.5, color: 'var(--text)', fontFamily: 'Geist, sans-serif', padding: '3px 4px', borderRadius: 4,
+                  fontSize: 12.5, color: 'var(--text)', fontFamily: 'Geist, sans-serif', padding: '3px 4px', borderRadius: 'var(--r-sm)',
                 }}
                 onFocus={e => e.currentTarget.style.background = hexToRgba(p.color, 0.08)}
                 onBlur={e => e.currentTarget.style.background = 'transparent'}
@@ -100,13 +100,13 @@ export default function PriorityManagerModal({ priorities, todos, onAdd, onEdit,
                     onClick={() => { onDelete(p.id); setConfirmDelete(null) }}
                     disabled={priorities.length <= 1}
                     title={priorities.length <= 1 ? "Can't delete the last priority" : `Delete — ${countFor(p.id)} task(s) will move to another priority`}
-                    style={{ fontSize: 10, padding: '3px 7px', borderRadius: 5, border: '1px solid rgba(255,68,68,0.4)', background: 'rgba(255,68,68,0.15)', color: '#ff6666', cursor: priorities.length <= 1 ? 'not-allowed' : 'pointer', fontFamily: 'Geist Mono, monospace' }}
+                    style={{ fontSize: 10, padding: '3px 7px', borderRadius: 'var(--r-sm)', border: '1px solid rgba(255,68,68,0.4)', background: 'rgba(255,68,68,0.15)', color: '#ff6666', cursor: priorities.length <= 1 ? 'not-allowed' : 'pointer', fontFamily: 'Geist Mono, monospace' }}
                   >
                     Confirm
                   </button>
                   <button
                     onClick={() => setConfirmDelete(null)}
-                    style={{ fontSize: 10, padding: '3px 7px', borderRadius: 5, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dimmer)', cursor: 'pointer', fontFamily: 'Geist Mono, monospace' }}
+                    style={{ fontSize: 10, padding: '3px 7px', borderRadius: 'var(--r-sm)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dimmer)', cursor: 'pointer', fontFamily: 'Geist Mono, monospace' }}
                   >
                     Cancel
                   </button>
@@ -118,7 +118,7 @@ export default function PriorityManagerModal({ priorities, todos, onAdd, onEdit,
                   title={priorities.length <= 1 ? "Can't delete the last priority" : 'Delete priority'}
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 24, height: 24, borderRadius: 6, flexShrink: 0,
+                    width: 24, height: 24, borderRadius: 'var(--r-md)', flexShrink: 0,
                     border: 'none', background: 'none', color: 'var(--dimmer)',
                     cursor: priorities.length <= 1 ? 'not-allowed' : 'pointer',
                     opacity: priorities.length <= 1 ? 0.4 : 1,
@@ -131,12 +131,12 @@ export default function PriorityManagerModal({ priorities, todos, onAdd, onEdit,
           ))}
 
           {/* Add new priority */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 8px', marginTop: 6, borderRadius: 8, border: '1px dashed var(--border-bright)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 8px', marginTop: 6, borderRadius: 'var(--r-md)', border: '1px dashed var(--border-bright)' }}>
             <input
               type="color"
               value={addingColor}
               onChange={e => setAddingColor(e.target.value)}
-              style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', padding: 0, flexShrink: 0, background: 'var(--card)' }}
+              style={{ width: 22, height: 22, borderRadius: 'var(--r-md)', border: '1px solid var(--border)', cursor: 'pointer', padding: 0, flexShrink: 0, background: 'var(--card)' }}
             />
             <input
               value={addingLabel}
@@ -149,7 +149,7 @@ export default function PriorityManagerModal({ priorities, todos, onAdd, onEdit,
               onClick={handleAdd}
               disabled={!addingLabel.trim()}
               style={{
-                fontSize: 11, padding: '4px 10px', borderRadius: 6, border: 'none',
+                fontSize: 11, padding: '4px 10px', borderRadius: 'var(--r-md)', border: 'none',
                 background: addingLabel.trim() ? 'var(--accent)' : 'var(--border)',
                 color: addingLabel.trim() ? '#000' : 'var(--dimmer)',
                 fontWeight: 600, cursor: addingLabel.trim() ? 'pointer' : 'default',

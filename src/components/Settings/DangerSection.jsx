@@ -11,7 +11,7 @@ export default function DangerSection({
     <>
       <SectionTitle icon={<ShieldIcon />} title="Danger Zone" desc="Irreversible actions. Be careful." />
 
-      <div style={{ background: 'rgba(255,68,68,0.04)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: 'rgba(255,68,68,0.04)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
 
         <DangerRow
           title="Re-run Setup Wizard"

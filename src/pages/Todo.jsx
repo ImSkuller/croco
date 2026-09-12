@@ -275,11 +275,11 @@ export default function Todo() {
           {section === 'tasks' ? `${filter} Tasks` : `${scheduleFilter} Schedules`}
         </span>
 
-        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 8, marginLeft: 8 }}>
+        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)', marginLeft: 8 }}>
           <button
             onClick={() => setSection('tasks')}
             style={{
-              display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: 'none',
+              display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 'var(--r-md)', border: 'none',
               background: section === 'tasks' ? 'var(--card)' : 'transparent',
               color: section === 'tasks' ? 'var(--text)' : 'var(--dimmer)',
               fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'Geist, sans-serif',
@@ -290,7 +290,7 @@ export default function Todo() {
           <button
             onClick={() => setSection('schedules')}
             style={{
-              display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: 'none',
+              display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 'var(--r-md)', border: 'none',
               background: section === 'schedules' ? 'var(--card)' : 'transparent',
               color: section === 'schedules' ? 'var(--text)' : 'var(--dimmer)',
               fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'Geist, sans-serif',
@@ -318,14 +318,14 @@ export default function Todo() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 28px', borderBottom: '1px solid var(--border)', flexShrink: 0, flexWrap: 'wrap' }}>
         <SearchBox ref={searchRef} value={search} onChange={setSearch} />
 
-        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 8 }}>
+        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)' }}>
           {FILTERS.map(f => (
             <FilterTab key={f} label={f} count={counts[f]} active={filter === f} onClick={() => setFilter(f)} />
           ))}
         </div>
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 8 }}>
+          <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)' }}>
             <PriorityTab label="All" active={priority === 'All'} onClick={() => setPriority('All')} />
             {priorities.map(p => (
               <PriorityTab key={p.id} label={p.label} color={p.color} bg={hexToRgba(p.color)} active={priority === p.id} onClick={() => setPriority(p.id)} />
@@ -337,7 +337,7 @@ export default function Todo() {
             title="Manage priorities"
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+              width: 28, height: 28, borderRadius: 'var(--r-md)', flexShrink: 0,
               border: '1px solid var(--border)', background: 'transparent',
               color: 'var(--dimmer)', cursor: 'pointer', fontSize: 13,
             }}
@@ -350,7 +350,7 @@ export default function Todo() {
             onChange={e => setProject(e.target.value)}
             style={{
               background: 'var(--card)', border: '1px solid var(--border)',
-              color: 'var(--dim)', borderRadius: 7, padding: '6px 10px',
+              color: 'var(--dim)', borderRadius: 'var(--r-md)', padding: '6px 10px',
               fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer', outline: 'none',
             }}
           >
@@ -362,7 +362,7 @@ export default function Todo() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 28px', borderBottom: '1px solid var(--border)', flexShrink: 0, flexWrap: 'wrap' }}>
         <SearchBox ref={searchRef} value={search} onChange={setSearch} />
 
-        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 8 }}>
+        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)' }}>
           {SCHEDULE_FILTERS.map(f => (
             <FilterTab key={f} label={f} count={scheduleCounts[f]} active={scheduleFilter === f} onClick={() => setScheduleFilter(f)} />
           ))}
@@ -374,7 +374,7 @@ export default function Todo() {
             onChange={e => setProject(e.target.value)}
             style={{
               background: 'var(--card)', border: '1px solid var(--border)',
-              color: 'var(--dim)', borderRadius: 7, padding: '6px 10px',
+              color: 'var(--dim)', borderRadius: 'var(--r-md)', padding: '6px 10px',
               fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer', outline: 'none',
             }}
           >
@@ -391,13 +391,13 @@ export default function Todo() {
 
           {/* Add new task inline */}
           {adding && (
-            <div className="anim-scale-in" style={{ background: 'var(--card)', border: '1px solid var(--accent)', borderRadius: 10, padding: '14px 16px', marginBottom: 20, boxShadow: '0 0 0 1px var(--accent-dim)' }}>
+            <div className="anim-scale-in" style={{ background: 'var(--card)', border: '1px solid var(--accent)', borderRadius: 'var(--r-lg)', padding: '14px 16px', marginBottom: 20, boxShadow: '0 0 0 1px var(--accent-dim)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                 <div style={{
-                  width: 16, height: 16, borderRadius: 4,
+                  width: 16, height: 16, borderRadius: 'var(--r-sm)',
                   border: '1px solid var(--accent)',
                   flexShrink: 0,
-                  transition: 'all 0.15s ease',
+                  transition: 'all var(--transition-base)',
                 }} />
                 <input
                   ref={addInputRef}
@@ -414,12 +414,12 @@ export default function Todo() {
                     key={p.id}
                     onClick={() => setNewPriority(p.id)}
                     style={{
-                      padding: '3px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
+                      padding: '3px 8px', borderRadius: 'var(--r-sm)', border: 'none', cursor: 'pointer',
                       fontSize: 10, fontFamily: 'Geist Mono, monospace',
                       background: effectiveNewPriority === p.id ? hexToRgba(p.color) : 'var(--border)',
                       color:      effectiveNewPriority === p.id ? p.color : 'var(--dimmer)',
                       outline:    effectiveNewPriority === p.id ? `1px solid ${p.color}40` : 'none',
-                      transition: 'all 0.12s',
+                      transition: 'all var(--transition-fast)',
                     }}
                   >
                     {p.label}
@@ -428,7 +428,7 @@ export default function Todo() {
                 <select
                   value={newProjectId || ''}
                   onChange={e => setNewProjectId(e.target.value || null)}
-                  style={{ background: 'var(--border)', border: 'none', color: 'var(--dim)', borderRadius: 4, padding: '3px 8px', fontSize: 10, fontFamily: 'Geist Mono, monospace', cursor: 'pointer', outline: 'none' }}
+                  style={{ background: 'var(--border)', border: 'none', color: 'var(--dim)', borderRadius: 'var(--r-sm)', padding: '3px 8px', fontSize: 10, fontFamily: 'Geist Mono, monospace', cursor: 'pointer', outline: 'none' }}
                 >
                   <option value="">no project</option>
                   {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -438,13 +438,13 @@ export default function Todo() {
                   value={newDueDate}
                   onChange={e => setNewDueDate(e.target.value)}
                   title="Due date (optional)"
-                  style={{ background: 'var(--border)', border: 'none', color: newDueDate ? 'var(--text)' : 'var(--dimmer)', borderRadius: 4, padding: '2px 8px', fontSize: 10, fontFamily: 'Geist Mono, monospace', cursor: 'pointer', outline: 'none', colorScheme: 'dark' }}
+                  style={{ background: 'var(--border)', border: 'none', color: newDueDate ? 'var(--text)' : 'var(--dimmer)', borderRadius: 'var(--r-sm)', padding: '2px 8px', fontSize: 10, fontFamily: 'Geist Mono, monospace', cursor: 'pointer', outline: 'none', colorScheme: 'dark' }}
                 />
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-                  <button onClick={() => { setAdding(false); setNewText('') }} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+                  <button onClick={() => { setAdding(false); setNewText('') }} style={{ padding: '4px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
                     Cancel
                   </button>
-                  <button onClick={addTodo} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+                  <button onClick={addTodo} style={{ padding: '4px 10px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
                     Add Task
                   </button>
                 </div>
@@ -464,7 +464,7 @@ export default function Todo() {
           {!loading && filtered.length === 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: 14 }}>
               <div style={{
-                width: 64, height: 64, borderRadius: 18,
+                width: 64, height: 64, borderRadius: 'var(--r-xl)',
                 background: 'var(--card)',
                 border: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -485,7 +485,7 @@ export default function Todo() {
               {!search && filter !== 'Completed' && (
                 <button
                   onClick={() => { setAdding(true); setTimeout(() => addInputRef.current?.focus(), 50) }}
-                  style={{ marginTop: 4, padding: '8px 18px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#000', fontSize: 13, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
+                  style={{ marginTop: 4, padding: '8px 18px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: '#000', fontSize: 13, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
                 >
                   Add First Task
                 </button>
@@ -507,7 +507,7 @@ export default function Todo() {
 
           {/* Flat view */}
           {!loading && !showGrouped && filtered.length > 0 && (
-            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
               {filtered.map((todo, i) => (
                 <TodoRow
                   key={todo.id}
@@ -545,7 +545,7 @@ export default function Todo() {
           {!schedulesLoading && filteredSchedules.length === 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: 14 }}>
               <div style={{
-                width: 64, height: 64, borderRadius: 18,
+                width: 64, height: 64, borderRadius: 'var(--r-xl)',
                 background: 'var(--card)',
                 border: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -564,7 +564,7 @@ export default function Todo() {
               {!search && (
                 <button
                   onClick={() => setScheduleModal('new')}
-                  style={{ marginTop: 4, padding: '8px 18px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#000', fontSize: 13, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
+                  style={{ marginTop: 4, padding: '8px 18px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: '#000', fontSize: 13, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
                 >
                   Add First Schedule
                 </button>
@@ -573,7 +573,7 @@ export default function Todo() {
           )}
 
           {!schedulesLoading && filteredSchedules.length > 0 && (
-            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
               {filteredSchedules.map((s, i) => (
                 <ScheduleRow
                   key={s.id}
@@ -630,8 +630,8 @@ export default function Todo() {
         </span>
         {counts.All > 0 && (
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 100, height: 4, background: 'var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-              <div style={{ width: `${Math.round((counts.Completed / counts.All) * 100)}%`, height: '100%', background: 'var(--green)', borderRadius: 10, transition: 'width 0.3s ease' }} />
+            <div style={{ width: 100, height: 4, background: 'var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
+              <div style={{ width: `${Math.round((counts.Completed / counts.All) * 100)}%`, height: '100%', background: 'var(--green)', borderRadius: 'var(--r-lg)', transition: 'width var(--transition-slow)' }} />
             </div>
             <span style={{ fontSize: 11, color: 'var(--dim)', fontFamily: 'Geist Mono, monospace' }}>
               {Math.round((counts.Completed / counts.All) * 100)}%

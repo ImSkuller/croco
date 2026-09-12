@@ -187,13 +187,13 @@ export default function Onboarding() {
             <div key={i} style={{
               width:      i + 1 === step ? 24 : 8,
               height:     8,
-              borderRadius: 4,
+              borderRadius: 'var(--r-sm)',
               background: i + 1 < step
                 ? 'var(--green)'
                 : i + 1 === step
                   ? 'var(--orange)'
                   : 'var(--border)',
-              transition: 'all 0.3s cubic-bezier(0.16,1,0.3,1)',
+              transition: 'all var(--transition-slow)',
             }} />
           ))}
         </div>
@@ -215,9 +215,9 @@ export default function Onboarding() {
                 style={{
                   width: '100%', background: 'var(--card)',
                   border: `1px solid ${nameError ? 'var(--red)' : 'var(--border)'}`,
-                  borderRadius: 10, padding: '12px 16px', fontSize: 14,
+                  borderRadius: 'var(--r-lg)', padding: '12px 16px', fontSize: 14,
                   color: 'var(--text)', fontFamily: 'Geist, sans-serif',
-                  outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.12s',
+                  outline: 'none', boxSizing: 'border-box', transition: 'border-color var(--transition-fast)',
                 }}
               />
               {nameError && <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 4 }}>{nameError}</div>}
@@ -239,7 +239,7 @@ export default function Onboarding() {
                   onChange={e => setProjectPath(e.target.value)}
                   style={{
                     flex: 1, background: 'var(--card)', border: '1px solid var(--border)',
-                    borderRadius: 10, padding: '12px 16px', fontSize: 13,
+                    borderRadius: 'var(--r-lg)', padding: '12px 16px', fontSize: 13,
                     color: 'var(--text)', fontFamily: 'Geist Mono, monospace',
                     outline: 'none', boxSizing: 'border-box',
                   }}
@@ -287,10 +287,10 @@ export default function Onboarding() {
                     onClick={startOAuth}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                      width: '100%', padding: '13px 0', borderRadius: 10, border: '1px solid var(--border)',
+                      width: '100%', padding: '13px 0', borderRadius: 'var(--r-lg)', border: '1px solid var(--border)',
                       background: 'var(--card)', color: 'var(--text)', fontSize: 14,
                       fontWeight: 500, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
-                      marginBottom: 14, transition: 'border-color 0.12s',
+                      marginBottom: 14, transition: 'border-color var(--transition-fast)',
                     }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -303,7 +303,7 @@ export default function Onboarding() {
                 {/* Device flow code display */}
                 {oauthData && (
                   <div style={{
-                    background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12,
+                    background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)',
                     padding: '18px 20px', marginBottom: 14, textAlign: 'center',
                   }}>
                     <div style={{ fontSize: 12, color: 'var(--dim)', marginBottom: 10 }}>
@@ -351,28 +351,28 @@ export default function Onboarding() {
                         style={{
                           flex: 1, background: 'var(--card)',
                           border: `1px solid ${ghError ? 'var(--red)' : 'var(--border)'}`,
-                          borderRadius: 10, padding: '12px 16px', fontSize: 13,
+                          borderRadius: 'var(--r-lg)', padding: '12px 16px', fontSize: 13,
                           color: 'var(--text)', fontFamily: 'Geist Mono, monospace',
-                          outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.12s',
+                          outline: 'none', boxSizing: 'border-box', transition: 'border-color var(--transition-fast)',
                         }}
                       />
                       <button
                         onClick={validateGithub}
                         disabled={!ghToken.trim() || ghValidating}
                         style={{
-                          padding: '12px 18px', borderRadius: 10, border: 'none',
+                          padding: '12px 18px', borderRadius: 'var(--r-lg)', border: 'none',
                           background: 'var(--orange)', color: '#fff', fontSize: 13,
                           fontWeight: 500, fontFamily: 'Geist, sans-serif',
                           cursor: ghToken.trim() && !ghValidating ? 'pointer' : 'default',
                           opacity: ghToken.trim() && !ghValidating ? 1 : 0.45,
-                          transition: 'all 0.12s', whiteSpace: 'nowrap',
+                          transition: 'all var(--transition-fast)', whiteSpace: 'nowrap',
                         }}
                       >
                         {ghValidating ? '…' : 'Validate'}
                       </button>
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--dimmer)', marginTop: 6 }}>
-                      Create one at <span style={{ fontFamily: 'Geist Mono, monospace', color: 'var(--dim)' }}>github.com/settings/tokens</span> — needs <code style={{ background: 'var(--card)', padding: '1px 4px', borderRadius: 4 }}>repo</code> + <code style={{ background: 'var(--card)', padding: '1px 4px', borderRadius: 4 }}>read:user</code> scope.
+                      Create one at <span style={{ fontFamily: 'Geist Mono, monospace', color: 'var(--dim)' }}>github.com/settings/tokens</span> — needs <code style={{ background: 'var(--card)', padding: '1px 4px', borderRadius: 'var(--r-sm)' }}>repo</code> + <code style={{ background: 'var(--card)', padding: '1px 4px', borderRadius: 'var(--r-sm)' }}>read:user</code> scope.
                     </div>
                     {ghError && <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 6 }}>{ghError}</div>}
                   </>
@@ -384,7 +384,7 @@ export default function Onboarding() {
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: 14,
                     background: 'var(--card)', border: '1px solid var(--green)',
-                    borderRadius: 12, padding: '16px 20px',
+                    borderRadius: 'var(--r-lg)', padding: '16px 20px',
                     animation: 'pmFadeUp 0.3s cubic-bezier(0.16,1,0.3,1) both',
                   }}>
                     {ghInfo.avatar && (
@@ -430,7 +430,7 @@ export default function Onboarding() {
                 <div style={{
                   display: 'inline-flex', alignItems: 'center', gap: 10, marginTop: 24,
                   background: 'rgba(255,107,53,0.12)', border: '1px solid var(--orange)',
-                  borderRadius: 24, padding: '10px 22px',
+                  borderRadius: 'var(--r-xl)', padding: '10px 22px',
                 }}>
                   <span style={{ display: 'flex' }}><ShieldIcon size={16} /></span>
                   <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--orange)', letterSpacing: -0.3 }}>
@@ -451,12 +451,12 @@ export default function Onboarding() {
                       key={tag}
                       onClick={() => setUserTag(tag)}
                       style={{
-                        padding: '9px 10px', borderRadius: 8, cursor: 'pointer',
+                        padding: '9px 10px', borderRadius: 'var(--r-md)', cursor: 'pointer',
                         fontFamily: 'Geist, sans-serif', fontSize: 12, textAlign: 'center',
                         border:     `1px solid ${userTag === tag ? 'var(--orange)' : 'var(--border)'}`,
                         background: userTag === tag ? 'rgba(255,107,53,0.1)' : 'var(--card)',
                         color:      userTag === tag ? 'var(--text)'           : 'var(--dim)',
-                        transition: 'all 0.12s',
+                        transition: 'all var(--transition-fast)',
                       }}
                     >
                       {tag}
@@ -496,11 +496,11 @@ export default function Onboarding() {
                   onClick={() => setDataLocation(opt.id)}
                   style={{
                     display: 'flex', alignItems: 'flex-start', gap: 12,
-                    padding: '14px 16px', borderRadius: 10, cursor: 'pointer',
+                    padding: '14px 16px', borderRadius: 'var(--r-lg)', cursor: 'pointer',
                     fontFamily: 'Geist, sans-serif', textAlign: 'left',
                     border:     `1px solid ${dataLocation === opt.id ? 'var(--orange)' : 'var(--border)'}`,
                     background: dataLocation === opt.id ? 'rgba(255,107,53,0.08)' : 'var(--card)',
-                    transition: 'all 0.12s',
+                    transition: 'all var(--transition-fast)',
                   }}
                 >
                   <span style={{ display: 'flex', flexShrink: 0, marginTop: 1, color: 'var(--dim)' }}>{opt.icon}</span>
@@ -510,7 +510,7 @@ export default function Onboarding() {
                         {opt.label}
                       </span>
                       {opt.badge && (
-                        <span style={{ fontSize: 10, background: 'var(--border)', padding: '1px 6px', borderRadius: 4, color: 'var(--dim)', fontFamily: 'Geist Mono, monospace' }}>
+                        <span style={{ fontSize: 10, background: 'var(--border)', padding: '1px 6px', borderRadius: 'var(--r-sm)', color: 'var(--dim)', fontFamily: 'Geist Mono, monospace' }}>
                           {opt.badge}
                         </span>
                       )}
@@ -531,7 +531,7 @@ export default function Onboarding() {
                   placeholder="Choose a folder…"
                   style={{
                     flex: 1, background: 'var(--card)', border: '1px solid var(--border)',
-                    borderRadius: 10, padding: '10px 14px', fontSize: 12,
+                    borderRadius: 'var(--r-lg)', padding: '10px 14px', fontSize: 12,
                     color: 'var(--text)', fontFamily: 'Geist Mono, monospace',
                     outline: 'none', boxSizing: 'border-box',
                   }}
@@ -572,11 +572,11 @@ export default function Onboarding() {
                   onClick={() => setStorageBackend(opt.id)}
                   style={{
                     display: 'flex', alignItems: 'flex-start', gap: 12,
-                    padding: '14px 16px', borderRadius: 10, cursor: 'pointer',
+                    padding: '14px 16px', borderRadius: 'var(--r-lg)', cursor: 'pointer',
                     fontFamily: 'Geist, sans-serif', textAlign: 'left',
                     border:     `1px solid ${storageBackend === opt.id ? 'var(--orange)' : 'var(--border)'}`,
                     background: storageBackend === opt.id ? 'rgba(255,107,53,0.08)' : 'var(--card)',
-                    transition: 'all 0.12s',
+                    transition: 'all var(--transition-fast)',
                   }}
                 >
                   <span style={{ display: 'flex', flexShrink: 0, marginTop: 1, color: 'var(--dim)' }}>{opt.icon}</span>
@@ -586,7 +586,7 @@ export default function Onboarding() {
                         {opt.label}
                       </span>
                       {opt.badge && (
-                        <span style={{ fontSize: 10, background: 'var(--border)', padding: '1px 6px', borderRadius: 4, color: 'var(--dim)', fontFamily: 'Geist Mono, monospace' }}>
+                        <span style={{ fontSize: 10, background: 'var(--border)', padding: '1px 6px', borderRadius: 'var(--r-sm)', color: 'var(--dim)', fontFamily: 'Geist Mono, monospace' }}>
                           {opt.badge}
                         </span>
                       )}
@@ -631,11 +631,11 @@ export default function Onboarding() {
                   onClick={() => setCloseBehavior(opt.id)}
                   style={{
                     display: 'flex', alignItems: 'flex-start', gap: 12,
-                    padding: '14px 16px', borderRadius: 10, cursor: 'pointer',
+                    padding: '14px 16px', borderRadius: 'var(--r-lg)', cursor: 'pointer',
                     fontFamily: 'Geist, sans-serif', textAlign: 'left',
                     border:     `1px solid ${closeBehavior === opt.id ? 'var(--orange)' : 'var(--border)'}`,
                     background: closeBehavior === opt.id ? 'rgba(255,107,53,0.08)' : 'var(--card)',
-                    transition: 'all 0.12s',
+                    transition: 'all var(--transition-fast)',
                   }}
                 >
                   <span style={{ display: 'flex', flexShrink: 0, marginTop: 1, color: 'var(--dim)' }}>{opt.icon}</span>
@@ -645,7 +645,7 @@ export default function Onboarding() {
                         {opt.label}
                       </span>
                       {opt.badge && (
-                        <span style={{ fontSize: 10, background: 'var(--border)', padding: '1px 6px', borderRadius: 4, color: 'var(--dim)', fontFamily: 'Geist Mono, monospace' }}>
+                        <span style={{ fontSize: 10, background: 'var(--border)', padding: '1px 6px', borderRadius: 'var(--r-sm)', color: 'var(--dim)', fontFamily: 'Geist Mono, monospace' }}>
                           {opt.badge}
                         </span>
                       )}
@@ -673,7 +673,7 @@ export default function Onboarding() {
             <StepDesc>Here's a summary of what we've configured:</StepDesc>
             <div style={{
               background: 'var(--card)', border: '1px solid var(--border)',
-              borderRadius: 10, padding: '16px 20px', marginTop: 20,
+              borderRadius: 'var(--r-lg)', padding: '16px 20px', marginTop: 20,
               display: 'flex', flexDirection: 'column', gap: 10,
             }}>
               <SummaryRow label="Name"          value={name || '—'} />
@@ -697,12 +697,12 @@ export default function Onboarding() {
             onClick={goBack}
             disabled={step === 1}
             style={{
-              padding: '10px 18px', borderRadius: 8,
+              padding: '10px 18px', borderRadius: 'var(--r-md)',
               border: '1px solid var(--border)', background: 'transparent',
               color: 'var(--dim)', fontSize: 13, fontFamily: 'Geist, sans-serif',
               cursor: step === 1 ? 'default' : 'pointer',
               opacity: step === 1 ? 0 : 1,
-              transition: 'all 0.12s',
+              transition: 'all var(--transition-fast)',
             }}
           >
             ← Back
@@ -716,10 +716,10 @@ export default function Onboarding() {
             <button
               onClick={skipGithub}
               style={{
-                padding: '10px 20px', borderRadius: 8,
+                padding: '10px 20px', borderRadius: 'var(--r-md)',
                 border: '1px solid var(--border)', background: 'transparent',
                 color: 'var(--dim)', fontSize: 13, fontFamily: 'Geist, sans-serif',
-                cursor: 'pointer', transition: 'all 0.12s',
+                cursor: 'pointer', transition: 'all var(--transition-fast)',
               }}
               onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-bright)'}
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
@@ -730,10 +730,10 @@ export default function Onboarding() {
             <button
               onClick={goNext}
               style={{
-                padding: '10px 24px', borderRadius: 8, border: 'none',
+                padding: '10px 24px', borderRadius: 'var(--r-md)', border: 'none',
                 background: 'var(--orange)', color: '#fff', fontSize: 13,
                 fontWeight: 500, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
-                transition: 'opacity 0.12s',
+                transition: 'opacity var(--transition-fast)',
               }}
               onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
               onMouseLeave={e => e.currentTarget.style.opacity = '1'}
@@ -744,10 +744,10 @@ export default function Onboarding() {
             <button
               onClick={finish}
               style={{
-                padding: '10px 24px', borderRadius: 8, border: 'none',
+                padding: '10px 24px', borderRadius: 'var(--r-md)', border: 'none',
                 background: '#4aff91', color: '#000', fontSize: 13,
                 fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
-                transition: 'opacity 0.12s',
+                transition: 'opacity var(--transition-fast)',
               }}
               onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
               onMouseLeave={e => e.currentTarget.style.opacity = '1'}
@@ -766,7 +766,7 @@ function StepCard({ children }) {
   return (
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)',
-      borderRadius: 16, padding: '36px 32px', textAlign: 'center',
+      borderRadius: 'var(--r-xl)', padding: '36px 32px', textAlign: 'center',
       boxShadow: '0 24px 48px rgba(0,0,0,0.3)',
       animation: 'pmFadeUp 0.35s cubic-bezier(0.16,1,0.3,1) both',
     }}>
@@ -805,12 +805,12 @@ function OptionBtn({ active, onClick, children }) {
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', gap: 10,
-        padding: '12px 14px', borderRadius: 10, cursor: 'pointer',
+        padding: '12px 14px', borderRadius: 'var(--r-lg)', cursor: 'pointer',
         fontFamily: 'Geist, sans-serif', fontSize: 13, textAlign: 'left',
         border:     `1px solid ${active ? 'var(--orange)' : 'var(--border)'}`,
         background: active ? 'rgba(255,107,53,0.08)' : 'var(--card)',
         color:      active ? 'var(--text)'            : 'var(--dim)',
-        transition: 'all 0.12s',
+        transition: 'all var(--transition-fast)',
       }}
     >
       {children}
@@ -823,9 +823,9 @@ function BrowseBtn({ onClick }) {
     <button
       onClick={onClick}
       style={{
-        padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)',
+        padding: '12px 14px', borderRadius: 'var(--r-lg)', border: '1px solid var(--border)',
         background: 'var(--card)', color: 'var(--dim)', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', transition: 'all 0.12s', flexShrink: 0,
+        display: 'flex', alignItems: 'center', transition: 'all var(--transition-fast)', flexShrink: 0,
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-bright)'}
       onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}

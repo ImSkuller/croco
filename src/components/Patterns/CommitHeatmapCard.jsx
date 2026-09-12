@@ -41,7 +41,7 @@ export default function CommitHeatmapCard({ commitDates, weeks = 26 }) {
             <div key={ci} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {col.map((day, di) => (
                 <div key={di} title={`${day.date}: ${day.count} commit${day.count === 1 ? '' : 's'}`} style={{
-                  width: 9, height: 9, borderRadius: 2,
+                  width: 9, height: 9, borderRadius: 'var(--r-sm)',
                   background: day.future ? 'transparent' : levelColor(day.count),
                   opacity: day.future ? 0 : levelOpacity(day.count),
                 }} />

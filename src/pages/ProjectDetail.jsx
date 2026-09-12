@@ -527,7 +527,7 @@ export default function ProjectDetail() {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12 }}>
       <div style={{ display: 'flex', color: 'var(--dimmer)' }}><SearchIcon size={32} /></div>
       <div style={{ fontSize: 14, color: 'var(--dim)' }}>Project not found</div>
-      <button onClick={() => navigate('/projects')} style={{ padding: '8px 16px', borderRadius: 8, background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--dim)', cursor: 'pointer', fontSize: 12, fontFamily: 'Geist, sans-serif' }}>
+      <button onClick={() => navigate('/projects')} style={{ padding: '8px 16px', borderRadius: 'var(--r-md)', background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--dim)', cursor: 'pointer', fontSize: 12, fontFamily: 'Geist, sans-serif' }}>
         Back to Projects
       </button>
     </div>
@@ -574,7 +574,7 @@ export default function ProjectDetail() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', height: 52, flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
         <button
           onClick={() => navigate('/projects')}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', padding: '4px 8px', borderRadius: 6, transition: 'all 0.12s' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', padding: '4px 8px', borderRadius: 'var(--r-md)', transition: 'all var(--transition-fast)' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--dim)' }}
         ><ArrowLeftIcon /> Projects</button>
@@ -592,7 +592,7 @@ export default function ProjectDetail() {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
           <button onClick={handleToggleFav}
             title={project.favourite ? 'Remove from favourites' : 'Add to favourites'}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, opacity: project.favourite ? 1 : 0.3, transition: 'opacity 0.15s' }}>
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, opacity: project.favourite ? 1 : 0.3, transition: 'opacity var(--transition-base)' }}>
             <StarIcon filled={project.favourite} />
           </button>
 
@@ -609,10 +609,10 @@ export default function ProjectDetail() {
             title={`Open in ${project.ide || 'VS Code'} (O)`}
             style={{
               display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
-              borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 12,
+              borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer', fontSize: 12,
               fontWeight: 500, fontFamily: 'Geist, sans-serif',
               background: 'rgba(74,158,255,0.10)', color: '#4a9eff',
-              transition: 'all 0.15s',
+              transition: 'all var(--transition-base)',
             }}>
             <IdeLogoIcon ide={project.ide || 'vscode'} /> Open IDE
           </button>
@@ -624,13 +624,13 @@ export default function ProjectDetail() {
               disabled={behindCount === 0 || pulling || syncLoading}
               title={syncLoading ? 'Checking remote…' : behindCount > 0 ? `Behind by ${behindCount} commit${behindCount > 1 ? 's' : ''}` : 'Up to date with remote'}
               style={{
-                display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7,
+                display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 'var(--r-md)',
                 border: `1px solid ${behindCount > 0 ? 'rgba(74,255,145,0.35)' : 'var(--border)'}`,
                 background: behindCount > 0 ? 'rgba(74,255,145,0.07)' : 'transparent',
                 color: syncLoading ? 'var(--dimmer)' : behindCount > 0 ? '#4aff91' : 'var(--dimmer)',
                 fontSize: 11, fontFamily: 'Geist, sans-serif',
                 cursor: behindCount > 0 && !pulling && !syncLoading ? 'pointer' : 'default',
-                transition: 'all 0.12s', flexShrink: 0,
+                transition: 'all var(--transition-fast)', flexShrink: 0,
               }}
             >
               {pulling
@@ -654,7 +654,7 @@ export default function ProjectDetail() {
                 border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500, fontFamily: 'Geist, sans-serif',
                 background: isRunning ? 'rgba(255,68,68,0.12)' : 'rgba(74,255,145,0.12)',
                 color:      isRunning ? '#ff4444'              : '#4aff91',
-                transition: 'all 0.15s',
+                transition: 'all var(--transition-base)',
               }}>
               {isRunning ? <><StopIcon /> Stop</> : <><PlayIcon /> Run</>}
             </button>
@@ -667,7 +667,7 @@ export default function ProjectDetail() {
                   borderRadius: '0 7px 7px 0', borderLeft: '1px solid rgba(74,255,145,0.2)',
                   border: 'none', cursor: 'pointer', fontSize: 10,
                   background: 'rgba(74,255,145,0.12)', color: '#4aff91',
-                  transition: 'all 0.15s',
+                  transition: 'all var(--transition-base)',
                 }}>
                 ▾
               </button>
@@ -676,7 +676,7 @@ export default function ProjectDetail() {
               <div style={{
                 position: 'absolute', top: '110%', right: 0, zIndex: 60,
                 background: 'var(--surface)', border: '1px solid var(--border)',
-                borderRadius: 9, padding: 4, minWidth: 180,
+                borderRadius: 'var(--r-lg)', padding: 4, minWidth: 180,
                 boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
               }}
                 onMouseLeave={() => setRunMenuOpen(false)}
@@ -689,7 +689,7 @@ export default function ProjectDetail() {
                     onClick={() => { handleRun(s.command); setRunMenuOpen(false) }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '7px 10px', borderRadius: 6, cursor: 'pointer', transition: 'background 0.1s',
+                      padding: '7px 10px', borderRadius: 'var(--r-md)', cursor: 'pointer', transition: 'background var(--transition-fast)',
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--card)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -713,7 +713,7 @@ export default function ProjectDetail() {
       {/* ── Project header ───────────────────────────────── */}
       <div style={{ padding: '16px 28px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-          <div style={{ width: 50, height: 50, borderRadius: 12, background: project.emojiColor || 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+          <div style={{ width: 50, height: 50, borderRadius: 'var(--r-lg)', background: project.emojiColor || 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
             {project.emoji}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -729,7 +729,7 @@ export default function ProjectDetail() {
             </div>
             {languages.length > 0 && (
               <div>
-                <div style={{ height: 4, borderRadius: 10, overflow: 'hidden', display: 'flex', maxWidth: 360, background: 'var(--border)', marginBottom: 6 }}>
+                <div style={{ height: 4, borderRadius: 'var(--r-lg)', overflow: 'hidden', display: 'flex', maxWidth: 360, background: 'var(--border)', marginBottom: 6 }}>
                   {languages.map((l, i) => <div key={i} style={{ width: `${l.pct}%`, height: '100%', background: l.color }} />)}
                 </div>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -745,7 +745,7 @@ export default function ProjectDetail() {
                     const fresh = await window.api.projects.detectLanguages(project.id).catch(() => [])
                     setLanguages(fresh || [])
                   }} title="Rescan languages"
-                    style={{ display: 'flex', color: 'var(--dimmer)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', opacity: 0.5, transition: 'opacity 0.12s' }}
+                    style={{ display: 'flex', color: 'var(--dimmer)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', opacity: 0.5, transition: 'opacity var(--transition-fast)' }}
                     onMouseEnter={e => e.currentTarget.style.opacity = 1}
                     onMouseLeave={e => e.currentTarget.style.opacity = 0.5}>
                     <RefreshIcon size={10} />
@@ -772,12 +772,12 @@ export default function ProjectDetail() {
               fontSize: 12, fontFamily: 'Geist, sans-serif', fontWeight: tab === t.id ? 500 : 400,
               color: tab === t.id ? (t.danger ? '#ff4444' : 'var(--text)') : t.danger ? 'rgba(255,68,68,0.45)' : 'var(--dim)',
               borderBottom: tab === t.id ? `2px solid ${t.danger ? '#ff4444' : 'var(--orange)'}` : '2px solid transparent',
-              marginBottom: -1, transition: 'all 0.12s',
+              marginBottom: -1, transition: 'all var(--transition-fast)',
               display: 'flex', alignItems: 'center', gap: 6,
             }}>
             {t.label}
             {t.badge != null && (
-              <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', background: t.badgeStyle === 'green' ? 'rgba(74,255,145,0.15)' : 'rgba(255,107,53,0.15)', color: t.badgeStyle === 'green' ? '#4aff91' : 'var(--orange)', padding: '1px 5px', borderRadius: 3 }}>
+              <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', background: t.badgeStyle === 'green' ? 'rgba(74,255,145,0.15)' : 'rgba(255,107,53,0.15)', color: t.badgeStyle === 'green' ? '#4aff91' : 'var(--orange)', padding: '1px 5px', borderRadius: 'var(--r-sm)' }}>
                 {t.badge}
               </span>
             )}
@@ -809,7 +809,7 @@ export default function ProjectDetail() {
               </div>
 
               <InfoSection label="Project Path">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '10px 14px' }}>
                   <span style={{ fontSize: 11, color: 'var(--dim)', fontFamily: 'Geist Mono, monospace', flex: 1, wordBreak: 'break-all' }}>
                     {project.paths?.projectRoot || '—'}
                   </span>
@@ -819,7 +819,7 @@ export default function ProjectDetail() {
 
               {project.github && (
                 <InfoSection label="GitHub Repository">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '10px 14px' }}>
                     <span style={{ color: 'var(--dim)', display: 'flex', flexShrink: 0 }}><GithubIcon /></span>
                     <span style={{ fontSize: 12, color: 'var(--blue)', fontFamily: 'Geist Mono, monospace', flex: 1 }}>
                       github.com/{project.github}
@@ -832,7 +832,7 @@ export default function ProjectDetail() {
               )}
 
               <InfoSection label="Activity">
-                <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
                   {[
                     { icon: <ClockIcon />,    label: 'Last opened',  value: project.time || 'never'       },
                     { icon: <CommitIcon />,   label: 'Last commit',  value: project.lastCommit || 'never'  },
@@ -852,7 +852,7 @@ export default function ProjectDetail() {
                 <InfoSection label="Commands">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {Object.entries(project.commands).filter(([, v]) => v && typeof v === 'string').map(([k, v]) => (
-                      <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 12px' }}>
+                      <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '8px 12px' }}>
                         <span style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', color: 'var(--orange)', width: 44, flexShrink: 0 }}>{k}</span>
                         <span style={{ fontSize: 11, fontFamily: 'Geist Mono, monospace', color: 'var(--dim)', flex: 1 }}>{v}</span>
                       </div>
@@ -918,7 +918,7 @@ export default function ProjectDetail() {
                   <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
                     Expected package.json, requirements.txt, go.mod, or Cargo.toml
                   </div>
-                  <button onClick={loadDeps} style={{ marginTop: 14, padding: '7px 16px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+                  <button onClick={loadDeps} style={{ marginTop: 14, padding: '7px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
                     Refresh
                   </button>
                 </div>
@@ -926,7 +926,7 @@ export default function ProjectDetail() {
                 <>
                   {/* Header */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', padding: '3px 7px', borderRadius: 4, background: 'rgba(74,158,255,0.1)', color: '#4a9eff' }}>
+                    <span style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', padding: '3px 7px', borderRadius: 'var(--r-sm)', background: 'rgba(74,158,255,0.1)', color: '#4a9eff' }}>
                       {deps.type}
                     </span>
                     {deps.name && <span style={{ fontSize: 11, color: 'var(--dim)', fontFamily: 'Geist Mono, monospace' }}>{deps.name}@{deps.version}</span>}
@@ -947,7 +947,7 @@ export default function ProjectDetail() {
                           </DepsBtn>
                         </>
                       )}
-                      <button onClick={loadDeps} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+                      <button onClick={loadDeps} style={{ padding: '5px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
                         Refresh
                       </button>
                     </div>
@@ -955,7 +955,7 @@ export default function ProjectDetail() {
 
                   {/* Add dependency (Node only) */}
                   {deps.type === 'node' && (
-                    <div style={{ display: 'flex', gap: 7, alignItems: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 9, padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', gap: 7, alignItems: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '10px 12px' }}>
                       <input
                         value={addPkgInput}
                         onChange={e => setAddPkgInput(e.target.value)}
@@ -979,7 +979,7 @@ export default function ProjectDetail() {
                           runDepsOp(`add:${addPkgInput}`, () => window.api.projects.addDependency(project.id, addPkgInput.trim(), addPkgDev))
                           setAddPkgInput('')
                         }}
-                        style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: addPkgInput.trim() ? 'var(--orange)' : 'var(--dimmer)', color: '#fff', fontSize: 11, cursor: addPkgInput.trim() ? 'pointer' : 'not-allowed', fontFamily: 'Geist, sans-serif', flexShrink: 0 }}
+                        style={{ padding: '5px 12px', borderRadius: 'var(--r-md)', border: 'none', background: addPkgInput.trim() ? 'var(--orange)' : 'var(--dimmer)', color: '#fff', fontSize: 11, cursor: addPkgInput.trim() ? 'pointer' : 'not-allowed', fontFamily: 'Geist, sans-serif', flexShrink: 0 }}
                       >
                         + Add
                       </button>
@@ -988,7 +988,7 @@ export default function ProjectDetail() {
 
                   {/* Output */}
                   {(depsOp || depsOutput) && (
-                    <div style={{ background: '#0a0a0a', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
+                    <div style={{ background: '#0a0a0a', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '10px 14px' }}>
                       {depsOp && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: depsOutput ? 8 : 0 }}>
                           <Spinner size={11} />
@@ -1015,7 +1015,7 @@ export default function ProjectDetail() {
                     if (!entries.length) return null
                     return (
                       <InfoSection key={key} label={`${label} (${entries.length})`}>
-                        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+                        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
                           {entries.map(([pkg, ver], i) => (
                             <div key={pkg} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', borderBottom: i < entries.length - 1 ? '1px solid var(--border)' : 'none' }}>
                               <span style={{ fontSize: 12, color: 'var(--text)', flex: 1, fontFamily: 'Geist Mono, monospace' }}>{pkg}</span>
@@ -1024,7 +1024,7 @@ export default function ProjectDetail() {
                                 <button
                                   disabled={!!depsOp}
                                   onClick={() => runDepsOp(`remove:${pkg}`, () => window.api.projects.removeDependency(project.id, pkg))}
-                                  style={{ padding: '3px 8px', borderRadius: 5, border: '1px solid rgba(255,68,68,0.2)', background: 'rgba(255,68,68,0.06)', color: '#ff5555', fontSize: 10, cursor: depsOp ? 'not-allowed' : 'pointer', fontFamily: 'Geist, sans-serif', flexShrink: 0, opacity: depsOp ? 0.5 : 1 }}
+                                  style={{ padding: '3px 8px', borderRadius: 'var(--r-sm)', border: '1px solid rgba(255,68,68,0.2)', background: 'rgba(255,68,68,0.06)', color: '#ff5555', fontSize: 10, cursor: depsOp ? 'not-allowed' : 'pointer', fontFamily: 'Geist, sans-serif', flexShrink: 0, opacity: depsOp ? 0.5 : 1 }}
                                 >
                                   Remove
                                 </button>
@@ -1053,15 +1053,15 @@ export default function ProjectDetail() {
                   <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--dimmer)', marginBottom: 10 }}><FolderOpenIcon size={28} /></div>
                   <div style={{ fontSize: 13, color: 'var(--dim)' }}>Project folder is empty</div>
                   <div style={{ fontSize: 11, color: 'var(--dimmer)', marginTop: 4, fontFamily: 'Geist Mono, monospace' }}>{project.paths?.projectRoot}</div>
-                  <button onClick={loadFiles} style={{ marginTop: 14, padding: '7px 16px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>Refresh</button>
+                  <button onClick={loadFiles} style={{ marginTop: 14, padding: '7px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>Refresh</button>
                 </div>
               ) : (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <span style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>{project.paths?.projectRoot}</span>
-                    <button onClick={loadFiles} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>Refresh</button>
+                    <button onClick={loadFiles} style={{ padding: '4px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>Refresh</button>
                   </div>
-                  <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', fontFamily: 'Geist Mono, monospace' }}>
+                  <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden', fontFamily: 'Geist Mono, monospace' }}>
                     <FileTreeNodes nodes={fileTree} depth={0} expanded={expanded} setExpanded={setExpanded} onOpenFile={p => window.api?.system.openPath(p)} onContextMenu={(e, entry) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, entry }) }} />
                   </div>
                 </div>
@@ -1079,8 +1079,8 @@ export default function ProjectDetail() {
           {tab === 'todos' && (
             <div>
               {/* Add todo inline */}
-              <div style={{ background: addingTodo ? 'var(--card)' : 'transparent', border: `1px solid ${addingTodo ? 'var(--orange)' : 'var(--border)'}`, borderRadius: 10, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 14, height: 14, borderRadius: 4, border: '1px solid var(--border-bright)', flexShrink: 0 }} />
+              <div style={{ background: addingTodo ? 'var(--card)' : 'transparent', border: `1px solid ${addingTodo ? 'var(--orange)' : 'var(--border)'}`, borderRadius: 'var(--r-lg)', padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 14, height: 14, borderRadius: 'var(--r-sm)', border: '1px solid var(--border-bright)', flexShrink: 0 }} />
                 <input
                   value={todoInput}
                   onChange={e => setTodoInput(e.target.value)}
@@ -1104,14 +1104,14 @@ export default function ProjectDetail() {
                     {/* Emoji picker */}
                     <div style={{ position: 'relative' }}>
                       <button onClick={() => setEmojiPickerOpen(o => !o)} title="Add icon"
-                        style={{ width: 22, height: 22, borderRadius: 5, border: `1px solid ${todoEmoji ? 'var(--border-bright)' : 'transparent'}`, background: todoEmoji ? 'var(--border)' : 'transparent', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, color: 'var(--dimmer)' }}>
+                        style={{ width: 22, height: 22, borderRadius: 'var(--r-sm)', border: `1px solid ${todoEmoji ? 'var(--border-bright)' : 'transparent'}`, background: todoEmoji ? 'var(--border)' : 'transparent', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, color: 'var(--dimmer)' }}>
                         {todoEmoji || <TagIcon size={13} />}
                       </button>
                       {emojiPickerOpen && (
-                        <div style={{ position: 'absolute', right: 0, top: '120%', zIndex: 60, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 9, padding: 8, display: 'flex', flexWrap: 'wrap', gap: 3, width: 184, boxShadow: '0 8px 28px rgba(0,0,0,0.45)' }}>
+                        <div style={{ position: 'absolute', right: 0, top: '120%', zIndex: 60, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 8, display: 'flex', flexWrap: 'wrap', gap: 3, width: 184, boxShadow: '0 8px 28px rgba(0,0,0,0.45)' }}>
                           {['','✅','🐛','⚡','💡','🔥','📌','🔗','🎯','⚙️','🧪','📊','🔐','🌐','📱','🎨','🛠️','💬','🚀','📝'].map(e => (
                             <button key={e || 'none'} onClick={() => { setTodoEmoji(e); setEmojiPickerOpen(false) }}
-                              style={{ width: 26, height: 26, borderRadius: 5, border: `1px solid ${todoEmoji === e ? 'var(--border-bright)' : 'transparent'}`, background: todoEmoji === e ? 'var(--border)' : 'transparent', cursor: 'pointer', fontSize: e ? 14 : 10, color: e ? undefined : 'var(--dimmer)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                              style={{ width: 26, height: 26, borderRadius: 'var(--r-sm)', border: `1px solid ${todoEmoji === e ? 'var(--border-bright)' : 'transparent'}`, background: todoEmoji === e ? 'var(--border)' : 'transparent', cursor: 'pointer', fontSize: e ? 14 : 10, color: e ? undefined : 'var(--dimmer)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
                               {e || '—'}
                             </button>
                           ))}
@@ -1120,7 +1120,7 @@ export default function ProjectDetail() {
                     </div>
                     {[['high','#ff4444'],['med','#ffd700'],['low','#4aff91']].map(([p, color]) => (
                       <button key={p} onClick={() => setTodoPriority(p)} title={p}
-                        style={{ width: 22, height: 22, borderRadius: 5, border: `1px solid ${todoPriority === p ? 'var(--border-bright)' : 'transparent'}`, background: todoPriority === p ? 'var(--border)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                        style={{ width: 22, height: 22, borderRadius: 'var(--r-sm)', border: `1px solid ${todoPriority === p ? 'var(--border-bright)' : 'transparent'}`, background: todoPriority === p ? 'var(--border)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
                       </button>
                     ))}
@@ -1129,13 +1129,13 @@ export default function ProjectDetail() {
                       <button
                         title={todoNoteId ? `Linked: ${projectNotes.find(n => n.id === todoNoteId)?.title}` : 'Link to a note'}
                         onClick={() => setTodoNotePicker(p => !p)}
-                        style={{ padding: '2px 7px', borderRadius: 5, border: `1px solid ${todoNoteId ? 'rgba(74,158,255,0.4)' : 'transparent'}`, background: todoNoteId ? 'rgba(74,158,255,0.1)' : 'transparent', cursor: 'pointer', display: 'flex', color: todoNoteId ? '#4a9eff' : 'var(--dimmer)' }}
+                        style={{ padding: '2px 7px', borderRadius: 'var(--r-sm)', border: `1px solid ${todoNoteId ? 'rgba(74,158,255,0.4)' : 'transparent'}`, background: todoNoteId ? 'rgba(74,158,255,0.1)' : 'transparent', cursor: 'pointer', display: 'flex', color: todoNoteId ? '#4a9eff' : 'var(--dimmer)' }}
                       ><LinkIcon size={12} /></button>
                       {todoNotePicker && (
-                        <div style={{ position: 'absolute', right: 0, top: '120%', zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 9, padding: 6, minWidth: 200, boxShadow: '0 8px 28px rgba(0,0,0,0.45)' }}>
+                        <div style={{ position: 'absolute', right: 0, top: '120%', zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 6, minWidth: 200, boxShadow: '0 8px 28px rgba(0,0,0,0.45)' }}>
                           {[{ id: null, title: '— None', emoji: '' }, ...projectNotes].map(n => (
                             <button key={n.id || 'none'} onClick={() => { setTodoNoteId(n.id); setTodoNotePicker(false) }}
-                              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', borderRadius: 6, border: 'none', background: todoNoteId === n.id ? 'var(--card)' : 'transparent', cursor: 'pointer', color: 'var(--text)', fontSize: 11, fontFamily: 'Geist, sans-serif' }}>
+                              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', borderRadius: 'var(--r-md)', border: 'none', background: todoNoteId === n.id ? 'var(--card)' : 'transparent', cursor: 'pointer', color: 'var(--text)', fontSize: 11, fontFamily: 'Geist, sans-serif' }}>
                               {n.emoji && <span style={{ marginRight: 6 }}>{n.emoji}</span>}{n.title}
                             </button>
                           ))}
@@ -1155,7 +1155,7 @@ export default function ProjectDetail() {
                       }
                       setTodoInput(''); setTodoPriority('med'); setTodoEmoji(''); setEmojiPickerOpen(false); setAddingTodo(false); setTodoNoteId(null); setTodoNotePicker(false)
                     }}
-                    style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: '#000', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'Geist, sans-serif', flexShrink: 0 }}
+                    style={{ padding: '4px 10px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: '#000', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'Geist, sans-serif', flexShrink: 0 }}
                   >
                     Add
                   </button>
@@ -1169,7 +1169,7 @@ export default function ProjectDetail() {
                   <div style={{ fontSize: 11, color: 'var(--dimmer)', marginTop: 4 }}>Type above to add one</div>
                 </div>
               ) : (
-                <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
                   {projectTodos.map((todo, i) => {
                     const locked = isTodoLocked(todo)
                     return (
@@ -1187,7 +1187,7 @@ export default function ProjectDetail() {
                           }
                         }}
                         title={locked ? 'Completed more than 6 days ago — cannot be reversed' : undefined}
-                        style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, border: todo.completed ? 'none' : '1px solid var(--border-bright)', background: todo.completed ? '#4aff91' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: locked ? 'not-allowed' : 'pointer', opacity: locked ? 0.65 : 1, fontSize: 9, color: '#000', transition: 'all 0.15s' }}
+                        style={{ width: 16, height: 16, borderRadius: 'var(--r-sm)', flexShrink: 0, border: todo.completed ? 'none' : '1px solid var(--border-bright)', background: todo.completed ? '#4aff91' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: locked ? 'not-allowed' : 'pointer', opacity: locked ? 0.65 : 1, fontSize: 9, color: '#000', transition: 'all var(--transition-base)' }}
                       >
                         {todo.completed && <CheckIcon />}
                       </button>
@@ -1202,23 +1202,23 @@ export default function ProjectDetail() {
                           <button
                             onClick={() => navigate(`/note-editor/${ln.id}`)}
                             title={`Linked note: ${ln.title}`}
-                            style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', padding: '2px 7px', borderRadius: 4, background: 'rgba(74,158,255,0.1)', color: '#4a9eff', border: '1px solid rgba(74,158,255,0.2)', cursor: 'pointer', flexShrink: 0, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', padding: '2px 7px', borderRadius: 'var(--r-sm)', background: 'rgba(74,158,255,0.1)', color: '#4a9eff', border: '1px solid rgba(74,158,255,0.2)', cursor: 'pointer', flexShrink: 0, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                             <LinkIcon size={9} /> {ln.title}
                           </button>
                         ) : null
                       })()}
-                      <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', padding: '2px 5px', borderRadius: 3, background: todo.priority === 'high' ? 'rgba(255,68,68,0.12)' : todo.priority === 'med' ? 'rgba(255,215,0,0.1)' : 'rgba(74,255,145,0.1)', color: todo.priority === 'high' ? '#ff4444' : todo.priority === 'med' ? '#ffd700' : '#4aff91' }}>{todo.priority}</span>
+                      <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', padding: '2px 5px', borderRadius: 'var(--r-sm)', background: todo.priority === 'high' ? 'rgba(255,68,68,0.12)' : todo.priority === 'med' ? 'rgba(255,215,0,0.1)' : 'rgba(74,255,145,0.1)', color: todo.priority === 'high' ? '#ff4444' : todo.priority === 'med' ? '#ffd700' : '#4aff91' }}>{todo.priority}</span>
                       {/* Link to note button */}
                       <div style={{ position: 'relative', flexShrink: 0 }}>
                         <button
                           title="Link to a note"
                           onClick={() => setLinkingTodoId(linkingTodoId === todo.id ? null : todo.id)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: todo.linkedNoteId ? '#4a9eff' : 'var(--dimmer)', display: 'flex', padding: '0 2px', opacity: 0.7, transition: 'opacity 0.12s' }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: todo.linkedNoteId ? '#4a9eff' : 'var(--dimmer)', display: 'flex', padding: '0 2px', opacity: 0.7, transition: 'opacity var(--transition-fast)' }}
                           onMouseEnter={e => e.currentTarget.style.opacity = 1}
                           onMouseLeave={e => e.currentTarget.style.opacity = 0.7}
                         ><LinkIcon size={12} /></button>
                         {linkingTodoId === todo.id && (
-                          <div style={{ position: 'absolute', right: 0, top: '120%', zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 9, padding: 6, minWidth: 200, boxShadow: '0 8px 28px rgba(0,0,0,0.45)' }}>
+                          <div style={{ position: 'absolute', right: 0, top: '120%', zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 6, minWidth: 200, boxShadow: '0 8px 28px rgba(0,0,0,0.45)' }}>
                             <div style={{ fontSize: 10, color: 'var(--dimmer)', padding: '2px 6px 6px', fontFamily: 'Geist Mono, monospace' }}>Link to note</div>
                             {projectNotes.length === 0 ? (
                               <div style={{ fontSize: 11, color: 'var(--dimmer)', padding: '6px 8px' }}>No notes for this project</div>
@@ -1232,7 +1232,7 @@ export default function ProjectDetail() {
                                   }
                                   setLinkingTodoId(null)
                                 }}
-                                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: todo.linkedNoteId === n.id ? '#4a9eff' : 'var(--text)', background: todo.linkedNoteId === n.id ? 'rgba(74,158,255,0.08)' : 'transparent', transition: 'background 0.1s' }}
+                                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', borderRadius: 'var(--r-md)', cursor: 'pointer', fontSize: 12, color: todo.linkedNoteId === n.id ? '#4a9eff' : 'var(--text)', background: todo.linkedNoteId === n.id ? 'rgba(74,158,255,0.08)' : 'transparent', transition: 'background var(--transition-fast)' }}
                                 onMouseEnter={e => { if (todo.linkedNoteId !== n.id) e.currentTarget.style.background = 'var(--card)' }}
                                 onMouseLeave={e => { if (todo.linkedNoteId !== n.id) e.currentTarget.style.background = 'transparent' }}
                               >
@@ -1249,7 +1249,7 @@ export default function ProjectDetail() {
                           setProjectTodos(prev => prev.filter(t => t.id !== todo.id))
                           window.dispatchEvent(new CustomEvent('croco:data-changed'))
                         }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', fontSize: 13, lineHeight: 1, padding: '0 2px', flexShrink: 0, opacity: 0.5, transition: 'opacity 0.12s' }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', fontSize: 13, lineHeight: 1, padding: '0 2px', flexShrink: 0, opacity: 0.5, transition: 'opacity var(--transition-fast)' }}
                         onMouseEnter={e => e.currentTarget.style.opacity = 1}
                         onMouseLeave={e => e.currentTarget.style.opacity = 0.5}
                       >
@@ -1267,7 +1267,7 @@ export default function ProjectDetail() {
             <div>
               <button
                 onClick={() => navigate('/note-editor', { state: { projectId: project.id } })}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif', marginBottom: 16, transition: 'all 0.12s' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 'var(--r-md)', border: '1px dashed var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif', marginBottom: 16, transition: 'all var(--transition-fast)' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--orange)'; e.currentTarget.style.color = 'var(--orange)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--dim)' }}
               >
@@ -1295,7 +1295,7 @@ export default function ProjectDetail() {
                           key={note.id}
                           className="note-row"
                           onClick={() => navigate(`/note-editor/${note.id}`)}
-                          style={{ background: pinned ? 'rgba(74,158,255,0.05)' : 'var(--card)', border: `1px solid ${pinned ? 'rgba(74,158,255,0.2)' : 'var(--border)'}`, borderRadius: 10, padding: '14px 16px', cursor: 'pointer', transition: 'all 0.12s', position: 'relative' }}
+                          style={{ background: pinned ? 'rgba(74,158,255,0.05)' : 'var(--card)', border: `1px solid ${pinned ? 'rgba(74,158,255,0.2)' : 'var(--border)'}`, borderRadius: 'var(--r-lg)', padding: '14px 16px', cursor: 'pointer', transition: 'all var(--transition-fast)', position: 'relative' }}
                           onMouseEnter={e => { e.currentTarget.style.borderColor = pinned ? 'rgba(74,158,255,0.4)' : 'var(--border-bright)'; e.currentTarget.style.background = pinned ? 'rgba(74,158,255,0.08)' : 'var(--card-hover)' }}
                           onMouseLeave={e => { e.currentTarget.style.borderColor = pinned ? 'rgba(74,158,255,0.2)' : 'var(--border)'; e.currentTarget.style.background = pinned ? 'rgba(74,158,255,0.05)' : 'var(--card)' }}
                         >
@@ -1306,7 +1306,7 @@ export default function ProjectDetail() {
                             <button
                               onClick={e => { e.stopPropagation(); togglePinNote(note.id) }}
                               title={pinned ? 'Unpin' : 'Pin to top'}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', opacity: pinned ? 1 : 0, padding: '0 2px', color: pinned ? 'var(--accent)' : 'var(--dimmer)', flexShrink: 0, transition: 'opacity 0.1s' }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', opacity: pinned ? 1 : 0, padding: '0 2px', color: pinned ? 'var(--accent)' : 'var(--dimmer)', flexShrink: 0, transition: 'opacity var(--transition-fast)' }}
                               className="note-pin-btn"
                             >
                               <PinIcon size={12} />
@@ -1342,7 +1342,7 @@ export default function ProjectDetail() {
               ) : (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: 11, fontFamily: 'Geist Mono, monospace', color: 'var(--dimmer)', background: 'var(--border)', padding: '3px 8px', borderRadius: 4 }}>
+                    <span style={{ fontSize: 11, fontFamily: 'Geist Mono, monospace', color: 'var(--dimmer)', background: 'var(--border)', padding: '3px 8px', borderRadius: 'var(--r-sm)' }}>
                       {readme.filename}
                     </span>
                   </div>
@@ -1378,7 +1378,7 @@ export default function ProjectDetail() {
               { value: 'nvim',      label: 'Neovim' },
             ]
             const labelStyle = { fontSize: 10, fontFamily: 'Geist Mono, monospace', color: 'var(--dimmer)', textTransform: 'uppercase', letterSpacing: '0.06em' }
-            const inputStyle = { width: '100%', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', color: 'var(--text)', fontSize: 13, fontFamily: 'Geist, sans-serif', outline: 'none', transition: 'border-color 0.15s' }
+            const inputStyle = { width: '100%', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '8px 11px', color: 'var(--text)', fontSize: 13, fontFamily: 'Geist, sans-serif', outline: 'none', transition: 'border-color var(--transition-base)' }
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
 
@@ -1386,13 +1386,13 @@ export default function ProjectDetail() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div style={labelStyle}>Project Icon</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ fontSize: 36, width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10 }}>
+                    <div style={{ fontSize: 36, width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)' }}>
                       {editDraft.emoji}
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, flex: 1 }}>
                       {COMMON_EMOJIS.map(e => (
                         <button key={e} onClick={() => setEditDraft(d => ({ ...d, emoji: e }))}
-                          style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, borderRadius: 6, cursor: 'pointer', background: editDraft.emoji === e ? 'var(--border-bright)' : 'var(--card)', border: `1px solid ${editDraft.emoji === e ? 'var(--border-bright)' : 'var(--border)'}`, transition: 'background 0.1s' }}>
+                          style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, borderRadius: 'var(--r-md)', cursor: 'pointer', background: editDraft.emoji === e ? 'var(--border-bright)' : 'var(--card)', border: `1px solid ${editDraft.emoji === e ? 'var(--border-bright)' : 'var(--border)'}`, transition: 'background var(--transition-fast)' }}>
                           {e}
                         </button>
                       ))}
@@ -1483,7 +1483,7 @@ export default function ProjectDetail() {
                         const t = tagInput.trim()
                         if (t && !editDraft.tags.includes(t)) { setEditDraft(d => ({ ...d, tags: [...d.tags, t] })); setTagInput('') }
                       }}
-                      style={{ padding: '8px 14px', borderRadius: 7, background: 'var(--border)', border: 'none', color: 'var(--text)', fontSize: 12, cursor: 'pointer' }}>Add</button>
+                      style={{ padding: '8px 14px', borderRadius: 'var(--r-md)', background: 'var(--border)', border: 'none', color: 'var(--text)', fontSize: 12, cursor: 'pointer' }}>Add</button>
                   </div>
                 </div>
 
@@ -1522,7 +1522,7 @@ export default function ProjectDetail() {
                       } catch (err) { toast.error(err?.message || 'Save failed') }
                       finally { setEditSaving(false) }
                     }}
-                    style={{ padding: '9px 22px', borderRadius: 8, background: editSaving ? 'var(--border)' : 'var(--orange)', border: 'none', color: editSaving ? 'var(--dim)' : '#fff', fontSize: 13, fontWeight: 600, cursor: editSaving ? 'default' : 'pointer', transition: 'background 0.15s' }}>
+                    style={{ padding: '9px 22px', borderRadius: 'var(--r-md)', background: editSaving ? 'var(--border)' : 'var(--orange)', border: 'none', color: editSaving ? 'var(--dim)' : '#fff', fontSize: 13, fontWeight: 600, cursor: editSaving ? 'default' : 'pointer', transition: 'background var(--transition-base)' }}>
                     {editSaving ? 'Saving…' : 'Save Changes'}
                   </button>
                 </div>
@@ -1552,7 +1552,7 @@ export default function ProjectDetail() {
                         setExportingTemplate(false)
                       }
                     }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: 'transparent', border: '1px solid var(--border)', color: 'var(--dim)', fontSize: 12, cursor: exportingTemplate ? 'default' : 'pointer', fontFamily: 'Geist, sans-serif' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 'var(--r-md)', background: 'transparent', border: '1px solid var(--border)', color: 'var(--dim)', fontSize: 12, cursor: exportingTemplate ? 'default' : 'pointer', fontFamily: 'Geist, sans-serif' }}>
                     <PackageIcon size={14} /> {exportingTemplate ? 'Exporting…' : 'Export as Template'}
                   </button>
                 </div>
@@ -1563,7 +1563,7 @@ export default function ProjectDetail() {
           {/* ─ DANGER ────────────────────────────────────── */}
           {tab === 'danger' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ padding: '11px 15px', borderRadius: 8, background: 'rgba(255,68,68,0.06)', border: '1px solid rgba(255,68,68,0.18)', fontSize: 11, color: '#ff6666', fontFamily: 'Geist Mono, monospace', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ padding: '11px 15px', borderRadius: 'var(--r-md)', background: 'rgba(255,68,68,0.06)', border: '1px solid rgba(255,68,68,0.18)', fontSize: 11, color: '#ff6666', fontFamily: 'Geist Mono, monospace', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <AlertTriangleIcon /> Actions on this page cannot be undone. Proceed carefully.
               </div>
 
@@ -1737,7 +1737,7 @@ export default function ProjectDetail() {
           style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={e => { if (e.target === e.currentTarget && !publishLoading) setPublishModal(false) }}
         >
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px', maxWidth: 420, width: '90%', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '24px', maxWidth: 420, width: '90%', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
               <GithubIcon />
               <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Publish to GitHub</span>
@@ -1746,26 +1746,26 @@ export default function ProjectDetail() {
               <div>
                 <div style={{ fontSize: 11, color: 'var(--dimmer)', marginBottom: 4 }}>Repository name</div>
                 <input value={publishName} onChange={e => setPublishName(e.target.value)}
-                  style={{ width: '100%', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 12px', fontSize: 13, color: 'var(--text)', fontFamily: 'Geist Mono, monospace', outline: 'none', boxSizing: 'border-box' }} />
+                  style={{ width: '100%', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '8px 12px', fontSize: 13, color: 'var(--text)', fontFamily: 'Geist Mono, monospace', outline: 'none', boxSizing: 'border-box' }} />
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--dimmer)', marginBottom: 4 }}>Description (optional)</div>
                 <input value={publishDesc} onChange={e => setPublishDesc(e.target.value)}
-                  style={{ width: '100%', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 12px', fontSize: 13, color: 'var(--text)', fontFamily: 'Geist, sans-serif', outline: 'none', boxSizing: 'border-box' }} />
+                  style={{ width: '100%', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '8px 12px', fontSize: 13, color: 'var(--text)', fontFamily: 'Geist, sans-serif', outline: 'none', boxSizing: 'border-box' }} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input type="checkbox" id="pub-priv" checked={publishPrivate} onChange={e => setPublishPrivate(e.target.checked)} />
                 <label htmlFor="pub-priv" style={{ fontSize: 12, color: 'var(--dim)', cursor: 'pointer', userSelect: 'none' }}>Private repository</label>
               </div>
               {publishError && (
-                <div style={{ fontSize: 11, color: '#ff5555', background: 'rgba(255,68,68,0.07)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: 6, padding: '8px 12px', fontFamily: 'Geist Mono, monospace' }}>
+                <div style={{ fontSize: 11, color: '#ff5555', background: 'rgba(255,68,68,0.07)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: 'var(--r-md)', padding: '8px 12px', fontFamily: 'Geist Mono, monospace' }}>
                   {publishError}
                 </div>
               )}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={() => setPublishModal(false)} disabled={publishLoading}
-                style={{ padding: '8px 16px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+                style={{ padding: '8px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
                 Cancel
               </button>
               <button
@@ -1785,7 +1785,7 @@ export default function ProjectDetail() {
                     setPublishLoading(false)
                   }
                 }}
-                style={{ padding: '8px 18px', borderRadius: 7, border: 'none', background: publishName.trim() && !publishLoading ? '#24292e' : 'var(--dimmer)', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: publishName.trim() && !publishLoading ? 'pointer' : 'not-allowed' }}>
+                style={{ padding: '8px 18px', borderRadius: 'var(--r-md)', border: 'none', background: publishName.trim() && !publishLoading ? '#24292e' : 'var(--dimmer)', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: publishName.trim() && !publishLoading ? 'pointer' : 'not-allowed' }}>
                 {publishLoading ? 'Publishing…' : 'Publish'}
               </button>
             </div>
@@ -1803,7 +1803,7 @@ export default function ProjectDetail() {
           <div style={{
             position: 'fixed', left: ctxMenu.x, top: ctxMenu.y,
             background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 8, padding: '4px 0', minWidth: 180,
+            borderRadius: 'var(--r-md)', padding: '4px 0', minWidth: 180,
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)', zIndex: 301,
           }}>
             <button

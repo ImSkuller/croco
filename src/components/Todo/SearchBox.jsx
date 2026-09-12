@@ -8,8 +8,8 @@ const SearchBox = forwardRef(function SearchBox({ value, onChange, placeholder =
       display: 'flex', alignItems: 'center', gap: 8,
       background: 'var(--card)',
       border: `1px solid ${focused ? 'var(--border-bright)' : 'var(--border)'}`,
-      borderRadius: 8, padding: '7px 12px',
-      flex: 1, maxWidth: 280, transition: 'border-color 0.15s',
+      borderRadius: 'var(--r-md)', padding: '7px 12px',
+      flex: 1, maxWidth: 280, transition: 'border-color var(--transition-base)',
     }}>
       <span style={{ color: 'var(--dimmer)', display: 'flex', flexShrink: 0 }}><SearchIcon /></span>
       <input

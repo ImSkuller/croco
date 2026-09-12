@@ -7,7 +7,7 @@ export default function FilterTab({ label, count, active, onClick }) {
         alignItems:   'center',
         gap:          5,
         padding:      '5px 10px',
-        borderRadius: 6,
+        borderRadius: 'var(--r-md)',
         border:       'none',
         cursor:       'pointer',
         fontSize:     12,
@@ -24,7 +24,7 @@ export default function FilterTab({ label, count, active, onClick }) {
         background:   active ? 'var(--border)' : 'transparent',
         color:        active ? 'var(--text)' : 'var(--dimmer)',
         padding:      '1px 5px',
-        borderRadius: 20,
+        borderRadius: 'var(--r-xl)',
         minWidth:     18,
         textAlign:    'center',
       }}>

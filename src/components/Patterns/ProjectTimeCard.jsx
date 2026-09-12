@@ -45,8 +45,8 @@ export default function ProjectTimeCard({ projectStats, projects }) {
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
                 <span style={{ color: 'var(--dimmer)', flexShrink: 0, marginLeft: 8, fontFamily: 'Geist Mono, monospace' }}>{formatDuration(r.seconds)}</span>
               </div>
-              <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${Math.max(4, (r.seconds / maxSeconds) * 100)}%`, background: 'var(--blue)', borderRadius: 2 }} />
+              <div style={{ height: 4, background: 'var(--border)', borderRadius: 'var(--r-sm)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${Math.max(4, (r.seconds / maxSeconds) * 100)}%`, background: 'var(--blue)', borderRadius: 'var(--r-sm)' }} />
               </div>
             </div>
           ))}

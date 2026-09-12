@@ -29,7 +29,7 @@ export default function ObsidianSection({
         )}
 
         {obsidianSyncResult && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14, padding: '10px 14px', borderRadius: 8, background: obsidianSyncResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${obsidianSyncResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: obsidianSyncResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14, padding: '10px 14px', borderRadius: 'var(--r-md)', background: obsidianSyncResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${obsidianSyncResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: obsidianSyncResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
             {obsidianSyncResult.ok ? <CheckIcon size={12} /> : <XCircleIcon size={12} />}{obsidianSyncResult.message}
           </div>
         )}
@@ -42,7 +42,7 @@ export default function ObsidianSection({
             disabled={obsidianSyncing || !obsidianEnabled || !obsidianVaultPath}
             onClick={handleObsidianSyncNow}
             style={{
-              padding: '7px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#000',
+              padding: '7px 16px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: '#000',
               fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif',
               cursor: (obsidianSyncing || !obsidianEnabled || !obsidianVaultPath) ? 'not-allowed' : 'pointer',
               opacity: (obsidianSyncing || !obsidianEnabled || !obsidianVaultPath) ? 0.6 : 1,

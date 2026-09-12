@@ -54,40 +54,40 @@ export default function TerminalPanel({ output, command, isRunning, project, all
       {/* ── Environment selector ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <span style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', flexShrink: 0 }}>NODE_ENV</span>
-        <div style={{ display: 'flex', gap: 2, padding: 2, background: 'var(--border)', borderRadius: 7 }}>
+        <div style={{ display: 'flex', gap: 2, padding: 2, background: 'var(--border)', borderRadius: 'var(--r-md)' }}>
           {RUN_ENVS.map(env => (
             <button key={env} onClick={() => !isRunning && onEnvChange(env)} disabled={isRunning}
               style={{
-                padding: '4px 9px', borderRadius: 5, border: 'none', fontSize: 10,
+                padding: '4px 9px', borderRadius: 'var(--r-sm)', border: 'none', fontSize: 10,
                 fontFamily: 'Geist Mono, monospace', cursor: isRunning ? 'not-allowed' : 'pointer',
                 background: runEnv === env ? `${ENV_COLOR[env]}18` : 'transparent',
                 color:      runEnv === env ? ENV_COLOR[env] : 'var(--dimmer)',
                 outline:    runEnv === env ? `1px solid ${ENV_COLOR[env]}40` : 'none',
-                transition: 'all 0.12s',
+                transition: 'all var(--transition-fast)',
               }}>
               {env}
             </button>
           ))}
         </div>
         {runEnv !== 'development' && (
-          <span style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', color: envColor, background: `${envColor}14`, border: `1px solid ${envColor}35`, padding: '2px 7px', borderRadius: 4 }}>
+          <span style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', color: envColor, background: `${envColor}14`, border: `1px solid ${envColor}35`, padding: '2px 7px', borderRadius: 'var(--r-sm)' }}>
             NODE_ENV={runEnv}
           </span>
         )}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
           {output.length > 0 && (
-            <button onClick={handleCopy} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+            <button onClick={handleCopy} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
               <CopyIcon />{copied ? 'Copied!' : 'Copy'}
             </button>
           )}
           {output.length > 0 && (
-            <button onClick={onClear} style={{ padding: '4px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+            <button onClick={onClear} style={{ padding: '4px 9px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
               Clear
             </button>
           )}
           {isRunning && (
             <button onClick={() => onRun()}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 7, border: 'none',
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 'var(--r-md)', border: 'none',
                 background: 'rgba(255,68,68,0.12)', color: '#ff4444',
                 fontSize: 12, fontWeight: 500, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
               <StopIcon /> Stop
@@ -105,13 +105,13 @@ export default function TerminalPanel({ output, command, isRunning, project, all
             title={s.command}
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              padding: '5px 11px', borderRadius: 7, fontSize: 11, fontFamily: 'Geist, sans-serif',
+              padding: '5px 11px', borderRadius: 'var(--r-md)', fontSize: 11, fontFamily: 'Geist, sans-serif',
               cursor: isRunning ? 'not-allowed' : 'pointer',
               border: `1px solid ${isActiveScript(s) ? 'rgba(74,255,145,0.4)' : 'var(--border)'}`,
               background: isActiveScript(s) ? 'rgba(74,255,145,0.08)' : 'var(--card)',
               color:      isActiveScript(s) ? '#4aff91' : isRunning ? 'var(--dimmer)' : 'var(--dim)',
               opacity: isRunning && !isActiveScript(s) ? 0.4 : 1,
-              transition: 'all 0.12s',
+              transition: 'all var(--transition-fast)',
             }}
             onMouseEnter={e => { if (!isRunning) { e.currentTarget.style.borderColor = 'var(--border-bright)'; e.currentTarget.style.color = 'var(--text)' } }}
             onMouseLeave={e => { if (!isRunning && !isActiveScript(s)) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--dim)' } }}
@@ -123,7 +123,7 @@ export default function TerminalPanel({ output, command, isRunning, project, all
 
         {hasMore && (
           <button onClick={() => setShowAll(p => !p)}
-            style={{ padding: '5px 10px', borderRadius: 7, fontSize: 11, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--dimmer)', cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+            style={{ padding: '5px 10px', borderRadius: 'var(--r-md)', fontSize: 11, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--dimmer)', cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
             {showAll ? '↑ less' : `+${sorted.length - 8} more`}
           </button>
         )}
@@ -132,7 +132,7 @@ export default function TerminalPanel({ output, command, isRunning, project, all
         {!showCustom ? (
           <button onClick={() => { setShowCustom(true); setTimeout(() => customRef.current?.focus(), 50) }}
             disabled={isRunning}
-            style={{ padding: '5px 11px', borderRadius: 7, fontSize: 11, fontFamily: 'Geist, sans-serif',
+            style={{ padding: '5px 11px', borderRadius: 'var(--r-md)', fontSize: 11, fontFamily: 'Geist, sans-serif',
               border: '1px dashed var(--border)', background: 'transparent', color: 'var(--dimmer)',
               cursor: isRunning ? 'not-allowed' : 'pointer', opacity: isRunning ? 0.4 : 1 }}>
             $ custom…
@@ -142,16 +142,16 @@ export default function TerminalPanel({ output, command, isRunning, project, all
             <input ref={customRef} value={custom} onChange={e => setCustom(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') runCustom(); if (e.key === 'Escape') { setShowCustom(false); setCustom('') } }}
               placeholder="npm run lint"
-              style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, padding: '5px 9px', borderRadius: 6,
+              style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, padding: '5px 9px', borderRadius: 'var(--r-md)',
                 background: 'var(--base)', border: '1px solid var(--border-bright)', color: 'var(--text)', outline: 'none', width: 160 }} />
             <button onClick={runCustom} disabled={!custom.trim()}
-              style={{ padding: '5px 11px', borderRadius: 6, border: 'none',
+              style={{ padding: '5px 11px', borderRadius: 'var(--r-md)', border: 'none',
                 background: custom.trim() ? 'var(--orange)' : 'var(--dimmer)', color: '#fff',
                 fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: custom.trim() ? 'pointer' : 'not-allowed' }}>
               Run
             </button>
             <button onClick={() => { setShowCustom(false); setCustom('') }}
-              style={{ display: 'flex', padding: '5px 9px', borderRadius: 6, border: '1px solid var(--border)',
+              style={{ display: 'flex', padding: '5px 9px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
                 background: 'transparent', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
               <XCircleIcon size={12} />
             </button>
@@ -173,7 +173,7 @@ export default function TerminalPanel({ output, command, isRunning, project, all
           onClick={onRefreshScripts}
           disabled={isRunning}
           title="Re-scan scripts from package.json / project config"
-          style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 7px', borderRadius: 5, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dimmer)', fontSize: 10, cursor: isRunning ? 'not-allowed' : 'pointer', fontFamily: 'Geist, sans-serif', opacity: isRunning ? 0.5 : 1 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 7px', borderRadius: 'var(--r-sm)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dimmer)', fontSize: 10, cursor: isRunning ? 'not-allowed' : 'pointer', fontFamily: 'Geist, sans-serif', opacity: isRunning ? 0.5 : 1 }}
         >
           <RefreshIcon /> Refresh
         </button>
@@ -192,7 +192,7 @@ export default function TerminalPanel({ output, command, isRunning, project, all
 
       {/* ── Output area ── */}
       <div style={{
-        flex: 1, background: '#0a0a0a', border: '1px solid var(--border)', borderRadius: 10,
+        flex: 1, background: '#0a0a0a', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)',
         padding: '14px 16px', overflowY: 'auto', fontFamily: 'Geist Mono, monospace', fontSize: 12,
         lineHeight: 1.6, minHeight: 300, maxHeight: 580,
       }}>

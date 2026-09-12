@@ -4,11 +4,11 @@ export default function FilterTab({ label, count, active, onClick }) {
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', gap: 5,
-        padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+        padding: '5px 10px', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer',
         fontSize: 12, fontWeight: active ? 500 : 400, fontFamily: 'Geist, sans-serif',
         background: active ? 'var(--card)' : 'transparent',
         color:      active ? 'var(--text)' : 'var(--dim)',
-        transition: 'all 0.12s',
+        transition: 'all var(--transition-fast)',
       }}
     >
       {label}
@@ -16,7 +16,7 @@ export default function FilterTab({ label, count, active, onClick }) {
         fontSize: 10, fontFamily: 'Geist Mono, monospace',
         background: active ? 'var(--border)' : 'transparent',
         color:      active ? 'var(--text)' : 'var(--dimmer)',
-        padding: '1px 5px', borderRadius: 20, minWidth: 18, textAlign: 'center',
+        padding: '1px 5px', borderRadius: 'var(--r-xl)', minWidth: 18, textAlign: 'center',
       }}>
         {count}
       </span>

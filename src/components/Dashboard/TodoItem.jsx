@@ -15,11 +15,11 @@ export default function TodoItem({ item, onToggle }) {
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '11px 18px', borderBottom: '1px solid var(--border)',
         cursor: 'pointer', background: hovered ? 'var(--hover-bg)' : 'transparent',
-        transition: 'background 0.1s',
+        transition: 'background var(--transition-fast)',
       }}
     >
       <div style={{
-        width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+        width: 16, height: 16, borderRadius: 'var(--r-sm)', flexShrink: 0,
         border:      item.done ? 'none' : '1px solid var(--border-bright)',
         background:  item.done ? '#4aff91' : 'transparent',
         display:     'flex', alignItems: 'center', justifyContent: 'center',
@@ -27,11 +27,11 @@ export default function TodoItem({ item, onToggle }) {
       }}>
         {item.done && <CheckIcon />}
       </div>
-      <span style={{ flex: 1, fontSize: 12, color: item.done ? 'var(--dimmer)' : 'var(--dim)', textDecoration: item.done ? 'line-through' : 'none', transition: 'all 0.12s' }}>
+      <span style={{ flex: 1, fontSize: 12, color: item.done ? 'var(--dimmer)' : 'var(--dim)', textDecoration: item.done ? 'line-through' : 'none', transition: 'all var(--transition-fast)' }}>
         {item.text}
       </span>
       <span style={{
-        fontSize: 10, fontFamily: 'Geist Mono, monospace', padding: '2px 6px', borderRadius: 4,
+        fontSize: 10, fontFamily: 'Geist Mono, monospace', padding: '2px 6px', borderRadius: 'var(--r-sm)',
         background: item.done ? 'rgba(74,255,145,0.1)' : priorityBg[item.priority],
         color:      item.done ? '#4aff91'              : priorityColor[item.priority],
       }}>

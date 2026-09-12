@@ -201,7 +201,7 @@ export default function Projects() {
         <SearchBox ref={searchRef} value={search} onChange={setSearch} />
 
         {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 8, flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)', flexShrink: 0 }}>
           {FILTERS.map(f => (
             <FilterTab key={f} label={f} count={counts[f]} active={filter === f} onClick={() => setFilter(f)} />
           ))}
@@ -218,7 +218,7 @@ export default function Projects() {
               <div style={{
                 position: 'absolute', top: '110%', right: 0, zIndex: 50,
                 background: 'var(--surface)', border: '1px solid var(--border)',
-                borderRadius: 8, padding: 4, minWidth: 140,
+                borderRadius: 'var(--r-md)', padding: 4, minWidth: 140,
                 boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
               }}>
                 {SORTS.map(s => (
@@ -226,10 +226,10 @@ export default function Projects() {
                     key={s}
                     onClick={() => { setSort(s); setSortOpen(false) }}
                     style={{
-                      padding: '8px 12px', borderRadius: 5, fontSize: 12,
+                      padding: '8px 12px', borderRadius: 'var(--r-sm)', fontSize: 12,
                       color: sort === s ? 'var(--accent)' : 'var(--dim)',
                       background: sort === s ? 'var(--accent-dim)' : 'transparent',
-                      cursor: 'pointer', transition: 'all 0.1s',
+                      cursor: 'pointer', transition: 'all var(--transition-fast)',
                     }}
                     onMouseEnter={e => { if (sort !== s) e.currentTarget.style.background = 'var(--card)' }}
                     onMouseLeave={e => { if (sort !== s) e.currentTarget.style.background = 'transparent' }}
@@ -242,7 +242,7 @@ export default function Projects() {
           </div>
 
           {/* View toggle */}
-          <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 7 }}>
+          <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)' }}>
             <ViewBtn active={view === 'grid'} onClick={() => setView('grid')}><GridIcon /></ViewBtn>
             <ViewBtn active={view === 'list'} onClick={() => setView('list')}><ListViewIcon /></ViewBtn>
           </div>
@@ -259,7 +259,7 @@ export default function Projects() {
           {selectedTag && (
             <button
               onClick={() => setSelectedTag(null)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontFamily: 'Geist, sans-serif', border: '1px solid transparent', background: 'transparent', color: 'var(--dimmer)', cursor: 'pointer' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 'var(--r-xl)', fontSize: 11, fontFamily: 'Geist, sans-serif', border: '1px solid transparent', background: 'transparent', color: 'var(--dimmer)', cursor: 'pointer' }}
             >
               <XCircleIcon size={11} /> clear
             </button>
@@ -339,7 +339,7 @@ export default function Projects() {
                 <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--dim)' }}>Archived</span>
                 <span style={{
                   fontSize: 10, fontFamily: 'Geist Mono, monospace', color: 'var(--dimmer)',
-                  background: 'var(--border)', padding: '1px 6px', borderRadius: 10,
+                  background: 'var(--border)', padding: '1px 6px', borderRadius: 'var(--r-lg)',
                 }}>{archivedProjects.length}</span>
               </button>
 

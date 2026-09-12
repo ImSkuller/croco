@@ -215,7 +215,7 @@ export default function Dashboard() {
             <div style={{
               background: 'var(--dash-accent-card-bg)',
               border: '1px solid var(--border)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-xl)',
               padding: '18px 22px',
               display: 'flex',
               alignItems: 'center',
@@ -224,7 +224,7 @@ export default function Dashboard() {
               flexShrink: 0,
               boxShadow: 'var(--shadow-sm)',
             }}>
-              <div style={{ width: 36, height: 36, background: 'var(--accent-dim)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
+              <div style={{ width: 36, height: 36, background: 'var(--accent-dim)', borderRadius: 'var(--r-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
                 <FolderIcon size={16} />
               </div>
               <div>
@@ -245,13 +245,13 @@ export default function Dashboard() {
           {languages.length > 0 && (
             <div>
               <SectionHeader title="Language Breakdown" action="All projects ›" link="/projects" />
-              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 22px', boxShadow: 'var(--shadow-sm)' }}>
-                <div style={{ height: 8, background: 'var(--border)', borderRadius: 20, overflow: 'hidden', display: 'flex', marginBottom: 18, gap: 1 }}>
+              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '20px 22px', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ height: 8, background: 'var(--border)', borderRadius: 'var(--r-xl)', overflow: 'hidden', display: 'flex', marginBottom: 18, gap: 1 }}>
                   {languages.map((lang, i) => (
                     <div key={lang.name} style={{
                       width: `${lang.pct}%`, height: '100%', background: lang.color, flexShrink: 0,
                       borderRadius: i === 0 ? '20px 0 0 20px' : i === languages.length - 1 ? '0 20px 20px 0' : 0,
-                      transition: 'width 0.3s ease',
+                      transition: 'width var(--transition-slow)',
                     }} />
                   ))}
                 </div>
@@ -292,11 +292,11 @@ export default function Dashboard() {
 
           {/* Todos + Notes */}
           <div className="pm-grid-2" style={{ gap: 16 }}>
-            <div className="glass-card" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+            <div className="glass-card" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
               <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--dim)', fontFamily: 'Geist Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Open Todos
-                  {activeCount > 0 && <span style={{ marginLeft: 6, fontSize: 10, background: 'var(--accent-dim)', color: 'var(--accent)', padding: '1px 6px', borderRadius: 8 }}>{activeCount}</span>}
+                  {activeCount > 0 && <span style={{ marginLeft: 6, fontSize: 10, background: 'var(--accent-dim)', color: 'var(--accent)', padding: '1px 6px', borderRadius: 'var(--r-md)' }}>{activeCount}</span>}
                 </span>
                 <NavLink to="/todos" style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: 10, fontFamily: 'Geist Mono, monospace' }}>View all ›</NavLink>
               </div>
@@ -311,7 +311,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="glass-card" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+            <div className="glass-card" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
               <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--dim)', fontFamily: 'Geist Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Recent Notes</span>
                 <NavLink to="/note-editor" style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: 10, fontFamily: 'Geist Mono, monospace' }}>New note ›</NavLink>
@@ -332,7 +332,7 @@ export default function Dashboard() {
           {recentCommits.length > 0 && (
             <div>
               <SectionHeader title="Recent Commits" action="All Projects ›" link="/projects" />
-              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
                 {recentCommits.map((c, i) => (
                   <div
                     key={c.hash + i}
@@ -352,7 +352,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', color: 'var(--dimmer)', flexShrink: 0 }}>{c.date}</span>
-                    <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', color: 'var(--accent)', background: 'var(--accent-dim)', padding: '1px 5px', borderRadius: 4, flexShrink: 0 }}>{c.hash}</span>
+                    <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', color: 'var(--accent)', background: 'var(--accent-dim)', padding: '1px 5px', borderRadius: 'var(--r-sm)', flexShrink: 0 }}>{c.hash}</span>
                   </div>
                 ))}
               </div>

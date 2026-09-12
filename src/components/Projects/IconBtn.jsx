@@ -12,7 +12,7 @@ export default function IconBtn({ children, onClick, active }) {
         alignItems:   'center',
         gap:          6,
         padding:      '6px 10px',
-        borderRadius: 7,
+        borderRadius: 'var(--r-md)',
         border:       `1px solid ${active || hovered ? 'var(--border-bright)' : 'var(--border)'}`,
         background:   active || hovered ? 'var(--card)' : 'transparent',
         color:        'var(--dim)',

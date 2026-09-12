@@ -5,7 +5,7 @@ export function Toggle({ value, onChange }) {
     <button
       onClick={() => onChange(v => !v)}
       style={{
-        width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
+        width: 44, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',
         background: value ? 'var(--green)' : 'var(--border)',
         position: 'relative', transition: 'background var(--transition-base)', flexShrink: 0,
       }}

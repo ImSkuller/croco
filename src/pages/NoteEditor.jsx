@@ -231,7 +231,7 @@ export default function NoteEditor() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', height: 54, flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
         <button
           onClick={() => navigate('/notes')}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', padding: '4px 8px', borderRadius: 6, transition: 'all 0.12s', flexShrink: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', padding: '4px 8px', borderRadius: 'var(--r-md)', transition: 'all var(--transition-fast)', flexShrink: 0 }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--dim)' }}
         >
@@ -244,17 +244,17 @@ export default function NoteEditor() {
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <button
             onClick={() => setShowEmoji(p => !p)}
-            style={{ fontSize: 17, background: 'none', border: 'none', cursor: 'pointer', padding: '3px 5px', borderRadius: 6, lineHeight: 1, transition: 'background 0.1s' }}
+            style={{ fontSize: 17, background: 'none', border: 'none', cursor: 'pointer', padding: '3px 5px', borderRadius: 'var(--r-md)', lineHeight: 1, transition: 'background var(--transition-fast)' }}
             onMouseEnter={e => e.currentTarget.style.background = 'var(--card)'}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
             {emoji}
           </button>
           {showEmoji && (
-            <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 10, display: 'flex', flexWrap: 'wrap', gap: 4, width: 220, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+            <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 10, display: 'flex', flexWrap: 'wrap', gap: 4, width: 220, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
               {EMOJIS.map(e => (
                 <button key={e} onClick={() => { setEmoji(e); setShowEmoji(false) }}
-                  style={{ fontSize: 19, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 5px', borderRadius: 6, transition: 'background 0.1s', lineHeight: 1 }}
+                  style={{ fontSize: 19, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 5px', borderRadius: 'var(--r-md)', transition: 'background var(--transition-fast)', lineHeight: 1 }}
                   onMouseEnter={e2 => e2.currentTarget.style.background = 'var(--card)'}
                   onMouseLeave={e2 => e2.currentTarget.style.background = 'none'}
                 >
@@ -279,7 +279,7 @@ export default function NoteEditor() {
         {/* Star */}
         <button
           onClick={() => setStarred(p => !p)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, opacity: starred ? 1 : 0.35, transition: 'opacity 0.15s', flexShrink: 0 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, opacity: starred ? 1 : 0.35, transition: 'opacity var(--transition-base)', flexShrink: 0 }}
         >
           <StarIcon filled={starred} />
         </button>
@@ -290,10 +290,10 @@ export default function NoteEditor() {
             onClick={handleArchive}
             title={archived ? 'Unarchive note' : 'Archive note'}
             style={{
-              padding: '4px 10px', borderRadius: 6, border: `1px solid ${archived ? 'var(--accent)' : 'var(--border)'}`,
+              padding: '4px 10px', borderRadius: 'var(--r-md)', border: `1px solid ${archived ? 'var(--accent)' : 'var(--border)'}`,
               background: archived ? 'rgba(74,158,255,0.10)' : 'transparent',
               color: archived ? 'var(--accent)' : 'var(--dimmer)',
-              fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer', transition: 'all 0.12s', flexShrink: 0,
+              fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer', transition: 'all var(--transition-fast)', flexShrink: 0,
             }}
           >
             {archived ? 'Archived' : 'Archive'}
@@ -301,17 +301,17 @@ export default function NoteEditor() {
         )}
 
         {/* View mode toggle */}
-        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 8, flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)', flexShrink: 0 }}>
           {['edit', 'split', 'preview'].map(mode => (
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
               style={{
-                padding: '4px 9px', borderRadius: 5, border: 'none', cursor: 'pointer',
+                padding: '4px 9px', borderRadius: 'var(--r-sm)', border: 'none', cursor: 'pointer',
                 fontSize: 11, fontFamily: 'Geist, sans-serif', textTransform: 'capitalize',
                 background: viewMode === mode ? 'var(--card)'  : 'transparent',
                 color:      viewMode === mode ? 'var(--text)'  : 'var(--dimmer)',
-                transition: 'all 0.12s',
+                transition: 'all var(--transition-fast)',
               }}
             >
               {mode}
@@ -323,10 +323,10 @@ export default function NoteEditor() {
         <button
           onClick={() => setShowMeta(p => !p)}
           style={{
-            padding: '5px 8px', borderRadius: 7, border: `1px solid ${showMeta ? 'var(--border-bright)' : 'var(--border)'}`,
+            padding: '5px 8px', borderRadius: 'var(--r-md)', border: `1px solid ${showMeta ? 'var(--border-bright)' : 'var(--border)'}`,
             background: showMeta ? 'var(--card)' : 'transparent',
             color: showMeta ? 'var(--text)' : 'var(--dimmer)',
-            fontSize: 13, cursor: 'pointer', transition: 'all 0.12s', flexShrink: 0,
+            fontSize: 13, cursor: 'pointer', transition: 'all var(--transition-fast)', flexShrink: 0,
           }}
         >
           ⋮
@@ -338,10 +338,10 @@ export default function NoteEditor() {
           disabled={saving}
           style={{
             display: 'flex', alignItems: 'center', gap: 5,
-            padding: '6px 14px', borderRadius: 7, border: 'none', cursor: saving ? 'default' : 'pointer',
+            padding: '6px 14px', borderRadius: 'var(--r-md)', border: 'none', cursor: saving ? 'default' : 'pointer',
             background: saved ? 'rgba(74,255,145,0.15)' : 'var(--orange)',
             color:      saved ? '#4aff91'               : '#fff',
-            fontSize: 12, fontWeight: 500, fontFamily: 'Geist, sans-serif', transition: 'all 0.2s', flexShrink: 0,
+            fontSize: 12, fontWeight: 500, fontFamily: 'Geist, sans-serif', transition: 'all var(--transition-base)', flexShrink: 0,
             opacity: saving ? 0.7 : 1,
           }}
         >
@@ -364,12 +364,12 @@ export default function NoteEditor() {
                 title={btn.title}
                 onMouseDown={e => { e.preventDefault(); insertText(btn.before, btn.after, btn.newLine) }}
                 style={{
-                  padding: '4px 8px', borderRadius: 5, border: 'none', cursor: 'pointer',
+                  padding: '4px 8px', borderRadius: 'var(--r-sm)', border: 'none', cursor: 'pointer',
                   fontSize: btn.label.length > 2 ? 10 : 12,
                   fontFamily: ['B', 'I'].includes(btn.label) ? 'Geist, sans-serif' : 'Geist Mono, monospace',
                   fontWeight: btn.label === 'B' ? 700 : 400,
                   fontStyle: btn.label === 'I' ? 'italic' : 'normal',
-                  color: 'var(--dim)', background: 'transparent', transition: 'all 0.1s',
+                  color: 'var(--dim)', background: 'transparent', transition: 'all var(--transition-fast)',
                   flexShrink: 0, minWidth: 28, textAlign: 'center',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text)' }}
@@ -434,7 +434,7 @@ export default function NoteEditor() {
                 onChange={e => setProjectId(e.target.value || null)}
                 style={{
                   width: '100%', background: 'var(--card)', border: '1px solid var(--border)',
-                  color: projectId ? 'var(--text)' : 'var(--dimmer)', borderRadius: 7,
+                  color: projectId ? 'var(--text)' : 'var(--dimmer)', borderRadius: 'var(--r-md)',
                   padding: '7px 10px', fontSize: 12, fontFamily: 'Geist, sans-serif',
                   cursor: 'pointer', outline: 'none', marginTop: 8,
                 }}
@@ -448,7 +448,7 @@ export default function NoteEditor() {
               <MetaLabel icon={<TagIcon />} label="Tags" />
               <div style={{
                 marginTop: 8, background: 'var(--card)', border: '1px solid var(--border)',
-                borderRadius: 7, padding: '7px 10px', display: 'flex', flexWrap: 'wrap', gap: 4, minHeight: 38,
+                borderRadius: 'var(--r-md)', padding: '7px 10px', display: 'flex', flexWrap: 'wrap', gap: 4, minHeight: 38,
               }}>
                 {tags.map(tag => (
                   <TagChip key={tag} tag={tag} prefix="#" onRemove={() => setTags(p => p.filter(t => t !== tag))} />

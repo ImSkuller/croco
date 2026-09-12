@@ -24,7 +24,7 @@ export default function MonthlyTrendCard({ commitDates, months = 12 }) {
             flex: 1, height: `${Math.max(2, (v / max) * 100)}%`,
             background: i === counts.length - 1 ? 'var(--accent)' : 'var(--border)',
             opacity: v > 0 ? (i === counts.length - 1 ? 0.95 : 0.6) : 0.3,
-            borderRadius: 2,
+            borderRadius: 'var(--r-sm)',
           }} />
         ))}
       </div>

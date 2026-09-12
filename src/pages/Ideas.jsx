@@ -105,9 +105,9 @@ function IdeaCard({ idea, onUse }) {
       style={{
         background: hovered ? 'var(--card-hover)' : 'var(--card)',
         border: `1px solid ${hovered ? 'var(--border-bright)' : 'var(--border)'}`,
-        borderRadius: 12, padding: '16px 18px',
+        borderRadius: 'var(--r-lg)', padding: '16px 18px',
         display: 'flex', flexDirection: 'column', gap: 10,
-        transition: 'all 0.15s', cursor: 'default',
+        transition: 'all var(--transition-base)', cursor: 'default',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -117,7 +117,7 @@ function IdeaCard({ idea, onUse }) {
         </div>
         <span style={{
           flexShrink: 0, fontSize: 10, fontWeight: 500, fontFamily: 'Geist Mono, monospace',
-          padding: '2px 7px', borderRadius: 6,
+          padding: '2px 7px', borderRadius: 'var(--r-md)',
           background: DIFFICULTY_BG[idea.diff], color: DIFFICULTY_COLOR[idea.diff],
         }}>
           {idea.diff}
@@ -126,18 +126,18 @@ function IdeaCard({ idea, onUse }) {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         {idea.tech.map(t => (
-          <span key={t} style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', padding: '1px 6px', borderRadius: 4, background: 'var(--border)', color: 'var(--dim)' }}>
+          <span key={t} style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', padding: '1px 6px', borderRadius: 'var(--r-sm)', background: 'var(--border)', color: 'var(--dim)' }}>
             {t}
           </span>
         ))}
         <button
           onClick={() => onUse(idea)}
           style={{
-            marginLeft: 'auto', padding: '4px 12px', borderRadius: 6,
+            marginLeft: 'auto', padding: '4px 12px', borderRadius: 'var(--r-md)',
             border: 'none', background: hovered ? 'var(--accent)' : 'var(--border)',
             color: hovered ? '#000' : 'var(--dim)',
             fontSize: 11, fontWeight: 600, fontFamily: 'Geist, sans-serif',
-            cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0,
+            cursor: 'pointer', transition: 'all var(--transition-base)', flexShrink: 0,
           }}
         >
           Use idea →
@@ -434,7 +434,7 @@ export default function Ideas() {
             onClick={() => { setScribbleOpen(o => !o); if (!scribbleOpen) setTimeout(() => document.getElementById('scribble-anchor')?.scrollIntoView({ behavior: 'smooth' }), 50) }}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              padding: '6px 12px', borderRadius: 7,
+              padding: '6px 12px', borderRadius: 'var(--r-md)',
               border: `1px solid ${scribbleOpen ? 'var(--accent)' : 'var(--border)'}`,
               background: scribbleOpen ? 'var(--accent-dim)' : 'transparent',
               color: scribbleOpen ? 'var(--accent)' : 'var(--dim)',
@@ -448,7 +448,7 @@ export default function Ideas() {
             disabled={loading || fetched}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              padding: '6px 14px', borderRadius: 7,
+              padding: '6px 14px', borderRadius: 'var(--r-md)',
               border: '1px solid var(--border)', background: 'transparent',
               color: fetched ? 'var(--dimmer)' : 'var(--dim)',
               fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: fetched || loading ? 'default' : 'pointer',
@@ -465,22 +465,22 @@ export default function Ideas() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search ideas…"
-          style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '7px 12px', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist, sans-serif', outline: 'none', width: 200 }}
+          style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '7px 12px', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist, sans-serif', outline: 'none', width: 200 }}
         />
 
-        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)', flexWrap: 'wrap' }}>
           {CATEGORIES.map(c => (
             <button key={c} onClick={() => setCategory(c)}
-              style={{ padding: '4px 10px', borderRadius: 6, border: 'none', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer', background: category === c ? 'var(--card)' : 'transparent', color: category === c ? 'var(--text)' : 'var(--dimmer)', transition: 'all 0.12s' }}>
+              style={{ padding: '4px 10px', borderRadius: 'var(--r-md)', border: 'none', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer', background: category === c ? 'var(--card)' : 'transparent', color: category === c ? 'var(--text)' : 'var(--dimmer)', transition: 'all var(--transition-fast)' }}>
               {c}
             </button>
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 8 }}>
+        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)' }}>
           {['All', 'Beginner', 'Intermediate', 'Advanced'].map(d => (
             <button key={d} onClick={() => setDifficulty(d)}
-              style={{ padding: '4px 10px', borderRadius: 6, border: 'none', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer', background: difficulty === d ? 'var(--card)' : 'transparent', color: difficulty === d ? (DIFFICULTY_COLOR[d] || 'var(--text)') : 'var(--dimmer)', transition: 'all 0.12s' }}>
+              style={{ padding: '4px 10px', borderRadius: 'var(--r-md)', border: 'none', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer', background: difficulty === d ? 'var(--card)' : 'transparent', color: difficulty === d ? (DIFFICULTY_COLOR[d] || 'var(--text)') : 'var(--dimmer)', transition: 'all var(--transition-fast)' }}>
               {d}
             </button>
           ))}
@@ -521,7 +521,7 @@ export default function Ideas() {
             <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--dimmer)' }}>{scribbleOpen ? '▲' : '▼'}</span>
           </div>
           {scribbleOpen && (
-            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
               {/* Tab bar */}
               <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--border)', padding: '0 12px' }}>
                 {['text', 'draw'].map(tab => (
@@ -532,7 +532,7 @@ export default function Ideas() {
                       fontFamily: 'Geist, sans-serif', fontWeight: scribbleTab === tab ? 600 : 400,
                       color: scribbleTab === tab ? 'var(--accent)' : 'var(--dimmer)',
                       borderBottom: scribbleTab === tab ? '2px solid var(--accent)' : '2px solid transparent',
-                      transition: 'all 0.1s',
+                      transition: 'all var(--transition-fast)',
                     }}
                   >
                     {tab === 'text' ? <><NoteIcon2 size={11} /> Text</> : <><EditIcon size={11} /> Draw</>}
@@ -558,12 +558,12 @@ export default function Ideas() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
                     {/* Tool selector */}
-                    <div style={{ display: 'flex', gap: 2, padding: 2, background: 'var(--border)', borderRadius: 7 }}>
+                    <div style={{ display: 'flex', gap: 2, padding: 2, background: 'var(--border)', borderRadius: 'var(--r-md)' }}>
                       {[{ id: 'pen', icon: <EditIcon size={12} />, label: 'Pen' }, { id: 'eraser', icon: <EraserIcon size={12} />, label: 'Eraser' }].map(t => (
                         <button key={t.id} onClick={() => { setDrawTool(t.id); toolRef.current = t.id }}
                           title={t.label}
                           style={{
-                            display: 'flex', padding: '3px 9px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 11,
+                            display: 'flex', padding: '3px 9px', borderRadius: 'var(--r-sm)', border: 'none', cursor: 'pointer', fontSize: 11,
                             fontFamily: 'Geist, sans-serif',
                             background: drawTool === t.id ? 'var(--card)' : 'transparent',
                             color: drawTool === t.id ? 'var(--text)' : 'var(--dimmer)',
@@ -592,15 +592,15 @@ export default function Ideas() {
 
                     <button onClick={undoDraw} disabled={!canUndo}
                       title="Undo last stroke"
-                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: canUndo ? 'var(--dim)' : 'var(--dimmer)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: canUndo ? 'pointer' : 'default', opacity: canUndo ? 1 : 0.4 }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: canUndo ? 'var(--dim)' : 'var(--dimmer)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: canUndo ? 'pointer' : 'default', opacity: canUndo ? 1 : 0.4 }}>
                       <UndoIcon size={11} /> Undo
                     </button>
                     <button onClick={clearCanvas}
-                      style={{ padding: '4px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+                      style={{ padding: '4px 9px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
                       Clear
                     </button>
                     <button onClick={saveCanvasAsPng}
-                      style={{ padding: '4px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer', marginLeft: 'auto' }}>
+                      style={{ padding: '4px 9px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer', marginLeft: 'auto' }}>
                       Save PNG
                     </button>
                   </div>
@@ -626,7 +626,7 @@ export default function Ideas() {
                   onClick={() => { setSaveProject(projects[0]?.id || ''); setSaveModal(true) }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '6px 14px', borderRadius: 7, border: 'none',
+                    padding: '6px 14px', borderRadius: 'var(--r-md)', border: 'none',
                     background: 'var(--accent)', color: '#000',
                     fontSize: 11, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
                   }}
@@ -649,7 +649,7 @@ export default function Ideas() {
               >
                 <div style={{
                   background: 'var(--surface)', border: '1px solid var(--border)',
-                  borderRadius: 14, padding: '24px 28px', width: 380,
+                  borderRadius: 'var(--r-xl)', padding: '24px 28px', width: 380,
                   boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
                 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Save Scribble</div>
@@ -666,7 +666,7 @@ export default function Ideas() {
                       onChange={e => setSaveProject(e.target.value)}
                       style={{
                         width: '100%', background: 'var(--card)', border: '1px solid var(--border)',
-                        color: 'var(--text)', borderRadius: 7, padding: '7px 10px',
+                        color: 'var(--text)', borderRadius: 'var(--r-md)', padding: '7px 10px',
                         fontSize: 12, fontFamily: 'Geist, sans-serif', outline: 'none',
                       }}
                     >
@@ -680,14 +680,14 @@ export default function Ideas() {
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                     <button
                       onClick={() => setSaveModal(false)}
-                      style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
+                      style={{ padding: '7px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
                     >
                       Cancel
                     </button>
                     <button
                       onClick={saveToNote}
                       disabled={saving}
-                      style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: saving ? 'var(--border)' : 'var(--accent)', color: saving ? 'var(--dimmer)' : '#000', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: saving ? 'default' : 'pointer' }}
+                      style={{ padding: '7px 16px', borderRadius: 'var(--r-md)', border: 'none', background: saving ? 'var(--border)' : 'var(--accent)', color: saving ? 'var(--dimmer)' : '#000', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: saving ? 'default' : 'pointer' }}
                     >
                       {saving ? 'Saving…' : 'Save'}
                     </button>

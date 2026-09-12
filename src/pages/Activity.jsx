@@ -104,15 +104,15 @@ export default function Activity() {
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--dim)' }}>Activity</span>
         <span style={{ color: 'var(--dimmer)' }}>/</span>
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>Log</span>
-        <span style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', background: 'var(--border)', padding: '2px 8px', borderRadius: 20 }}>
+        <span style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', background: 'var(--border)', padding: '2px 8px', borderRadius: 'var(--r-xl)' }}>
           {entries.length}
         </span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+          <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
             <RefreshIcon /> Refresh
           </button>
           {entries.length > 0 && (
-            <button onClick={handleClear} disabled={clearing} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(255,68,68,0.3)', background: 'rgba(255,68,68,0.06)', color: '#ff6b6b', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+            <button onClick={handleClear} disabled={clearing} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 'var(--r-md)', border: '1px solid rgba(255,68,68,0.3)', background: 'rgba(255,68,68,0.06)', color: '#ff6b6b', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
               <TrashIcon /> Clear All
             </button>
           )}
@@ -127,11 +127,11 @@ export default function Activity() {
           return (
             <button key={g.label} onClick={() => setFilter(g.label)} style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              padding: '5px 12px', borderRadius: 20, border: `1px solid ${active ? 'var(--accent)' : 'transparent'}`,
+              padding: '5px 12px', borderRadius: 'var(--r-xl)', border: `1px solid ${active ? 'var(--accent)' : 'transparent'}`,
               background: active ? 'rgba(74,158,255,0.10)' : 'var(--border)',
               color: active ? 'var(--accent)' : 'var(--dim)',
               fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
-              transition: 'all 0.12s', flexShrink: 0, whiteSpace: 'nowrap',
+              transition: 'all var(--transition-fast)', flexShrink: 0, whiteSpace: 'nowrap',
             }}>
               <span style={{ display: 'flex' }}>{g.icon}</span>
               {g.label}
@@ -184,13 +184,13 @@ export default function Activity() {
                   return (
                     <div key={entry.id} style={{
                       display: 'flex', alignItems: 'center', gap: 14, padding: '11px 14px',
-                      background: 'transparent', borderRadius: 8, transition: 'background 0.1s',
+                      background: 'transparent', borderRadius: 'var(--r-md)', transition: 'background var(--transition-fast)',
                     }}
                       onMouseEnter={e => e.currentTarget.style.background = 'var(--card)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       {/* Type icon */}
-                      <div style={{ width: 30, height: 30, borderRadius: 8, background: meta.bg, color: meta.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 'var(--r-md)', background: meta.bg, color: meta.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         {meta.icon}
                       </div>
 

@@ -8,7 +8,7 @@ export function Chip({ color = 'var(--dim)', bg, children, style, ...props }) {
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 4,
         fontSize: 10, fontFamily: 'Geist Mono, monospace',
-        padding: '2px 7px', borderRadius: 4,
+        padding: '2px 7px', borderRadius: 'var(--r-sm)',
         background: bg ?? 'color-mix(in srgb, ' + color + ' 12%, transparent)',
         color,
         ...style,

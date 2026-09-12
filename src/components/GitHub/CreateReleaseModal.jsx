@@ -14,7 +14,7 @@ function suggestNextTag(tags) {
 
 function inputStyle(mono, extra = {}) {
   return {
-    width: '100%', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 7,
+    width: '100%', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
     padding: '8px 12px', fontSize: 13, color: 'var(--text)',
     fontFamily: mono ? 'Geist Mono, monospace' : 'Geist, sans-serif',
     outline: 'none', boxSizing: 'border-box', ...extra,
@@ -82,7 +82,7 @@ export default function CreateReleaseModal({ project, tags, onClose, onCreated }
       style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={e => { if (e.target === e.currentTarget && !loading) onClose() }}
     >
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, maxWidth: 480, width: '90%', maxHeight: '85vh', overflow: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 24, maxWidth: 480, width: '90%', maxHeight: '85vh', overflow: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 20 }}>
           <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Create Release</span>
           <span style={{ fontSize: 12, color: 'var(--dimmer)' }}>{project.name}</span>
@@ -109,18 +109,18 @@ export default function CreateReleaseModal({ project, tags, onClose, onCreated }
             </label>
           </div>
           {error && (
-            <div style={{ fontSize: 11, color: '#ff5555', background: 'rgba(255,68,68,0.07)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: 6, padding: '8px 12px', fontFamily: 'Geist Mono, monospace' }}>
+            <div style={{ fontSize: 11, color: '#ff5555', background: 'rgba(255,68,68,0.07)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: 'var(--r-md)', padding: '8px 12px', fontFamily: 'Geist Mono, monospace' }}>
               {error}
             </div>
           )}
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
           <button onClick={onClose} disabled={loading}
-            style={{ padding: '8px 16px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+            style={{ padding: '8px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
             Cancel
           </button>
           <button onClick={submit} disabled={!tagName.trim() || loading}
-            style={{ padding: '8px 18px', borderRadius: 7, border: 'none', background: tagName.trim() && !loading ? '#24292e' : 'var(--dimmer)', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: tagName.trim() && !loading ? 'pointer' : 'not-allowed' }}>
+            style={{ padding: '8px 18px', borderRadius: 'var(--r-md)', border: 'none', background: tagName.trim() && !loading ? '#24292e' : 'var(--dimmer)', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: tagName.trim() && !loading ? 'pointer' : 'not-allowed' }}>
             {loading ? 'Publishing…' : 'Publish Release'}
           </button>
         </div>

@@ -48,16 +48,16 @@ export default function InsightsPanel({ projects }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <select value={scope} onChange={e => setScope(e.target.value)}
-          style={{ background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 7, padding: '7px 10px', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist, sans-serif' }}>
+          style={{ background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '7px 10px', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist, sans-serif' }}>
           <option value="overall">Overall (all projects)</option>
           {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
 
-        <div style={{ display: 'flex', gap: 4, background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 7, padding: 3 }}>
+        <div style={{ display: 'flex', gap: 4, background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: 3 }}>
           {RANGES.map(r => (
             <button key={r.id} onClick={() => setRange(r.id)}
               style={{
-                padding: '5px 12px', borderRadius: 5, border: 'none', cursor: 'pointer',
+                padding: '5px 12px', borderRadius: 'var(--r-sm)', border: 'none', cursor: 'pointer',
                 fontSize: 11, fontFamily: 'Geist, sans-serif', fontWeight: range === r.id ? 600 : 400,
                 background: range === r.id ? 'var(--accent)' : 'transparent',
                 color: range === r.id ? '#000' : 'var(--dim)',

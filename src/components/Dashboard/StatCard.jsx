@@ -9,7 +9,7 @@ export default function StatCard({ stat }) {
       style={{
         background:   hovered ? 'var(--card-hover)' : 'var(--card)',
         border:       `1px solid ${hovered ? 'var(--border-bright)' : 'var(--border)'}`,
-        borderRadius: 10,
+        borderRadius: 'var(--r-lg)',
         padding:      16,
         transform:    hovered ? 'translateY(-1px)' : 'translateY(0)',
         boxShadow:    hovered ? 'var(--shadow-md)' : 'none',

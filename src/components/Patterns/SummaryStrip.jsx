@@ -22,7 +22,7 @@ export default function SummaryStrip({ profile, projectsTracked }) {
     <div className="glass-card" style={{
       display: 'flex', flexWrap: 'wrap', gap: 20,
       background: 'var(--card)', border: '1px solid var(--border)',
-      borderRadius: 10, padding: '18px 22px', gridColumn: '1 / -1',
+      borderRadius: 'var(--r-lg)', padding: '18px 22px', gridColumn: '1 / -1',
     }}>
       <Stat label="Total commits" value={totalCommits} accent />
       <Stat label="Notes written" value={totalNotes} />

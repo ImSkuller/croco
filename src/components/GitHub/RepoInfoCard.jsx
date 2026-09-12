@@ -78,7 +78,7 @@ export default function RepoInfoCard({ project }) {
           {info.htmlUrl && (
             <button
               onClick={() => window.api.system.openExternal(info.htmlUrl)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 14, padding: '6px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 14, padding: '6px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
               Open on GitHub <ExternalLinkIcon />
             </button>
           )}

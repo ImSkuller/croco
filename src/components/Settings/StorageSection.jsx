@@ -27,7 +27,7 @@ export default function StorageSection({
             <div
               key={opt.id}
               onClick={() => !migrating && setStorageBackend(opt.id)}
-              style={{ flex: 1, padding: '12px 14px', borderRadius: 10, border: `1px solid ${storageBackend === opt.id ? 'var(--accent)' : 'var(--border)'}`, background: storageBackend === opt.id ? 'var(--accent-dim)' : 'var(--card)', cursor: migrating ? 'not-allowed' : 'pointer', transition: 'border-color 0.15s' }}
+              style={{ flex: 1, padding: '12px 14px', borderRadius: 'var(--r-lg)', border: `1px solid ${storageBackend === opt.id ? 'var(--accent)' : 'var(--border)'}`, background: storageBackend === opt.id ? 'var(--accent-dim)' : 'var(--card)', cursor: migrating ? 'not-allowed' : 'pointer', transition: 'border-color var(--transition-base)' }}
             >
               <div style={{ fontSize: 12, fontWeight: 700, color: storageBackend === opt.id ? 'var(--accent)' : 'var(--text)', marginBottom: 3 }}>{opt.label}</div>
               <div style={{ fontSize: 11, color: 'var(--dimmer)', lineHeight: 1.5, marginBottom: 8 }}>{opt.desc}</div>
@@ -40,7 +40,7 @@ export default function StorageSection({
         </div>
 
         {migrateResult && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, padding: '10px 14px', borderRadius: 8, background: migrateResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${migrateResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: migrateResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, padding: '10px 14px', borderRadius: 'var(--r-md)', background: migrateResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${migrateResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: migrateResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
             {migrateResult.ok ? <CheckIcon size={12} /> : <XCircleIcon size={12} />}{migrateResult.message}
           </div>
         )}
@@ -49,7 +49,7 @@ export default function StorageSection({
           const currentBackend = migrateResult?.appliedBackend || (window._currentStorageBackend ?? 'json')
           const changed = storageBackend !== currentBackend
           return changed ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '10px 14px', borderRadius: 8, background: 'rgba(255,107,53,0.06)', border: '1px solid rgba(255,107,53,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '10px 14px', borderRadius: 'var(--r-md)', background: 'rgba(255,107,53,0.06)', border: '1px solid rgba(255,107,53,0.2)' }}>
               <div style={{ fontSize: 11, color: 'var(--dimmer)', lineHeight: 1.5 }}>
                 Switching to <strong style={{ color: 'var(--text)' }}>{storageBackend === 'sqlite' ? 'SQLite' : 'JSON'}</strong> will sync all data and restart the app.
               </div>
@@ -70,12 +70,12 @@ export default function StorageSection({
                     setMigrating(false)
                   }
                 }}
-                style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: migrating ? 'not-allowed' : 'pointer', opacity: migrating ? 0.6 : 1, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                style={{ padding: '7px 16px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: migrating ? 'not-allowed' : 'pointer', opacity: migrating ? 0.6 : 1, flexShrink: 0, whiteSpace: 'nowrap' }}>
                 {migrating ? 'Switching…' : 'Apply & Restart'}
               </button>
             </div>
           ) : (
-            <div style={{ padding: '8px 14px', borderRadius: 8, background: 'rgba(74,255,145,0.05)', border: '1px solid rgba(74,255,145,0.12)', fontSize: 11, color: 'var(--dimmer)' }}>
+            <div style={{ padding: '8px 14px', borderRadius: 'var(--r-md)', background: 'rgba(74,255,145,0.05)', border: '1px solid rgba(74,255,145,0.12)', fontSize: 11, color: 'var(--dimmer)' }}>
               Currently using <strong style={{ color: '#4aff91' }}>{currentBackend === 'sqlite' ? 'SQLite' : 'JSON files'}</strong>. Activity logs are always stored in SQLite.
             </div>
           )
@@ -87,7 +87,7 @@ export default function StorageSection({
         <FieldDesc>Export all projects, notes and todos to a single backup file, or restore from a previous backup. Settings and tokens are never included in restores.</FieldDesc>
 
         {backupResult && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '12px 0', padding: '10px 14px', borderRadius: 8, background: backupResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${backupResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: backupResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '12px 0', padding: '10px 14px', borderRadius: 'var(--r-md)', background: backupResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${backupResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: backupResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
             {backupResult.ok ? <CheckIcon size={12} /> : <XCircleIcon size={12} />}{backupResult.message}
           </div>
         )}
@@ -108,7 +108,7 @@ export default function StorageSection({
                 setBackupResult({ ok: false, message: err?.message || String(err) })
               } finally { setBackupBusy(null) }
             }}
-            style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: backupBusy ? 'not-allowed' : 'pointer', opacity: backupBusy ? 0.6 : 1 }}
+            style={{ padding: '7px 16px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: backupBusy ? 'not-allowed' : 'pointer', opacity: backupBusy ? 0.6 : 1 }}
           >
             {backupBusy === 'export' ? 'Exporting…' : 'Export Backup'}
           </button>
@@ -127,7 +127,7 @@ export default function StorageSection({
                 setBackupResult({ ok: false, message: err?.message || String(err) })
               } finally { setBackupBusy(null) }
             }}
-            style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 12, fontWeight: 500, fontFamily: 'Geist, sans-serif', cursor: backupBusy ? 'not-allowed' : 'pointer', opacity: backupBusy ? 0.6 : 1 }}
+            style={{ padding: '7px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 12, fontWeight: 500, fontFamily: 'Geist, sans-serif', cursor: backupBusy ? 'not-allowed' : 'pointer', opacity: backupBusy ? 0.6 : 1 }}
           >
             {backupBusy === 'import' ? 'Importing…' : 'Import Backup'}
           </button>
@@ -152,7 +152,7 @@ export default function StorageSection({
                   key={opt.days}
                   onClick={() => onChangeAutoBackupInterval(opt.days)}
                   style={{
-                    padding: '6px 14px', borderRadius: 7,
+                    padding: '6px 14px', borderRadius: 'var(--r-md)',
                     border: `1px solid ${autoBackupInterval === opt.days ? 'var(--accent)' : 'var(--border)'}`,
                     background: autoBackupInterval === opt.days ? 'var(--accent-dim)' : 'var(--card)',
                     color: autoBackupInterval === opt.days ? 'var(--accent)' : 'var(--text)',
@@ -171,7 +171,7 @@ export default function StorageSection({
                 type="number" min={1} max={30}
                 value={autoBackupRetention}
                 onChange={e => onChangeAutoBackupRetention(Math.min(30, Math.max(1, Number(e.target.value) || 1)))}
-                style={{ width: 60, padding: '6px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 12, fontFamily: 'Geist Mono, monospace' }}
+                style={{ width: 60, padding: '6px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 12, fontFamily: 'Geist Mono, monospace' }}
               />
               <span style={{ fontSize: 11, color: 'var(--dimmer)' }}>backups</span>
             </div>
@@ -179,7 +179,7 @@ export default function StorageSection({
         </div>
 
         {autoBackupResult && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, padding: '10px 14px', borderRadius: 8, background: autoBackupResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${autoBackupResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: autoBackupResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, padding: '10px 14px', borderRadius: 'var(--r-md)', background: autoBackupResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${autoBackupResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: autoBackupResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
             {autoBackupResult.ok ? <CheckIcon size={12} /> : <XCircleIcon size={12} />}{autoBackupResult.message}
           </div>
         )}
@@ -191,7 +191,7 @@ export default function StorageSection({
           <button
             disabled={autoBackupBusy}
             onClick={onBackUpNow}
-            style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 12, fontWeight: 500, fontFamily: 'Geist, sans-serif', cursor: autoBackupBusy ? 'not-allowed' : 'pointer', opacity: autoBackupBusy ? 0.6 : 1 }}
+            style={{ padding: '7px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 12, fontWeight: 500, fontFamily: 'Geist, sans-serif', cursor: autoBackupBusy ? 'not-allowed' : 'pointer', opacity: autoBackupBusy ? 0.6 : 1 }}
           >
             {autoBackupBusy ? 'Backing up…' : 'Back Up Now'}
           </button>

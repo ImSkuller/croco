@@ -21,7 +21,7 @@ export default function DiffView({ loading, text }) {
 
   return (
     <div style={{
-      margin: '4px 0 8px 70px', padding: '8px 10px', borderRadius: 6,
+      margin: '4px 0 8px 70px', padding: '8px 10px', borderRadius: 'var(--r-md)',
       background: 'var(--base)', border: '1px solid var(--border)',
       overflowX: 'auto', fontFamily: 'Geist Mono, monospace', fontSize: 11, lineHeight: 1.5,
     }}>

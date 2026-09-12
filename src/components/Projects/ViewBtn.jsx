@@ -8,7 +8,7 @@ export default function ViewBtn({ children, active, onClick }) {
         display:      'flex',
         alignItems:   'center',
         justifyContent: 'center',
-        borderRadius: 5,
+        borderRadius: 'var(--r-sm)',
         border:       'none',
         cursor:       'pointer',
         background:   active ? 'var(--card)' : 'transparent',

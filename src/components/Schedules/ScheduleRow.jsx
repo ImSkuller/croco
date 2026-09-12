@@ -30,7 +30,7 @@ export default function ScheduleRow({ schedule, last, priorities, notesById, onT
         padding: '12px 16px',
         borderBottom: last ? 'none' : '1px solid var(--border)',
         background: hovered ? 'var(--hover-bg)' : 'transparent',
-        transition: 'background 0.1s',
+        transition: 'background var(--transition-fast)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -39,7 +39,7 @@ export default function ScheduleRow({ schedule, last, priorities, notesById, onT
           onClick={() => !isLocked && onToggle(schedule.id)}
           title={isLocked ? 'Completed more than 6 days ago — cannot be reversed' : undefined}
           style={{
-            width: 18, height: 18, borderRadius: 5, flexShrink: 0, marginTop: 1,
+            width: 18, height: 18, borderRadius: 'var(--r-sm)', flexShrink: 0, marginTop: 1,
             border:      schedule.completed ? 'none' : '1px solid var(--border-bright)',
             background:  schedule.completed ? 'var(--green)' : 'transparent',
             display:     'flex', alignItems: 'center', justifyContent: 'center',
@@ -66,7 +66,7 @@ export default function ScheduleRow({ schedule, last, priorities, notesById, onT
             </span>
 
             {schedule.project && (
-              <span style={{ fontSize: 10, color: 'var(--blue)', fontFamily: 'Geist Mono, monospace', background: 'rgba(74,158,255,0.08)', padding: '2px 6px', borderRadius: 4 }}>
+              <span style={{ fontSize: 10, color: 'var(--blue)', fontFamily: 'Geist Mono, monospace', background: 'rgba(74,158,255,0.08)', padding: '2px 6px', borderRadius: 'var(--r-sm)' }}>
                 {schedule.project}
               </span>
             )}
@@ -77,7 +77,7 @@ export default function ScheduleRow({ schedule, last, priorities, notesById, onT
                 fontSize: 10, fontFamily: 'Geist Mono, monospace',
                 color:    overdue ? '#ff4444' : 'var(--dimmer)',
                 background: overdue ? 'rgba(255,68,68,0.08)' : 'transparent',
-                padding:  '2px 6px', borderRadius: 4,
+                padding:  '2px 6px', borderRadius: 'var(--r-sm)',
               }}>
                 {overdue ? <AlertTriangleIcon size={10} /> : <ClockIcon size={10} />}{dueStr}
               </span>
@@ -88,7 +88,7 @@ export default function ScheduleRow({ schedule, last, priorities, notesById, onT
               return (
                 <span style={{
                   fontSize: 10, fontFamily: 'Geist Mono, monospace',
-                  padding: '2px 6px', borderRadius: 4,
+                  padding: '2px 6px', borderRadius: 'var(--r-sm)',
                   background: schedule.completed ? 'var(--border)' : hexToRgba(p.color, 0.12),
                   color:      schedule.completed ? 'var(--dimmer)' : p.color,
                   opacity:    schedule.completed ? 0.7 : 1,
@@ -124,7 +124,7 @@ export default function ScheduleRow({ schedule, last, priorities, notesById, onT
                   style={{
                     display: 'flex', alignItems: 'center', gap: 4,
                     fontSize: 10, color: 'var(--purple)', background: 'rgba(180,140,242,0.08)',
-                    border: 'none', borderRadius: 4, padding: '2px 6px', cursor: 'pointer',
+                    border: 'none', borderRadius: 'var(--r-sm)', padding: '2px 6px', cursor: 'pointer',
                     fontFamily: 'Geist Mono, monospace',
                   }}
                 >
@@ -136,7 +136,7 @@ export default function ScheduleRow({ schedule, last, priorities, notesById, onT
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: 3, opacity: hovered ? 1 : 0, transition: 'opacity 0.12s', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 3, opacity: hovered ? 1 : 0, transition: 'opacity var(--transition-fast)', flexShrink: 0 }}>
           {!schedule.completed && (
             <RowBtn title="Edit" onClick={() => onEdit(schedule)}>
               <EditIcon />

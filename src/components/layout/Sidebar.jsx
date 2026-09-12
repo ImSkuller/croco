@@ -278,7 +278,7 @@ export default function Sidebar() {
             width: 24,
             height: 24,
             background: 'var(--logo-bg, #ffffff)',
-            borderRadius: 6,
+            borderRadius: 'var(--r-md)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -302,7 +302,7 @@ export default function Sidebar() {
               padding: '7px 10px',
               background: 'rgba(255,215,0,0.08)',
               border: '1px solid rgba(255,215,0,0.25)',
-              borderRadius: 8,
+              borderRadius: 'var(--r-md)',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
@@ -328,7 +328,7 @@ export default function Sidebar() {
               gap: 7,
               background: 'var(--card)',
               border: '1px solid var(--border)',
-              borderRadius: 6,
+              borderRadius: 'var(--r-md)',
               padding: '6px 9px',
               cursor: 'pointer',
               transition: 'border-color var(--transition-fast)',
@@ -338,7 +338,7 @@ export default function Sidebar() {
           >
             <span style={{ color: 'var(--dimmer)', display: 'flex', flexShrink: 0 }}><SearchIcon /></span>
             <span style={{ fontSize: 12, color: 'var(--dimmer)', flex: 1 }}>Search...</span>
-            <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 9, color: 'var(--dimmer)', background: 'var(--border)', padding: '1px 4px', borderRadius: 3 }}>{modKeyHint('K')}</span>
+            <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 9, color: 'var(--dimmer)', background: 'var(--border)', padding: '1px 4px', borderRadius: 'var(--r-sm)' }}>{modKeyHint('K')}</span>
           </div>
         </div>
 
@@ -486,7 +486,7 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
         onClick={e => e.stopPropagation()}
         style={{
           width: 520, background: 'var(--surface)', border: '1px solid var(--border-bright)',
-          borderRadius: 14, overflow: 'hidden',
+          borderRadius: 'var(--r-xl)', overflow: 'hidden',
           boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
           animation: 'pmFadeDown 0.15s cubic-bezier(0.16,1,0.3,1) both',
         }}
@@ -511,7 +511,7 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', fontSize: 16, lineHeight: 1, padding: 0 }}
             >×</button>
           )}
-          <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--dimmer)', background: 'var(--border)', padding: '2px 6px', borderRadius: 4, flexShrink: 0 }}>Esc</span>
+          <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, color: 'var(--dimmer)', background: 'var(--border)', padding: '2px 6px', borderRadius: 'var(--r-sm)', flexShrink: 0 }}>Esc</span>
         </div>
 
         <div ref={listRef} style={{ maxHeight: 360, overflowY: 'auto', padding: '6px 0' }}>
@@ -565,7 +565,7 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
                 padding: '9px 18px', cursor: 'pointer',
                 background: selected === i ? 'var(--card)' : 'transparent',
                 borderLeft: `2px solid ${selected === i ? 'var(--accent)' : 'transparent'}`,
-                transition: 'background 0.08s',
+                transition: 'background var(--transition-fast)',
               }}
             >
               <span style={{ fontSize: 16, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, flexShrink: 0, color: 'var(--dim)' }}>{item.icon}</span>
@@ -577,7 +577,7 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
                   {item.sub}
                 </div>
               </div>
-              <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', color: TYPE_COLOR[item.type], background: `${TYPE_COLOR[item.type]}18`, padding: '2px 6px', borderRadius: 4, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', color: TYPE_COLOR[item.type], background: `${TYPE_COLOR[item.type]}18`, padding: '2px 6px', borderRadius: 'var(--r-sm)', flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {item.type}
               </span>
               {selected === i && (
@@ -590,7 +590,7 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
         <div style={{ padding: '8px 18px', borderTop: '1px solid var(--border)', display: 'flex', gap: 16 }}>
           {[['↑↓', 'navigate'], ['↵', 'open'], ['Esc', 'close']].map(([key, hint]) => (
             <span key={key} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
-              <span style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 3 }}>{key}</span>
+              <span style={{ background: 'var(--border)', padding: '1px 5px', borderRadius: 'var(--r-sm)' }}>{key}</span>
               {hint}
             </span>
           ))}
@@ -617,12 +617,12 @@ const SidebarItem = memo(function SidebarItem({ item }) {
         gap: 8,
         width: '100%',
         padding: '6px 8px',
-        borderRadius: 6,
+        borderRadius: 'var(--r-md)',
         cursor: 'pointer',
         border: 'none',
         borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
         position: 'relative',
-        transition: 'all 0.15s ease',
+        transition: 'all var(--transition-base)',
         textAlign: 'left',
         fontSize: 12,
         fontWeight: isActive ? 600 : 400,
@@ -650,8 +650,8 @@ const SidebarItem = memo(function SidebarItem({ item }) {
           background: item.badgeStyle === 'accent' ? 'var(--accent-dim)' : 'var(--border)',
           color:      item.badgeStyle === 'accent' ? 'var(--accent)'     : 'var(--dimmer)',
           padding: '1px 5px',
-          borderRadius: 20,
-          transition: 'all 0.15s ease',
+          borderRadius: 'var(--r-xl)',
+          transition: 'all var(--transition-base)',
         }}>
           {item.badge}
         </span>

@@ -14,7 +14,7 @@ export default function CardBtn({ children, title, onClick, danger }) {
         display:        'flex',
         alignItems:     'center',
         justifyContent: 'center',
-        borderRadius:   5,
+        borderRadius:   'var(--r-sm)',
         border:         'none',
         cursor:         'pointer',
         background:     hovered

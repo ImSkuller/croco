@@ -44,7 +44,7 @@ export default function EasterEggs() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 28px', height: 54, flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
         <button
           onClick={() => navigate(-1)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', display: 'flex', padding: 4, borderRadius: 6, transition: 'color 0.12s' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', display: 'flex', padding: 4, borderRadius: 'var(--r-md)', transition: 'color var(--transition-fast)' }}
           onMouseEnter={e => e.currentTarget.style.color = 'var(--dim)'}
           onMouseLeave={e => e.currentTarget.style.color = 'var(--dimmer)'}
         >
@@ -72,7 +72,7 @@ export default function EasterEggs() {
                 key={egg.id}
                 style={{
                   background: 'var(--card)', border: '1px solid var(--border)',
-                  borderRadius: 12, padding: '18px 20px',
+                  borderRadius: 'var(--r-lg)', padding: '18px 20px',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -94,7 +94,7 @@ export default function EasterEggs() {
             ))}
           </div>
 
-          <div style={{ marginTop: 32, padding: '14px 18px', borderRadius: 10, background: 'rgba(74,255,145,0.04)', border: '1px solid rgba(74,255,145,0.12)', fontSize: 12, color: 'var(--dimmer)', lineHeight: 1.6 }}>
+          <div style={{ marginTop: 32, padding: '14px 18px', borderRadius: 'var(--r-lg)', background: 'rgba(74,255,145,0.04)', border: '1px solid rgba(74,255,145,0.12)', fontSize: 12, color: 'var(--dimmer)', lineHeight: 1.6 }}>
             More easter eggs may be added in future updates. Keep exploring!
           </div>
         </div>

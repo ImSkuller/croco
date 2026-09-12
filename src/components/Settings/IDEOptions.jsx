@@ -6,12 +6,12 @@ export default function IDEOption({ ide, selected, onClick }) {
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
+        padding: '10px 12px', borderRadius: 'var(--r-md)', cursor: 'pointer',
         border: `1px solid ${selected ? 'var(--orange)' : 'var(--border)'}`,
         background: selected ? 'rgba(255,107,53,0.08)' : 'var(--base)',
         color: selected ? 'var(--orange)' : 'var(--dim)',
         fontSize: 12, fontFamily: 'Geist, sans-serif', fontWeight: selected ? 500 : 400,
-        transition: 'all 0.12s', textAlign: 'left',
+        transition: 'all var(--transition-fast)', textAlign: 'left',
       }}
     >
       {ide.label}

@@ -67,7 +67,7 @@ export default function Patterns() {
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>Your work habits</span>
         <button
           onClick={rescan}
-          style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}
+          style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}
         >
           <RefreshIcon /> Refresh
         </button>

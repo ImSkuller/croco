@@ -10,7 +10,7 @@ export default function NoteItem({ note }) {
       onClick={() => navigate(`/note-editor/${note.id}`)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ padding: '12px 18px', borderBottom: '1px solid var(--border)', cursor: 'pointer', background: hovered ? 'var(--hover-bg)' : 'transparent', transition: 'background 0.1s' }}
+      style={{ padding: '12px 18px', borderBottom: '1px solid var(--border)', cursor: 'pointer', background: hovered ? 'var(--hover-bg)' : 'transparent', transition: 'background var(--transition-fast)' }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3 }}>
         <span style={{ fontSize: 14, flexShrink: 0, display: 'flex', color: 'var(--dim)' }}>{note.emoji || <NoteIcon2 size={14} />}</span>

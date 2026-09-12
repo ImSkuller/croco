@@ -6,7 +6,7 @@ function Flame({ current, label, icon: Icon, color }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 180,
-      padding: '14px 18px', borderRadius: 12,
+      padding: '14px 18px', borderRadius: 'var(--r-lg)',
       background: 'var(--card)',
       border: `1px solid ${alive ? color : 'var(--border)'}`,
     }}>

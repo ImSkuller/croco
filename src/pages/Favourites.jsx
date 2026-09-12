@@ -89,7 +89,7 @@ export default function Favourites() {
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--dim)' }}>Favourites</span>
         <span style={{ color: 'var(--dimmer)' }}>/</span>
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>Pinned Projects</span>
-        <span style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', background: 'var(--border)', padding: '2px 8px', borderRadius: 20 }}>
+        <span style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', background: 'var(--border)', padding: '2px 8px', borderRadius: 'var(--r-xl)' }}>
           {favourites.length}
         </span>
       </div>
@@ -100,7 +100,7 @@ export default function Favourites() {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>drag to reorder</span>
           <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
-          <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 7 }}>
+          <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)' }}>
             <ViewBtn active={view === 'grid'} onClick={() => setView('grid')}><GridIcon /></ViewBtn>
             <ViewBtn active={view === 'list'} onClick={() => setView('list')}><ListViewIcon /></ViewBtn>
           </div>
@@ -176,7 +176,7 @@ function FavCard({ project, onRemove, onOpen, dragging, dragOver, ...dragProps }
       style={{
         background:   dragging ? 'var(--surface)' : hovered ? 'var(--card-hover)' : 'var(--card)',
         border:       `1px solid ${dragOver ? 'var(--orange)' : hovered ? 'var(--border-bright)' : 'var(--border)'}`,
-        borderRadius: 12, padding: 20, cursor: 'pointer',
+        borderRadius: 'var(--r-lg)', padding: 20, cursor: 'pointer',
         transform:    dragging ? 'scale(0.98) rotate(1deg)' : hovered ? 'translateY(-1px)' : 'none',
         opacity:      dragging ? 0.6 : 1,
         transition:   'all 0.15s', position: 'relative', overflow: 'hidden',
@@ -186,12 +186,12 @@ function FavCard({ project, onRemove, onOpen, dragging, dragOver, ...dragProps }
       {hovered && !dragging && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, var(--border-bright), transparent)' }} />
       )}
-      <div style={{ position: 'absolute', top: 10, right: 10, color: 'var(--dimmer)', opacity: hovered ? 0.6 : 0, transition: 'opacity 0.15s' }}>
+      <div style={{ position: 'absolute', top: 10, right: 10, color: 'var(--dimmer)', opacity: hovered ? 0.6 : 0, transition: 'opacity var(--transition-base)' }}>
         <DragIcon />
       </div>
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 11, background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 'var(--r-lg)', background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
           {project.emoji}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -206,14 +206,14 @@ function FavCard({ project, onRemove, onOpen, dragging, dragOver, ...dragProps }
         <button
           onClick={e => { e.stopPropagation(); onRemove(project.id) }}
           title="Remove from favourites"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ffd700', padding: 2, flexShrink: 0, opacity: hovered ? 1 : 0.7, transition: 'opacity 0.15s' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ffd700', padding: 2, flexShrink: 0, opacity: hovered ? 1 : 0.7, transition: 'opacity var(--transition-base)' }}
         >
           <StarIcon filled />
         </button>
       </div>
 
       {(project.languages || []).length > 0 && (
-        <div style={{ height: 3, background: 'var(--border)', borderRadius: 10, overflow: 'hidden', display: 'flex', marginBottom: 12 }}>
+        <div style={{ height: 3, background: 'var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden', display: 'flex', marginBottom: 12 }}>
           {project.languages.map((l, i) => (
             <div key={i} style={{ width: `${l.pct}%`, background: l.color, height: '100%' }} />
           ))}
@@ -222,7 +222,7 @@ function FavCard({ project, onRemove, onOpen, dragging, dragOver, ...dragProps }
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 14 }}>
         {(project.tags || []).map(tag => (
-          <span key={tag} style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, background: 'var(--border)', color: 'var(--dim)', padding: '3px 7px', borderRadius: 4 }}>
+          <span key={tag} style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, background: 'var(--border)', color: 'var(--dim)', padding: '3px 7px', borderRadius: 'var(--r-sm)' }}>
             {tag}
           </span>
         ))}
@@ -245,7 +245,7 @@ function FavCard({ project, onRemove, onOpen, dragging, dragOver, ...dragProps }
             {project.status === 'running' ? 'running' : project.time}
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 4, opacity: hovered ? 1 : 0, transition: 'opacity 0.12s' }}>
+        <div style={{ display: 'flex', gap: 4, opacity: hovered ? 1 : 0, transition: 'opacity var(--transition-fast)' }}>
           <CardBtn title="Open in IDE"    onClick={e => { e.stopPropagation(); window.api?.projects.openInIDE(project.id) }}><IDEIcon /></CardBtn>
           <CardBtn title="Open Folder"    onClick={e => { e.stopPropagation(); window.api?.projects.openFolder(project.id) }}><FolderIcon /></CardBtn>
         </div>
@@ -267,7 +267,7 @@ function FavListRow({ project, index, onRemove, onOpen, dragging, dragOver, ...d
         display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px',
         background:   dragging ? 'var(--surface)' : hovered ? 'var(--card-hover)' : index % 2 === 0 ? 'var(--card)' : 'transparent',
         border:       `1px solid ${dragOver ? 'var(--orange)' : hovered ? 'var(--border-bright)' : 'transparent'}`,
-        borderRadius: 10, cursor: 'pointer',
+        borderRadius: 'var(--r-lg)', cursor: 'pointer',
         opacity:      dragging ? 0.5 : 1,
         transform:    dragging ? 'scale(0.99)' : 'none',
         transition:   'all 0.12s',
@@ -275,8 +275,8 @@ function FavListRow({ project, index, onRemove, onOpen, dragging, dragOver, ...d
       }}
     >
       <div style={{ width: 24, textAlign: 'center', fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', flexShrink: 0 }}>{index + 1}</div>
-      <div style={{ color: 'var(--dimmer)', opacity: hovered ? 1 : 0, transition: 'opacity 0.12s', flexShrink: 0 }}><DragIcon /></div>
-      <div style={{ width: 34, height: 34, borderRadius: 8, background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+      <div style={{ color: 'var(--dimmer)', opacity: hovered ? 1 : 0, transition: 'opacity var(--transition-fast)', flexShrink: 0 }}><DragIcon /></div>
+      <div style={{ width: 34, height: 34, borderRadius: 'var(--r-md)', background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
         {project.emoji}
       </div>
 
@@ -285,7 +285,7 @@ function FavListRow({ project, index, onRemove, onOpen, dragging, dragOver, ...d
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{project.name}</span>
           <VisBadge visibility={project.visibility} />
           {project.status === 'running' && (
-            <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', padding: '2px 6px', borderRadius: 20, background: 'rgba(74,255,145,0.1)', color: '#4aff91' }}>running</span>
+            <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', padding: '2px 6px', borderRadius: 'var(--r-xl)', background: 'rgba(74,255,145,0.1)', color: '#4aff91' }}>running</span>
           )}
         </div>
         <div style={{ fontSize: 11, color: 'var(--dimmer)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{project.description}</div>
@@ -293,12 +293,12 @@ function FavListRow({ project, index, onRemove, onOpen, dragging, dragOver, ...d
 
       <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
         {(project.tags || []).slice(0, 2).map(tag => (
-          <span key={tag} style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, background: 'var(--border)', color: 'var(--dim)', padding: '2px 6px', borderRadius: 3 }}>{tag}</span>
+          <span key={tag} style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, background: 'var(--border)', color: 'var(--dim)', padding: '2px 6px', borderRadius: 'var(--r-sm)' }}>{tag}</span>
         ))}
       </div>
 
       {(project.languages || []).length > 0 && (
-        <div style={{ width: 50, height: 4, background: 'var(--border)', borderRadius: 10, overflow: 'hidden', display: 'flex', flexShrink: 0 }}>
+        <div style={{ width: 50, height: 4, background: 'var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden', display: 'flex', flexShrink: 0 }}>
           {project.languages.map((l, i) => <div key={i} style={{ width: `${l.pct}%`, background: l.color, height: '100%' }} />)}
         </div>
       )}
@@ -306,13 +306,13 @@ function FavListRow({ project, index, onRemove, onOpen, dragging, dragOver, ...d
       <div style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', width: 76, textAlign: 'right', flexShrink: 0 }}>{project.lastCommit || 'never'}</div>
       <div style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', width: 56, flexShrink: 0 }}>{project.ide}</div>
 
-      <div style={{ display: 'flex', gap: 3, opacity: hovered ? 1 : 0, transition: 'opacity 0.12s', flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 3, opacity: hovered ? 1 : 0, transition: 'opacity var(--transition-fast)', flexShrink: 0 }}>
         <CardBtn title="Open in IDE" onClick={e => { e.stopPropagation(); window.api?.projects.openInIDE(project.id) }}><IDEIcon /></CardBtn>
         <CardBtn title="Open Folder" onClick={e => { e.stopPropagation(); window.api?.projects.openFolder(project.id) }}><FolderIcon /></CardBtn>
         <button
           onClick={e => { e.stopPropagation(); onRemove(project.id) }}
           title="Remove from favourites"
-          style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 5, border: 'none', cursor: 'pointer', background: 'rgba(255,215,0,0.1)', color: '#ffd700', transition: 'all 0.12s' }}
+          style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--r-sm)', border: 'none', cursor: 'pointer', background: 'rgba(255,215,0,0.1)', color: '#ffd700', transition: 'all var(--transition-fast)' }}
         >
           <StarIcon filled />
         </button>
@@ -323,8 +323,8 @@ function FavListRow({ project, index, onRemove, onOpen, dragging, dragOver, ...d
 
 function MiniStat({ icon, label, value, color, small }) {
   return (
-    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-      <div style={{ width: 32, height: 32, borderRadius: 8, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color }}>
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ width: 32, height: 32, borderRadius: 'var(--r-md)', background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color }}>
         {icon}
       </div>
       <div style={{ minWidth: 0 }}>
@@ -341,7 +341,7 @@ function VisBadge({ visibility }) {
   if (!visibility) return null
   return (
     <span style={{
-      fontSize: 9, fontFamily: 'Geist Mono, monospace', padding: '2px 5px', borderRadius: 3,
+      fontSize: 9, fontFamily: 'Geist Mono, monospace', padding: '2px 5px', borderRadius: 'var(--r-sm)',
       textTransform: 'uppercase', letterSpacing: '0.06em',
       background: visibility === 'hidden' ? 'rgba(168,85,247,0.1)' : 'rgba(74,158,255,0.1)',
       color:      visibility === 'hidden' ? '#a855f7'              : '#4a9eff',
@@ -358,8 +358,8 @@ function FavSearchBox({ value, onChange }) {
       display: 'flex', alignItems: 'center', gap: 8,
       background: 'var(--card)',
       border: `1px solid ${focused ? 'var(--border-bright)' : 'var(--border)'}`,
-      borderRadius: 8, padding: '7px 12px',
-      flex: 1, maxWidth: 280, transition: 'border-color 0.15s',
+      borderRadius: 'var(--r-md)', padding: '7px 12px',
+      flex: 1, maxWidth: 280, transition: 'border-color var(--transition-base)',
     }}>
       <span style={{ color: 'var(--dimmer)', display: 'flex', flexShrink: 0 }}><SearchIcon /></span>
       <input

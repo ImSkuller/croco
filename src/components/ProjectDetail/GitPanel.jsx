@@ -92,7 +92,7 @@ export default function GitPanel({
                 setInitingRepo(false)
               }
             }}
-            style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: initingRepo ? 'not-allowed' : 'pointer', opacity: initingRepo ? 0.6 : 1 }}
+            style={{ padding: '8px 18px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: initingRepo ? 'not-allowed' : 'pointer', opacity: initingRepo ? 0.6 : 1 }}
           >
             {initingRepo ? 'Initialising…' : 'Initialize Repository'}
           </button>
@@ -109,7 +109,7 @@ export default function GitPanel({
             <div style={{
               background: 'var(--card)',
               border: `1px solid ${gitStatus.clean ? 'var(--border)' : 'rgba(255,107,53,0.25)'}`,
-              borderRadius: 10, padding: '14px 18px',
+              borderRadius: 'var(--r-lg)', padding: '14px 18px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: gitStatus.clean ? 0 : 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text)', fontFamily: 'Geist Mono, monospace' }}>
@@ -137,7 +137,7 @@ export default function GitPanel({
                     : null
                   }
                   <button onClick={checkRemote} title="Refresh remote status"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', padding: 2, display: 'flex', borderRadius: 4, transition: 'color 0.12s' }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', padding: 2, display: 'flex', borderRadius: 'var(--r-sm)', transition: 'color var(--transition-fast)' }}
                     onMouseEnter={e => e.currentTarget.style.color = 'var(--dim)'}
                     onMouseLeave={e => e.currentTarget.style.color = 'var(--dimmer)'}
                   ><RefreshIcon /></button>
@@ -171,7 +171,7 @@ export default function GitPanel({
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{
                           fontSize: 9, fontFamily: 'Geist Mono, monospace', padding: '2px 6px',
-                          borderRadius: 3, flexShrink: 0, minWidth: 62, textAlign: 'center',
+                          borderRadius: 'var(--r-sm)', flexShrink: 0, minWidth: 62, textAlign: 'center',
                           color:      type === 'staged' ? '#4aff91' : type === 'modified' ? 'var(--orange)' : 'var(--dim)',
                           background: type === 'staged' ? 'rgba(74,255,145,0.1)' : type === 'modified' ? 'rgba(255,107,53,0.1)' : 'var(--border)',
                         }}>{type}</span>
@@ -185,7 +185,7 @@ export default function GitPanel({
                           title={type === 'staged' ? 'Unstage' : 'Stage'}
                           style={{
                             flexShrink: 0, width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            borderRadius: 4, border: '1px solid var(--border)', background: 'transparent',
+                            borderRadius: 'var(--r-sm)', border: '1px solid var(--border)', background: 'transparent',
                             color: 'var(--dimmer)', cursor: 'pointer', fontSize: 12, lineHeight: 1, padding: 0,
                           }}
                         >{type === 'staged' ? '−' : '+'}</button>
@@ -195,7 +195,7 @@ export default function GitPanel({
                             title={discardArmed === `${type}:${f}` ? 'Click again to discard permanently' : (type === 'untracked' ? 'Delete file' : 'Discard changes')}
                             style={{
                               flexShrink: 0, height: 18, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              borderRadius: 4, border: `1px solid ${discardArmed === `${type}:${f}` ? '#ff4444' : 'var(--border)'}`,
+                              borderRadius: 'var(--r-sm)', border: `1px solid ${discardArmed === `${type}:${f}` ? '#ff4444' : 'var(--border)'}`,
                               background: discardArmed === `${type}:${f}` ? 'rgba(255,68,68,0.12)' : 'transparent',
                               color: discardArmed === `${type}:${f}` ? '#ff4444' : 'var(--dimmer)',
                               cursor: 'pointer', fontSize: 9, fontFamily: 'Geist Mono, monospace', whiteSpace: 'nowrap',
@@ -216,14 +216,14 @@ export default function GitPanel({
 
           {/* Publish to GitHub — shown when no remote is configured */}
           {aheadBehind?.unavailable && (
-            <div style={{ padding: '12px 16px', borderRadius: 10, background: 'var(--card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <div style={{ padding: '12px 16px', borderRadius: 'var(--r-lg)', background: 'var(--card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>No remote configured</div>
                 <div style={{ fontSize: 11, color: 'var(--dimmer)' }}>Publish this repository to GitHub to enable push/pull.</div>
               </div>
               <button
                 onClick={() => { setPublishName(project.name || ''); setPublishDesc(project.description || ''); setPublishError(''); setPublishModal(true) }}
-                style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#24292e', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}
+                style={{ padding: '7px 14px', borderRadius: 'var(--r-md)', border: 'none', background: '#24292e', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}
               >
                 <GithubIcon /> Publish to GitHub
               </button>
@@ -234,24 +234,24 @@ export default function GitPanel({
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button onClick={() => setShowCommit(p => !p)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 8,
+                display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 'var(--r-md)',
                 border: '1px solid var(--border)',
                 background: showCommit ? 'rgba(255,107,53,0.08)' : 'var(--card)',
                 color: showCommit ? 'var(--orange)' : 'var(--dim)',
-                fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer', transition: 'all 0.12s',
+                fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer', transition: 'all var(--transition-fast)',
               }}>
               <CommitIcon /> Commit
             </button>
 
             <button onClick={handlePull} disabled={!behindCount || pulling}
               style={{
-                display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 8,
+                display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 'var(--r-md)',
                 border: `1px solid ${behindCount > 0 ? 'rgba(74,255,145,0.3)' : 'var(--border)'}`,
                 background: behindCount > 0 ? 'rgba(74,255,145,0.06)' : 'var(--card)',
                 color: behindCount > 0 ? '#4aff91' : 'var(--dimmer)',
                 fontSize: 12, fontFamily: 'Geist, sans-serif',
                 cursor: behindCount > 0 && !pulling ? 'pointer' : 'not-allowed',
-                opacity: behindCount > 0 ? 1 : 0.55, transition: 'all 0.12s',
+                opacity: behindCount > 0 ? 1 : 0.55, transition: 'all var(--transition-fast)',
               }}>
               <DownloadIcon />
               {pulling ? 'Pulling…' : behindCount > 0 ? `Pull (↓ ${behindCount})` : 'Pull (up to date)'}
@@ -259,13 +259,13 @@ export default function GitPanel({
 
             <button onClick={handlePush} disabled={pushing || aheadCount === 0}
               style={{
-                display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 8,
+                display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 'var(--r-md)',
                 border: `1px solid ${aheadCount > 0 ? 'rgba(255,107,53,0.3)' : 'var(--border)'}`,
                 background: aheadCount > 0 ? 'rgba(255,107,53,0.06)' : 'var(--card)',
                 color: aheadCount > 0 ? 'var(--orange)' : 'var(--dimmer)',
                 fontSize: 12, fontFamily: 'Geist, sans-serif',
                 cursor: aheadCount > 0 && !pushing ? 'pointer' : 'not-allowed',
-                opacity: aheadCount > 0 ? 1 : 0.55, transition: 'all 0.12s',
+                opacity: aheadCount > 0 ? 1 : 0.55, transition: 'all var(--transition-fast)',
               }}>
               <ExternalLinkIcon />
               {pushing ? 'Pushing…' : aheadCount > 0 ? `Push (↑ ${aheadCount})` : 'Push (synced)'}
@@ -294,7 +294,7 @@ export default function GitPanel({
 
           {/* Commit panel */}
           {showCommit && (
-            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
                   {(gitStatus?.staged?.length || 0) > 0
@@ -308,7 +308,7 @@ export default function GitPanel({
                     title="Generate a commit message from the diff with AI"
                     style={{
                       display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
-                      padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)',
+                      padding: '4px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
                       background: 'transparent', color: 'var(--dim)', fontSize: 11,
                       fontFamily: 'Geist, sans-serif', cursor: generatingMsg ? 'default' : 'pointer',
                       opacity: generatingMsg ? 0.6 : 1,
@@ -325,9 +325,9 @@ export default function GitPanel({
                 rows={3}
                 style={{
                   width: '100%', background: 'var(--base)', border: '1px solid var(--border)',
-                  borderRadius: 8, padding: '10px 12px', fontSize: 13, color: 'var(--text)',
+                  borderRadius: 'var(--r-md)', padding: '10px 12px', fontSize: 13, color: 'var(--text)',
                   fontFamily: 'Geist, sans-serif', resize: 'vertical', minHeight: 72,
-                  outline: 'none', lineHeight: 1.5, transition: 'border-color 0.12s',
+                  outline: 'none', lineHeight: 1.5, transition: 'border-color var(--transition-fast)',
                 }}
                 onFocus={e => e.target.style.borderColor = 'var(--border-bright)'}
                 onBlur={e => e.target.style.borderColor = 'var(--border)'}
@@ -335,7 +335,7 @@ export default function GitPanel({
               {commitResult && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  fontSize: 11, padding: '7px 10px', borderRadius: 6, fontFamily: 'Geist Mono, monospace',
+                  fontSize: 11, padding: '7px 10px', borderRadius: 'var(--r-md)', fontFamily: 'Geist Mono, monospace',
                   background: commitResult.ok ? 'rgba(74,255,145,0.08)' : 'rgba(255,68,68,0.08)',
                   border: `1px solid ${commitResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,68,68,0.2)'}`,
                   color: commitResult.ok ? '#4aff91' : '#ff4444',
@@ -451,9 +451,9 @@ export default function GitPanel({
               {/* New branch */}
               {!branchOpen ? (
                 <button onClick={() => setBranchOpen(true)}
-                  style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, padding: '4px 10px', borderRadius: 5,
+                  style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, padding: '4px 10px', borderRadius: 'var(--r-sm)',
                     background: 'transparent', border: '1px dashed var(--border)', color: 'var(--dimmer)',
-                    cursor: 'pointer', transition: 'all 0.12s' }}
+                    cursor: 'pointer', transition: 'all var(--transition-fast)' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-bright)'; e.currentTarget.style.color = 'var(--dim)' }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--dimmer)' }}
                 >+ new</button>
@@ -465,18 +465,18 @@ export default function GitPanel({
                     onChange={e => setNewBranch(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') handleCreateBranch(); if (e.key === 'Escape') { setBranchOpen(false); setNewBranch('') } }}
                     placeholder="branch-name"
-                    style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, padding: '4px 8px', borderRadius: 5,
+                    style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, padding: '4px 8px', borderRadius: 'var(--r-sm)',
                       background: 'var(--base)', border: '1px solid var(--border-bright)', color: 'var(--text)',
                       outline: 'none', width: 130 }}
                   />
                   <button onClick={handleCreateBranch} disabled={!newBranch.trim() || !!branchOp}
-                    style={{ fontSize: 11, padding: '4px 10px', borderRadius: 5, border: 'none',
+                    style={{ fontSize: 11, padding: '4px 10px', borderRadius: 'var(--r-sm)', border: 'none',
                       background: newBranch.trim() ? 'var(--orange)' : 'var(--dimmer)', color: '#fff',
                       cursor: newBranch.trim() ? 'pointer' : 'not-allowed', fontFamily: 'Geist, sans-serif' }}>
                     {branchOp === 'creating' ? '…' : 'Create'}
                   </button>
                   <button onClick={() => { setBranchOpen(false); setNewBranch('') }}
-                    style={{ fontSize: 11, padding: '4px 8px', borderRadius: 5, border: '1px solid var(--border)',
+                    style={{ fontSize: 11, padding: '4px 8px', borderRadius: 'var(--r-sm)', border: '1px solid var(--border)',
                       background: 'transparent', color: 'var(--dim)', cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
                     Cancel
                   </button>

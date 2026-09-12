@@ -13,7 +13,7 @@ export default function LanguageMixCard({ projects }) {
         </div>
       ) : (
         <>
-          <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', marginTop: 10, marginBottom: 10 }}>
+          <div style={{ display: 'flex', height: 8, borderRadius: 'var(--r-sm)', overflow: 'hidden', marginTop: 10, marginBottom: 10 }}>
             {mix.map(l => (
               <div key={l.name} title={`${l.name}: ${l.pct}%`} style={{ width: `${l.pct}%`, background: l.color || 'var(--accent)' }} />
             ))}

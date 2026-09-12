@@ -168,18 +168,18 @@ export default function ProjectForm() {
   if (setupDone) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '28px 28px 22px', maxWidth: 440, width: '90%' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', padding: '28px 28px 22px', maxWidth: 440, width: '90%' }}>
           <div style={{ display: 'flex', color: '#4aff91', marginBottom: 12 }}><CheckCircleIcon size={28} /></div>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Project Created</div>
           {setupDone.warnings.length > 0 && (
-            <div style={{ background: 'rgba(255,170,85,0.07)', border: '1px solid rgba(255,170,85,0.2)', borderRadius: 8, padding: '10px 12px', marginBottom: 16 }}>
+            <div style={{ background: 'rgba(255,170,85,0.07)', border: '1px solid rgba(255,170,85,0.2)', borderRadius: 'var(--r-md)', padding: '10px 12px', marginBottom: 16 }}>
               {setupDone.warnings.map((w, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#ffaa55', fontFamily: 'Geist Mono, monospace', marginBottom: i < setupDone.warnings.length - 1 ? 6 : 0 }}><AlertTriangleIcon size={12} /> {w}</div>
               ))}
             </div>
           )}
           <button onClick={() => navigate('/projects')}
-            style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#000', fontSize: 13, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
+            style={{ padding: '9px 20px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: '#000', fontSize: 13, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}>
             Go to Projects
           </button>
         </div>
@@ -195,7 +195,7 @@ export default function ProjectForm() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button
             onClick={() => navigate('/projects')}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', padding: '4px 6px', borderRadius: 6, transition: 'all 0.12s' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', padding: '4px 6px', borderRadius: 'var(--r-md)', transition: 'all var(--transition-fast)' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--card)'; e.currentTarget.style.color = 'var(--text)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--dim)' }}
           >
@@ -206,11 +206,11 @@ export default function ProjectForm() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => navigate('/projects')} disabled={saving}
-            style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: saving ? 'not-allowed' : 'pointer' }}>
+            style={{ padding: '6px 14px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: saving ? 'not-allowed' : 'pointer' }}>
             Cancel
           </button>
           <button onClick={handleCreate} disabled={saving}
-            style={{ padding: '6px 16px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+            style={{ padding: '6px 16px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
             {saving ? 'Creating…' : 'Create Project'}
           </button>
         </div>
@@ -227,15 +227,15 @@ export default function ProjectForm() {
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <button
                 onClick={() => setShowEmoji(p => !p)}
-                style={{ width: 46, height: 46, borderRadius: 10, background: 'var(--card)', border: `1px solid ${showEmoji ? 'var(--border-bright)' : 'var(--border)'}`, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.12s' }}
+                style={{ width: 46, height: 46, borderRadius: 'var(--r-lg)', background: 'var(--card)', border: `1px solid ${showEmoji ? 'var(--border-bright)' : 'var(--border)'}`, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all var(--transition-fast)' }}
               >
                 {emoji}
               </button>
               {showEmoji && (
-                <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border-bright)', borderRadius: 10, padding: 8, display: 'flex', flexWrap: 'wrap', gap: 3, width: 192, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-lg)', padding: 8, display: 'flex', flexWrap: 'wrap', gap: 3, width: 192, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
                   {EMOJI_PRESETS.map(e => (
                     <button key={e} onClick={() => { setEmoji(e); setShowEmoji(false) }}
-                      style={{ fontSize: 18, background: 'none', border: 'none', cursor: 'pointer', padding: '3px 5px', borderRadius: 5, transition: 'background 0.1s' }}
+                      style={{ fontSize: 18, background: 'none', border: 'none', cursor: 'pointer', padding: '3px 5px', borderRadius: 'var(--r-sm)', transition: 'background var(--transition-fast)' }}
                       onMouseEnter={e2 => e2.currentTarget.style.background = 'var(--card)'}
                       onMouseLeave={e2 => e2.currentTarget.style.background = 'none'}
                     >{e}</button>
@@ -272,7 +272,7 @@ export default function ProjectForm() {
             <div style={{ display: 'flex', gap: 6 }}>
               {[['public', 'Public', <EyeIcon size={12} />, '#4a9eff'], ['hidden', 'Private', <EyeOffIcon size={12} />, '#a855f7']].map(([v, lbl, icon, col]) => (
                 <button key={v} onClick={() => setVisibility(v)}
-                  style={{ flex: 1, padding: '6px 10px', borderRadius: 7, cursor: 'pointer', fontSize: 11, fontFamily: 'Geist, sans-serif', transition: 'all 0.12s', border: `1px solid ${visibility === v ? col : 'var(--border)'}`, background: visibility === v ? `${col}14` : 'var(--card)', color: visibility === v ? col : 'var(--dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  style={{ flex: 1, padding: '6px 10px', borderRadius: 'var(--r-md)', cursor: 'pointer', fontSize: 11, fontFamily: 'Geist, sans-serif', transition: 'all var(--transition-fast)', border: `1px solid ${visibility === v ? col : 'var(--border)'}`, background: visibility === v ? `${col}14` : 'var(--card)', color: visibility === v ? col : 'var(--dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                   {icon} {lbl}
                 </button>
               ))}
@@ -285,7 +285,7 @@ export default function ProjectForm() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 5 }}>
               {IDE_OPTIONS.map(opt => (
                 <button key={opt.value} onClick={() => setIde(opt.value)}
-                  style={{ padding: '5px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontFamily: 'Geist, sans-serif', textAlign: 'center', transition: 'all 0.12s', border: `1px solid ${ide === opt.value ? 'var(--accent)' : 'var(--border)'}`, background: ide === opt.value ? 'var(--accent-dim)' : 'var(--card)', color: ide === opt.value ? 'var(--accent)' : 'var(--dim)' }}>
+                  style={{ padding: '5px 8px', borderRadius: 'var(--r-md)', cursor: 'pointer', fontSize: 11, fontFamily: 'Geist, sans-serif', textAlign: 'center', transition: 'all var(--transition-fast)', border: `1px solid ${ide === opt.value ? 'var(--accent)' : 'var(--border)'}`, background: ide === opt.value ? 'var(--accent-dim)' : 'var(--card)', color: ide === opt.value ? 'var(--accent)' : 'var(--dim)' }}>
                   {opt.label}
                 </button>
               ))}
@@ -298,7 +298,7 @@ export default function ProjectForm() {
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
               {shellOpts.map(opt => (
                 <button key={opt.value} onClick={() => setShell(opt.value)}
-                  style={{ padding: '5px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontFamily: 'Geist Mono, monospace', transition: 'all 0.12s', border: `1px solid ${shell === opt.value ? 'var(--accent)' : 'var(--border)'}`, background: shell === opt.value ? 'var(--accent-dim)' : 'var(--card)', color: shell === opt.value ? 'var(--accent)' : 'var(--dim)' }}>
+                  style={{ padding: '5px 10px', borderRadius: 'var(--r-md)', cursor: 'pointer', fontSize: 11, fontFamily: 'Geist Mono, monospace', transition: 'all var(--transition-fast)', border: `1px solid ${shell === opt.value ? 'var(--accent)' : 'var(--border)'}`, background: shell === opt.value ? 'var(--accent-dim)' : 'var(--card)', color: shell === opt.value ? 'var(--accent)' : 'var(--dim)' }}>
                   {opt.label}
                 </button>
               ))}
@@ -308,9 +308,9 @@ export default function ProjectForm() {
           {/* Tags */}
           <div style={{ marginBottom: 14 }}>
             <Label>Tags</Label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 7, padding: '6px 10px', minHeight: 36 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '6px 10px', minHeight: 36 }}>
               {tags.map(tag => (
-                <span key={tag} style={{ display: 'flex', alignItems: 'center', gap: 3, fontFamily: 'Geist Mono, monospace', fontSize: 10, background: 'var(--border)', color: 'var(--dim)', padding: '2px 7px', borderRadius: 4 }}>
+                <span key={tag} style={{ display: 'flex', alignItems: 'center', gap: 3, fontFamily: 'Geist Mono, monospace', fontSize: 10, background: 'var(--border)', color: 'var(--dim)', padding: '2px 7px', borderRadius: 'var(--r-sm)' }}>
                   {tag}
                   <button onClick={() => setTags(p => p.filter(t => t !== tag))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', fontSize: 11, lineHeight: 1, padding: 0 }}>×</button>
                 </span>
@@ -339,7 +339,7 @@ export default function ProjectForm() {
                   <div style={{ marginTop: 6, display: 'flex', gap: 5, paddingLeft: 24 }}>
                     {[{ val: false, label: 'Public' }, { val: true, label: 'Private' }].map(opt => (
                       <button key={opt.label} onClick={() => setGithubRepoPrivate(opt.val)}
-                        style={{ padding: '3px 12px', borderRadius: 5, fontSize: 10, cursor: 'pointer', fontFamily: 'Geist, sans-serif', border: '1px solid', borderColor: githubRepoPrivate === opt.val ? 'var(--accent)' : 'var(--border)', background: githubRepoPrivate === opt.val ? 'rgba(74,158,255,0.1)' : 'transparent', color: githubRepoPrivate === opt.val ? 'var(--accent)' : 'var(--dim)', transition: 'all 0.1s' }}>
+                        style={{ padding: '3px 12px', borderRadius: 'var(--r-sm)', fontSize: 10, cursor: 'pointer', fontFamily: 'Geist, sans-serif', border: '1px solid', borderColor: githubRepoPrivate === opt.val ? 'var(--accent)' : 'var(--border)', background: githubRepoPrivate === opt.val ? 'rgba(74,158,255,0.1)' : 'transparent', color: githubRepoPrivate === opt.val ? 'var(--accent)' : 'var(--dim)', transition: 'all var(--transition-fast)' }}>
                         {opt.label}
                       </button>
                     ))}
@@ -352,7 +352,7 @@ export default function ProjectForm() {
           {/* Optional section toggle */}
           <button
             onClick={() => setShowOptional(p => !p)}
-            style={{ width: '100%', padding: '7px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all 0.12s', marginBottom: 14 }}
+            style={{ width: '100%', padding: '7px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all var(--transition-fast)', marginBottom: 14 }}
             onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-bright)'}
             onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
           >
@@ -372,7 +372,7 @@ export default function ProjectForm() {
                   <input value={customPath} onChange={e => setCustomPath(e.target.value)} placeholder="Leave blank for default" style={{ ...iStyle(), fontFamily: 'Geist Mono, monospace', fontSize: 11, flex: 1 }} />
                   {window.api && (
                     <button type="button" onClick={pickFolder}
-                      style={{ padding: '7px 10px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer', flexShrink: 0, transition: 'all 0.12s' }}
+                      style={{ padding: '7px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer', flexShrink: 0, transition: 'all var(--transition-fast)' }}
                       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-bright)'}
                       onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
                     >Browse</button>
@@ -383,7 +383,7 @@ export default function ProjectForm() {
           )}
 
           {errors.submit && (
-            <div style={{ padding: '8px 12px', borderRadius: 7, background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.2)', fontSize: 11, color: '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
+            <div style={{ padding: '8px 12px', borderRadius: 'var(--r-md)', background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.2)', fontSize: 11, color: '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
               {errors.submit}
             </div>
           )}
@@ -394,7 +394,7 @@ export default function ProjectForm() {
 
           {/* Imported custom template — takes over selection entirely */}
           {importedTemplate ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border-bright)', borderRadius: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-lg)' }}>
               <PackageIcon size={22} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{importedTemplate.name}</div>
@@ -406,13 +406,13 @@ export default function ProjectForm() {
               </button>
             </div>
           ) : selectedTemplate && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border-bright)', borderRadius: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-lg)' }}>
               <TemplateIcon icon={selectedTemplate.icon} color={selectedTemplate.color} size={22} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{selectedTemplate.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 2 }}>{selectedTemplate.desc}</div>
               </div>
-              <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', color: CATEGORY_COLOR[selectedTemplate.category] || 'var(--dimmer)', background: `${CATEGORY_COLOR[selectedTemplate.category] || 'var(--dimmer)'}18`, padding: '2px 7px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <span style={{ fontSize: 9, fontFamily: 'Geist Mono, monospace', color: CATEGORY_COLOR[selectedTemplate.category] || 'var(--dimmer)', background: `${CATEGORY_COLOR[selectedTemplate.category] || 'var(--dimmer)'}18`, padding: '2px 7px', borderRadius: 'var(--r-sm)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {selectedTemplate.category}
               </span>
             </div>
@@ -431,13 +431,13 @@ export default function ProjectForm() {
               const active = catFilter === c
               return (
                 <button key={c} onClick={() => setCatFilter(c)}
-                  style={{ padding: '4px 10px', borderRadius: 20, fontSize: 10, cursor: 'pointer', fontFamily: 'Geist, sans-serif', border: '1px solid', borderColor: active ? col : 'var(--border)', background: active ? `${col}16` : 'transparent', color: active ? col : 'var(--dimmer)', transition: 'all 0.1s', fontWeight: active ? 600 : 400 }}>
+                  style={{ padding: '4px 10px', borderRadius: 'var(--r-xl)', fontSize: 10, cursor: 'pointer', fontFamily: 'Geist, sans-serif', border: '1px solid', borderColor: active ? col : 'var(--border)', background: active ? `${col}16` : 'transparent', color: active ? col : 'var(--dimmer)', transition: 'all var(--transition-fast)', fontWeight: active ? 600 : 400 }}>
                   {c}
                 </button>
               )
             })}
             <button onClick={pickCustomTemplate}
-              style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 20, fontSize: 10, cursor: 'pointer', fontFamily: 'Geist, sans-serif', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dimmer)' }}>
+              style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 'var(--r-xl)', fontSize: 10, cursor: 'pointer', fontFamily: 'Geist, sans-serif', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dimmer)' }}>
               <UploadCloudIcon size={11} /> Import Custom Template
             </button>
           </div>
@@ -449,7 +449,7 @@ export default function ProjectForm() {
               const catColor = CATEGORY_COLOR[t.category] || 'var(--accent)'
               return (
                 <button key={t.id} onClick={() => { setTemplateId(t.id); setImportedTemplate(null) }}
-                  style={{ padding: '11px 11px 9px', borderRadius: 10, cursor: 'pointer', textAlign: 'left', border: `1px solid ${selected ? catColor : 'var(--border)'}`, background: selected ? `${catColor}10` : 'var(--card)', transition: 'all 0.12s', display: 'flex', flexDirection: 'column', gap: 4 }}
+                  style={{ padding: '11px 11px 9px', borderRadius: 'var(--r-lg)', cursor: 'pointer', textAlign: 'left', border: `1px solid ${selected ? catColor : 'var(--border)'}`, background: selected ? `${catColor}10` : 'var(--card)', transition: 'all var(--transition-fast)', display: 'flex', flexDirection: 'column', gap: 4 }}
                   onMouseEnter={e => { if (!selected) { e.currentTarget.style.borderColor = 'var(--border-bright)'; e.currentTarget.style.background = 'var(--card-hover)' } }}
                   onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--card)' } }}
                 >
@@ -484,9 +484,9 @@ function MiniToggle({ checked, onChange, label, disabled }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: disabled ? 0.45 : 1 }}>
       <button
         onClick={() => !disabled && onChange(!checked)}
-        style={{ width: 30, height: 17, borderRadius: 9, border: 'none', cursor: disabled ? 'not-allowed' : 'pointer', background: checked ? 'var(--accent)' : 'var(--border)', transition: 'background 0.15s', position: 'relative', flexShrink: 0 }}
+        style={{ width: 30, height: 17, borderRadius: 'var(--r-lg)', border: 'none', cursor: disabled ? 'not-allowed' : 'pointer', background: checked ? 'var(--accent)' : 'var(--border)', transition: 'background var(--transition-base)', position: 'relative', flexShrink: 0 }}
       >
-        <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: checked ? 16 : 3, transition: 'left 0.15s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+        <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: checked ? 16 : 3, transition: 'left var(--transition-base)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
       </button>
       <span style={{ fontSize: 11, color: 'var(--dim)', fontFamily: 'Geist, sans-serif' }}>{label}</span>
     </div>
@@ -495,6 +495,6 @@ function MiniToggle({ checked, onChange, label, disabled }) {
 
 const iStyle = (hasError) => ({
   width: '100%', background: 'var(--card)', border: `1px solid ${hasError ? 'var(--red)' : 'var(--border)'}`,
-  borderRadius: 7, padding: '7px 10px', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist, sans-serif',
-  outline: 'none', transition: 'border-color 0.12s', boxSizing: 'border-box',
+  borderRadius: 'var(--r-md)', padding: '7px 10px', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist, sans-serif',
+  outline: 'none', transition: 'border-color var(--transition-fast)', boxSizing: 'border-box',
 })

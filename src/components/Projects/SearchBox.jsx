@@ -10,7 +10,7 @@ const SearchBox = forwardRef(function SearchBox({ value, onChange, placeholder =
       gap:          8,
       background:   'var(--card)',
       border:       `1px solid ${focused ? 'var(--border-bright)' : 'var(--border)'}`,
-      borderRadius: 8,
+      borderRadius: 'var(--r-md)',
       padding:      '7px 12px',
       flex:         1,
       maxWidth:     320,

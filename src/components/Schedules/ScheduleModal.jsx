@@ -45,7 +45,7 @@ export default function ScheduleModal({ schedule, priorities, projects, notes, o
         style={{
           width: 480, maxHeight: '86vh', overflowY: 'auto',
           background: 'var(--surface)', border: '1px solid var(--border-bright)',
-          borderRadius: 14, boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
+          borderRadius: 'var(--r-xl)', boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
           animation: 'pmFadeDown 0.15s cubic-bezier(0.16,1,0.3,1) both',
         }}
       >
@@ -63,7 +63,7 @@ export default function ScheduleModal({ schedule, priorities, projects, notes, o
               onChange={e => setTitle(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) handleSave() }}
               placeholder="e.g. Submit tax filing"
-              style={{ width: '100%', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 10px', color: 'var(--text)', fontSize: 13, fontFamily: 'Geist, sans-serif', outline: 'none' }}
+              style={{ width: '100%', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '8px 10px', color: 'var(--text)', fontSize: 13, fontFamily: 'Geist, sans-serif', outline: 'none' }}
             />
           </div>
 
@@ -74,7 +74,7 @@ export default function ScheduleModal({ schedule, priorities, projects, notes, o
               onChange={e => setDescription(e.target.value)}
               placeholder="Optional details..."
               rows={3}
-              style={{ width: '100%', resize: 'vertical', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 10px', color: 'var(--text)', fontSize: 12.5, fontFamily: 'Geist, sans-serif', outline: 'none', lineHeight: 1.5 }}
+              style={{ width: '100%', resize: 'vertical', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '8px 10px', color: 'var(--text)', fontSize: 12.5, fontFamily: 'Geist, sans-serif', outline: 'none', lineHeight: 1.5 }}
             />
           </div>
 
@@ -85,7 +85,7 @@ export default function ScheduleModal({ schedule, priorities, projects, notes, o
                 type="date"
                 value={dueDate}
                 onChange={e => setDueDate(e.target.value)}
-                style={{ width: '100%', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 7, padding: '7px 10px', color: dueDate ? 'var(--text)' : 'var(--dimmer)', fontSize: 12, fontFamily: 'Geist Mono, monospace', outline: 'none', colorScheme: 'dark' }}
+                style={{ width: '100%', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '7px 10px', color: dueDate ? 'var(--text)' : 'var(--dimmer)', fontSize: 12, fontFamily: 'Geist Mono, monospace', outline: 'none', colorScheme: 'dark' }}
               />
             </div>
             <div style={{ flex: 1 }}>
@@ -95,7 +95,7 @@ export default function ScheduleModal({ schedule, priorities, projects, notes, o
                 value={dueTime}
                 onChange={e => setDueTime(e.target.value)}
                 disabled={!dueDate}
-                style={{ width: '100%', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 7, padding: '7px 10px', color: dueTime ? 'var(--text)' : 'var(--dimmer)', fontSize: 12, fontFamily: 'Geist Mono, monospace', outline: 'none', colorScheme: 'dark', opacity: dueDate ? 1 : 0.5 }}
+                style={{ width: '100%', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '7px 10px', color: dueTime ? 'var(--text)' : 'var(--dimmer)', fontSize: 12, fontFamily: 'Geist Mono, monospace', outline: 'none', colorScheme: 'dark', opacity: dueDate ? 1 : 0.5 }}
               />
             </div>
           </div>
@@ -108,7 +108,7 @@ export default function ScheduleModal({ schedule, priorities, projects, notes, o
                   key={p.id}
                   onClick={() => setPriority(p.id)}
                   style={{
-                    padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                    padding: '5px 10px', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer',
                     fontSize: 11, fontFamily: 'Geist Mono, monospace',
                     background: priority === p.id ? hexToRgba(p.color) : 'var(--card)',
                     color:      priority === p.id ? p.color : 'var(--dimmer)',
@@ -126,7 +126,7 @@ export default function ScheduleModal({ schedule, priorities, projects, notes, o
             <select
               value={projectId}
               onChange={e => setProjectId(e.target.value)}
-              style={{ width: '100%', background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--dim)', borderRadius: 7, padding: '7px 10px', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer', outline: 'none' }}
+              style={{ width: '100%', background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--dim)', borderRadius: 'var(--r-md)', padding: '7px 10px', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer', outline: 'none' }}
             >
               <option value="">No project</option>
               {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -140,7 +140,7 @@ export default function ScheduleModal({ schedule, priorities, projects, notes, o
             {relevantNotes.length === 0 ? (
               <div style={{ fontSize: 11.5, color: 'var(--dimmer)', padding: '8px 0' }}>No notes available to attach yet.</div>
             ) : (
-              <div style={{ maxHeight: 140, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 7, background: 'var(--card)' }}>
+              <div style={{ maxHeight: 140, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', background: 'var(--card)' }}>
                 {relevantNotes.map(n => (
                   <label
                     key={n.id}
@@ -156,10 +156,10 @@ export default function ScheduleModal({ schedule, priorities, projects, notes, o
           </div>
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-            <button onClick={onClose} style={{ padding: '7px 14px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+            <button onClick={onClose} style={{ padding: '7px 14px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
               Cancel
             </button>
-            <button onClick={handleSave} disabled={!title.trim()} style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: title.trim() ? 'var(--accent)' : 'var(--border)', color: title.trim() ? '#000' : 'var(--dimmer)', fontSize: 12, fontWeight: 600, cursor: title.trim() ? 'pointer' : 'default', fontFamily: 'Geist, sans-serif' }}>
+            <button onClick={handleSave} disabled={!title.trim()} style={{ padding: '7px 16px', borderRadius: 'var(--r-md)', border: 'none', background: title.trim() ? 'var(--accent)' : 'var(--border)', color: title.trim() ? '#000' : 'var(--dimmer)', fontSize: 12, fontWeight: 600, cursor: title.trim() ? 'pointer' : 'default', fontFamily: 'Geist, sans-serif' }}>
               {isEdit ? 'Save Changes' : 'Create Schedule'}
             </button>
           </div>

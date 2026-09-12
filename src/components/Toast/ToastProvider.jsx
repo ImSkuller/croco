@@ -78,7 +78,7 @@ function Toast({ toast, onDismiss }) {
         background: 'var(--surface, #1a1a1a)',
         border: '1px solid var(--border, #242424)',
         borderLeft: `3px solid ${s.border}`,
-        borderRadius: 10,
+        borderRadius: 'var(--r-lg)',
         padding: '11px 14px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         display: 'flex', alignItems: 'flex-start', gap: 10,
@@ -89,7 +89,7 @@ function Toast({ toast, onDismiss }) {
       }}
     >
       <span style={{
-        width: 18, height: 18, borderRadius: 4,
+        width: 18, height: 18, borderRadius: 'var(--r-sm)',
         background: s.border + '22',
         color: s.border,
         display: 'flex', alignItems: 'center', justifyContent: 'center',

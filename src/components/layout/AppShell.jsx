@@ -128,7 +128,7 @@ function ShortcutsModal({ overrides, onClose }) {
     }}>
       <div onClick={e => e.stopPropagation()} style={{
         background: 'var(--surface)', border: '1px solid var(--border-bright)',
-        borderRadius: 14, width: '100%', maxWidth: 520, maxHeight: '85vh',
+        borderRadius: 'var(--r-xl)', width: '100%', maxWidth: 520, maxHeight: '85vh',
         overflow: 'hidden', display: 'flex', flexDirection: 'column',
         boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
         animation: 'pmFadeDown 0.15s cubic-bezier(0.16,1,0.3,1) both',
@@ -139,7 +139,7 @@ function ShortcutsModal({ overrides, onClose }) {
             <span style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
               Remap in <span style={{ color: 'var(--dim)' }}>Settings → Shortcuts</span>
             </span>
-            <kbd style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--border)', color: 'var(--dimmer)', padding: '2px 6px', borderRadius: 4 }}>?</kbd>
+            <kbd style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--border)', color: 'var(--dimmer)', padding: '2px 6px', borderRadius: 'var(--r-sm)' }}>?</kbd>
           </div>
         </div>
 
@@ -159,7 +159,7 @@ function ShortcutsModal({ overrides, onClose }) {
                         {tokens.map((k, ki) => (
                           k === 'then' || k === '–'
                             ? <span key={ki} style={{ fontSize: 10, color: 'var(--dimmer)', alignSelf: 'center' }}>{k}</span>
-                            : <kbd key={ki} style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text)', padding: '3px 6px', borderRadius: 5, boxShadow: '0 1px 0 var(--border)', whiteSpace: 'nowrap' }}>{formatKeyToken(k)}</kbd>
+                            : <kbd key={ki} style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text)', padding: '3px 6px', borderRadius: 'var(--r-sm)', boxShadow: '0 1px 0 var(--border)', whiteSpace: 'nowrap' }}>{formatKeyToken(k)}</kbd>
                         ))}
                       </div>
                     </div>
@@ -171,7 +171,7 @@ function ShortcutsModal({ overrides, onClose }) {
         </div>
 
         <div style={{ padding: '10px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: 'var(--dimmer)' }}>Press <kbd style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--border)', color: 'var(--dim)', padding: '1px 5px', borderRadius: 3 }}>Esc</kbd> or click outside to close</span>
+          <span style={{ fontSize: 11, color: 'var(--dimmer)' }}>Press <kbd style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--border)', color: 'var(--dim)', padding: '1px 5px', borderRadius: 'var(--r-sm)' }}>Esc</kbd> or click outside to close</span>
         </div>
       </div>
     </div>

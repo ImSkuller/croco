@@ -14,7 +14,7 @@ export default function FavChip({ fav }) {
         padding: '8px 14px',
         background:  hovered ? 'var(--card-hover)' : 'var(--card)',
         border:      `1px solid ${hovered ? 'var(--border-bright)' : 'var(--border)'}`,
-        borderRadius: 8,
+        borderRadius: 'var(--r-md)',
         cursor:      'pointer',
         whiteSpace:  'nowrap',
         flexShrink:  0,
@@ -23,7 +23,7 @@ export default function FavChip({ fav }) {
     >
       <span style={{ fontSize: 14 }}>{fav.emoji}</span>
       <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)' }}>{fav.name}</span>
-      <span style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', background: 'var(--border)', padding: '2px 6px', borderRadius: 4 }}>
+      <span style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', background: 'var(--border)', padding: '2px 6px', borderRadius: 'var(--r-sm)' }}>
         {fav.ide}
       </span>
     </div>

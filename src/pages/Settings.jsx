@@ -21,7 +21,7 @@ const codeStyle = {
   background:   'var(--border)',
   color:        'var(--text)',
   padding:      '1px 5px',
-  borderRadius: 4,
+  borderRadius: 'var(--r-sm)',
 }
 
 const IDE_OPTIONS = [
@@ -763,7 +763,7 @@ export default function Settings() {
                       <div style={{
                         display: 'inline-flex', alignItems: 'center', gap: 8,
                         background: 'var(--accent-dim)', border: '1px solid var(--accent)',
-                        borderRadius: 20, padding: '6px 14px',
+                        borderRadius: 'var(--r-xl)', padding: '6px 14px',
                       }}>
                         <span style={{ display: 'flex', color: 'var(--accent)' }}><LockIcon size={14} /></span>
                         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{userTag}</span>
@@ -779,12 +779,12 @@ export default function Settings() {
                           key={tag}
                           onClick={() => setUserTag(tag)}
                           style={{
-                            padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
+                            padding: '5px 12px', borderRadius: 'var(--r-xl)', cursor: 'pointer',
                             fontFamily: 'Geist, sans-serif', fontSize: 12,
                             border:     `1px solid ${userTag === tag ? 'var(--accent)' : 'var(--border)'}`,
                             background: userTag === tag ? 'var(--accent-dim)' : 'var(--card)',
                             color:      userTag === tag ? 'var(--text)'       : 'var(--dim)',
-                            transition: 'all 0.1s',
+                            transition: 'all var(--transition-fast)',
                           }}
                         >
                           {tag}
@@ -948,11 +948,11 @@ export default function Settings() {
                       onClick={handleOAuthStart}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8, marginTop: 10,
-                        padding: '10px 18px', borderRadius: 8, border: '1px solid var(--border)',
+                        padding: '10px 18px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
                         background: ghConnected ? 'rgba(74,255,145,0.06)' : 'var(--base)',
                         color: 'var(--text)', fontSize: 13,
                         fontWeight: 500, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
-                        transition: 'border-color 0.12s',
+                        transition: 'border-color var(--transition-fast)',
                       }}
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -962,7 +962,7 @@ export default function Settings() {
                     </button>
                   ) : (
                     <div style={{
-                      marginTop: 10, padding: '12px 16px', borderRadius: 8,
+                      marginTop: 10, padding: '12px 16px', borderRadius: 'var(--r-md)',
                       background: 'var(--base)', border: '1px solid var(--border)',
                       fontSize: 13,
                     }}>
@@ -1138,7 +1138,7 @@ export default function Settings() {
                       </FieldDesc>
                       {apiTokenReveal ? (
                         <div style={{ marginTop: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--base)', border: '1px solid var(--border-bright)', borderRadius: 8, padding: '10px 12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--base)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-md)', padding: '10px 12px' }}>
                             <code style={{ ...codeStyle, flex: 1, fontSize: 12, wordBreak: 'break-all' }}>{apiTokenReveal}</code>
                             <button
                               onClick={() => { navigator.clipboard.writeText(apiTokenReveal); toast.success('Copied') }}
@@ -1160,7 +1160,7 @@ export default function Settings() {
                     <SettingsCard>
                       <FieldLabel>Example</FieldLabel>
                       <FieldDesc>List projects from a terminal:</FieldDesc>
-                      <pre style={{ marginTop: 8, padding: '10px 12px', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11, fontFamily: 'Geist Mono, monospace', color: 'var(--dim)', overflowX: 'auto' }}>
+                      <pre style={{ marginTop: 8, padding: '10px 12px', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', fontSize: 11, fontFamily: 'Geist Mono, monospace', color: 'var(--dim)', overflowX: 'auto' }}>
 {`curl http://127.0.0.1:${apiPort}/projects \\
   -H "Authorization: Bearer <token>"`}
                       </pre>
@@ -1210,18 +1210,18 @@ export default function Settings() {
                           title={style.status === 'coming-soon' ? `${style.label} — coming soon` : style.label}
                           style={{
                             display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6,
-                            padding: '12px 14px', borderRadius: 10, textAlign: 'left',
+                            padding: '12px 14px', borderRadius: 'var(--r-lg)', textAlign: 'left',
                             border: isActive ? '2px solid var(--accent)' : '2px solid var(--border)',
                             background: isActive ? 'var(--accent-dim)' : 'var(--card)',
                             cursor: isComingSoon ? 'default' : 'pointer',
                             opacity: isComingSoon ? 0.55 : 1,
-                            transition: 'all 0.15s',
+                            transition: 'all var(--transition-base)',
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>
                             <span style={{ fontSize: 12.5, fontWeight: 600, color: isActive ? 'var(--text)' : 'var(--dim)' }}>{style.label}</span>
                             {isComingSoon && (
-                              <span style={{ marginLeft: 'auto', fontSize: 9, fontFamily: 'Geist Mono, monospace', color: 'var(--dimmer)', background: 'var(--border)', padding: '1px 6px', borderRadius: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                              <span style={{ marginLeft: 'auto', fontSize: 9, fontFamily: 'Geist Mono, monospace', color: 'var(--dimmer)', background: 'var(--border)', padding: '1px 6px', borderRadius: 'var(--r-lg)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                                 Soon
                               </span>
                             )}
@@ -1279,11 +1279,11 @@ export default function Settings() {
                             alignItems: 'center',
                             gap: 5,
                             padding: '8px 4px',
-                            borderRadius: 8,
+                            borderRadius: 'var(--r-md)',
                             border: isActive ? `2px solid ${accent}` : '2px solid var(--border)',
                             background: isActive ? `${accent}18` : 'var(--card)',
                             cursor: 'pointer',
-                            transition: 'all 0.15s',
+                            transition: 'all var(--transition-base)',
                             outline: 'none',
                           }}
                         >
@@ -1292,7 +1292,7 @@ export default function Settings() {
                             background: bg,
                             border: `3px solid ${accent}`,
                             boxShadow: isActive ? `0 0 0 2px ${accent}40` : 'none',
-                            transition: 'box-shadow 0.15s',
+                            transition: 'box-shadow var(--transition-base)',
                           }} />
                           <span style={{
                             fontSize: 9, fontFamily: 'Geist Mono, monospace',
@@ -1311,7 +1311,7 @@ export default function Settings() {
                       Selected: <span style={{ color: 'var(--text)' }}>{THEMES.find(t => t.id === selectedTheme)?.label || 'Default'}</span>
                     </span>
                     {THEMES.find(t => t.id === selectedTheme)?.dark === false && (
-                      <span style={{ fontSize: 10, background: 'rgba(255,215,0,0.1)', color: 'var(--yellow)', padding: '1px 6px', borderRadius: 4, fontFamily: 'Geist Mono, monospace' }}>light theme</span>
+                      <span style={{ fontSize: 10, background: 'rgba(255,215,0,0.1)', color: 'var(--yellow)', padding: '1px 6px', borderRadius: 'var(--r-sm)', fontFamily: 'Geist Mono, monospace' }}>light theme</span>
                     )}
                   </div>
                 </SettingsCard>
@@ -1329,7 +1329,7 @@ export default function Settings() {
                           border: accentColor === color ? '2px solid #fff' : '2px solid transparent',
                           outline: accentColor === color ? '2px solid ' + color : 'none',
                           outlineOffset: 2,
-                          cursor: 'pointer', transition: 'all 0.15s', padding: 0,
+                          cursor: 'pointer', transition: 'all var(--transition-base)', padding: 0,
                         }}
                       />
                     ))}
@@ -1363,10 +1363,10 @@ export default function Settings() {
                         key={f.id}
                         onClick={() => setFontBody(f.id)}
                         style={{
-                          padding: '11px 14px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                          padding: '11px 14px', borderRadius: 'var(--r-md)', cursor: 'pointer', textAlign: 'left',
                           border: `1px solid ${fontBody === f.id ? 'var(--accent)' : 'var(--border)'}`,
                           background: fontBody === f.id ? 'var(--accent-dim)' : 'var(--card)',
-                          transition: 'all 0.15s',
+                          transition: 'all var(--transition-base)',
                         }}
                       >
                         <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: `'${f.id}', sans-serif`, marginBottom: 3 }}>{f.sample}</div>
@@ -1389,10 +1389,10 @@ export default function Settings() {
                         key={f.id}
                         onClick={() => setFontDisplay(f.id)}
                         style={{
-                          padding: '11px 14px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                          padding: '11px 14px', borderRadius: 'var(--r-md)', cursor: 'pointer', textAlign: 'left',
                           border: `1px solid ${fontDisplay === f.id ? 'var(--accent)' : 'var(--border)'}`,
                           background: fontDisplay === f.id ? 'var(--accent-dim)' : 'var(--card)',
-                          transition: 'all 0.15s',
+                          transition: 'all var(--transition-base)',
                         }}
                       >
                         <div style={{ fontSize: 15, color: 'var(--text)', fontFamily: f.id === 'inherit' ? `'${fontBody}', sans-serif` : `'${f.id}', serif`, marginBottom: 3 }}>{f.sample}</div>
@@ -1491,7 +1491,7 @@ export default function Settings() {
                       Desktop notification permission hasn't been granted yet — reminders won't show until it is.
                       <button
                         onClick={handleRequestDesktopPermission}
-                        style={{ marginLeft: 8, padding: '3px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
+                        style={{ marginLeft: 8, padding: '3px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
                       >
                         Grant Permission
                       </button>

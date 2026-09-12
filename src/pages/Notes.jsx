@@ -123,9 +123,9 @@ export default function Notes() {
             onClick={() => navigate('/note-editor')}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border)',
+              padding: '6px 12px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
               background: 'var(--card)', color: 'var(--text)', fontSize: 12, cursor: 'pointer',
-              fontFamily: 'Geist, sans-serif', transition: 'all 0.12s',
+              fontFamily: 'Geist, sans-serif', transition: 'all var(--transition-fast)',
             }}
             onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-bright)'}
             onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
@@ -139,17 +139,17 @@ export default function Notes() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 28px', borderBottom: '1px solid var(--border)', flexShrink: 0, flexWrap: 'wrap' }}>
         <NoteSearchBox value={search} onChange={setSearch} inputRef={searchRef} />
 
-        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 8 }}>
+        <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)' }}>
           {FILTERS.map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               style={{
-                padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                padding: '5px 10px', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer',
                 fontSize: 12, fontFamily: 'Geist, sans-serif',
                 background: filter === f ? 'var(--card)'  : 'transparent',
                 color:      filter === f ? 'var(--text)'  : 'var(--dimmer)',
-                transition: 'all 0.12s',
+                transition: 'all var(--transition-fast)',
               }}
             >
               {f}
@@ -166,7 +166,7 @@ export default function Notes() {
             onChange={e => setProject(e.target.value)}
             style={{
               background: 'var(--card)', border: '1px solid var(--border)',
-              color: 'var(--dim)', borderRadius: 7, padding: '6px 10px',
+              color: 'var(--dim)', borderRadius: 'var(--r-md)', padding: '6px 10px',
               fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer', outline: 'none',
             }}
           >
@@ -181,7 +181,7 @@ export default function Notes() {
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 7 }}>
+          <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)' }}>
             <ViewBtn active={view === 'grid'} onClick={() => setView('grid')}><GridIcon /></ViewBtn>
             <ViewBtn active={view === 'list'} onClick={() => setView('list')}><ListViewIcon /></ViewBtn>
           </div>
@@ -200,7 +200,7 @@ export default function Notes() {
             position: 'absolute', inset: 0, zIndex: 20,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
             background: 'rgba(11,15,26,0.85)', backdropFilter: 'blur(4px)',
-            border: '2px dashed var(--accent)', borderRadius: 12, margin: 12,
+            border: '2px dashed var(--accent)', borderRadius: 'var(--r-lg)', margin: 12,
             pointerEvents: 'none',
           }}>
             <div style={{ display: 'flex', color: 'var(--accent)' }}><ImportIcon size={36} /></div>
@@ -229,7 +229,7 @@ export default function Notes() {
           {!loading && filtered.length === 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: 14 }}>
               <div style={{
-                width: 72, height: 72, borderRadius: 20,
+                width: 72, height: 72, borderRadius: 'var(--r-xl)',
                 background: 'var(--card)',
                 border: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -252,7 +252,7 @@ export default function Notes() {
               {!search && filter === 'All' && (
                 <button
                   onClick={() => navigate('/note-editor')}
-                  style={{ marginTop: 4, padding: '8px 18px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#000', fontSize: 13, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
+                  style={{ marginTop: 4, padding: '8px 18px', borderRadius: 'var(--r-md)', border: 'none', background: 'var(--accent)', color: '#000', fontSize: 13, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
                 >
                   Write First Note
                 </button>
@@ -311,7 +311,7 @@ function NoteCard({ note, onToggleStar, onDelete, onToggleArchive, onOpen }) {
       style={{
         background:   hovered ? 'var(--card-hover)' : 'var(--card)',
         border:       `1px solid ${hovered ? 'var(--accent)' : 'var(--border)'}`,
-        borderRadius: 12, padding: 20, cursor: 'pointer',
+        borderRadius: 'var(--r-lg)', padding: 20, cursor: 'pointer',
         transform:    hovered ? 'translateY(-2px)' : 'none',
         transition:   'all 0.15s',
         position: 'relative', overflow: 'hidden',
@@ -335,7 +335,7 @@ function NoteCard({ note, onToggleStar, onDelete, onToggleArchive, onOpen }) {
         <div style={{ display: 'flex', gap: 2, flexShrink: 0, marginLeft: 6 }}>
           <button
             onClick={e => { e.stopPropagation(); onToggleStar(note.id) }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, opacity: note.starred || hovered ? 1 : 0, transition: 'opacity 0.15s' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, opacity: note.starred || hovered ? 1 : 0, transition: 'opacity var(--transition-base)' }}
           >
             <StarIcon filled={note.starred} />
           </button>
@@ -345,13 +345,13 @@ function NoteCard({ note, onToggleStar, onDelete, onToggleArchive, onOpen }) {
             style={{
               background: hovered ? 'var(--border)' : 'none',
               border: hovered ? '1px solid var(--border-bright)' : '1px solid transparent',
-              borderRadius: 4,
+              borderRadius: 'var(--r-sm)',
               cursor: 'pointer', padding: '2px 5px',
               opacity: hovered ? 1 : 0.45,
               fontSize: 11,
               color: note.archived ? 'var(--accent)' : 'var(--dim)',
               display: 'flex', alignItems: 'center',
-              transition: 'all 0.15s',
+              transition: 'all var(--transition-base)',
             }}
           >
             {note.archived ? <UndoIcon size={12} /> : <PackageIcon size={12} />}
@@ -378,7 +378,7 @@ function NoteCard({ note, onToggleStar, onDelete, onToggleArchive, onOpen }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid var(--border)' }}>
         <div>
           {note.project ? (
-            <span style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--border)', color: 'var(--dim)', padding: '2px 7px', borderRadius: 4 }}>
+            <span style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--border)', color: 'var(--dim)', padding: '2px 7px', borderRadius: 'var(--r-sm)' }}>
               {note.project}
             </span>
           ) : (
@@ -406,7 +406,7 @@ function NoteRow({ note, index, onToggleStar, onDelete, onToggleArchive, onOpen 
         display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px',
         background:   hovered ? 'var(--card-hover)' : index % 2 === 0 ? 'var(--card)' : 'transparent',
         border:       `1px solid ${hovered ? 'var(--border-bright)' : 'transparent'}`,
-        borderRadius: 10, cursor: 'pointer', transition: 'all 0.12s',
+        borderRadius: 'var(--r-lg)', cursor: 'pointer', transition: 'all var(--transition-fast)',
       }}
     >
       <span style={{ fontSize: 16, flexShrink: 0, display: 'flex', color: 'var(--dim)' }}>{note.emoji || <NoteIcon2 size={16} />}</span>
@@ -426,7 +426,7 @@ function NoteRow({ note, index, onToggleStar, onDelete, onToggleArchive, onOpen 
       </div>
 
       {note.project && (
-        <span style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--border)', color: 'var(--dim)', padding: '2px 7px', borderRadius: 4, flexShrink: 0 }}>
+        <span style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--border)', color: 'var(--dim)', padding: '2px 7px', borderRadius: 'var(--r-sm)', flexShrink: 0 }}>
           {note.project}
         </span>
       )}
@@ -437,7 +437,7 @@ function NoteRow({ note, index, onToggleStar, onDelete, onToggleArchive, onOpen 
       <div style={{ display: 'flex', gap: 2, flexShrink: 0, alignItems: 'center' }}>
         <button
           onClick={e => { e.stopPropagation(); onToggleStar(note.id) }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, opacity: note.starred || hovered ? 1 : 0, transition: 'opacity 0.15s' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, opacity: note.starred || hovered ? 1 : 0, transition: 'opacity var(--transition-base)' }}
         >
           <StarIcon filled={note.starred} />
         </button>
@@ -447,20 +447,20 @@ function NoteRow({ note, index, onToggleStar, onDelete, onToggleArchive, onOpen 
           style={{
             background: hovered ? 'var(--border)' : 'none',
             border: hovered ? '1px solid var(--border-bright)' : '1px solid transparent',
-            borderRadius: 4,
+            borderRadius: 'var(--r-sm)',
             cursor: 'pointer', padding: '2px 5px',
             opacity: hovered ? 1 : 0.4,
             fontSize: 11,
             color: note.archived ? 'var(--accent)' : 'var(--dim)',
             display: 'flex', alignItems: 'center',
-            transition: 'all 0.15s',
+            transition: 'all var(--transition-base)',
           }}
         >
           {note.archived ? <UndoIcon size={12} /> : <PackageIcon size={12} />}
         </button>
         <button
           onClick={e => { e.stopPropagation(); onDelete(note.id) }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: '#ff4444', display: 'flex', alignItems: 'center', opacity: hovered ? 1 : 0, transition: 'opacity 0.15s' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: '#ff4444', display: 'flex', alignItems: 'center', opacity: hovered ? 1 : 0, transition: 'opacity var(--transition-base)' }}
         >
           <TrashIcon />
         </button>
@@ -479,17 +479,17 @@ function NewNoteCard({ onClick }) {
       style={{
         background: hovered ? 'var(--accent-dim)' : 'transparent',
         border: `1px dashed ${hovered ? 'var(--accent)' : 'var(--border)'}`,
-        borderRadius: 12, padding: 20, cursor: 'pointer',
-        transition: 'all 0.15s', display: 'flex', flexDirection: 'column',
+        borderRadius: 'var(--r-lg)', padding: 20, cursor: 'pointer',
+        transition: 'all var(--transition-base)', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 150,
         boxShadow: hovered ? 'var(--shadow-sm)' : 'none',
       }}
     >
-      <div style={{ width: 36, height: 36, borderRadius: 10, background: hovered ? 'var(--accent-dim)' : 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
-        <span style={{ fontSize: 18, color: hovered ? 'var(--accent)' : 'var(--dimmer)', fontWeight: 300, transition: 'color 0.15s' }}>+</span>
+      <div style={{ width: 36, height: 36, borderRadius: 'var(--r-lg)', background: hovered ? 'var(--accent-dim)' : 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all var(--transition-base)' }}>
+        <span style={{ fontSize: 18, color: hovered ? 'var(--accent)' : 'var(--dimmer)', fontWeight: 300, transition: 'color var(--transition-base)' }}>+</span>
       </div>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 12, fontWeight: 500, color: hovered ? 'var(--accent)' : 'var(--dim)', transition: 'color 0.15s' }}>New Note</div>
+        <div style={{ fontSize: 12, fontWeight: 500, color: hovered ? 'var(--accent)' : 'var(--dim)', transition: 'color var(--transition-base)' }}>New Note</div>
         <div style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', marginTop: 3 }}>untitled.md</div>
       </div>
     </div>
@@ -503,8 +503,8 @@ function NoteSearchBox({ value, onChange, inputRef }) {
       display: 'flex', alignItems: 'center', gap: 8,
       background: 'var(--card)',
       border: `1px solid ${focused ? 'var(--border-bright)' : 'var(--border)'}`,
-      borderRadius: 8, padding: '7px 12px',
-      flex: 1, maxWidth: 280, transition: 'border-color 0.15s',
+      borderRadius: 'var(--r-md)', padding: '7px 12px',
+      flex: 1, maxWidth: 280, transition: 'border-color var(--transition-base)',
     }}>
       <span style={{ color: 'var(--dimmer)', display: 'flex', flexShrink: 0 }}><SearchIcon /></span>
       <input

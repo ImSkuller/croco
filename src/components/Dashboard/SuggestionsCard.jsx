@@ -54,7 +54,7 @@ export default function SuggestionsCard({ profile, projects, todos }) {
         {suggestions.map(s => (
           <div key={s.id} style={{
             display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 16px',
-            background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10,
+            background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)',
             boxShadow: 'var(--shadow-sm)',
           }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 5, flexShrink: 0, background: SEVERITY_COLOR[s.severity] || 'var(--dim)' }} />
@@ -66,7 +66,7 @@ export default function SuggestionsCard({ profile, projects, todos }) {
               onClick={() => snooze(s.id)}
               title="Remind me in 3 days"
               style={{
-                flexShrink: 0, padding: '4px 10px', borderRadius: 7, border: '1px solid var(--border)',
+                flexShrink: 0, padding: '4px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
                 background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif',
               }}
             >

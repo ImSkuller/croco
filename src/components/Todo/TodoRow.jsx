@@ -37,7 +37,7 @@ export default function TodoRow({ todo, last, onToggle, onDelete, onEdit, editin
         onClick={() => !isLockedCompleted && onToggle(todo.id)}
         title={isLockedCompleted ? 'Completed more than 6 days ago — cannot be reversed' : undefined}
         style={{
-          width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+          width: 18, height: 18, borderRadius: 'var(--r-sm)', flexShrink: 0,
           border:      todo.completed ? 'none' : '1px solid var(--border-bright)',
           background:  todo.completed ? 'var(--green)' : 'transparent',
           display:     'flex', alignItems: 'center', justifyContent: 'center',
@@ -58,7 +58,7 @@ export default function TodoRow({ todo, last, onToggle, onDelete, onEdit, editin
             onChange={e => setEditText(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') onSaveEdit(todo.id); if (e.key === 'Escape') { onSaveEdit(todo.id) } }}
             onBlur={() => onSaveEdit(todo.id)}
-            style={{ width: '100%', background: 'var(--border)', border: '1px solid var(--orange)', borderRadius: 5, padding: '3px 8px', color: 'var(--text)', fontSize: 13, fontFamily: 'Geist, sans-serif', outline: 'none' }}
+            style={{ width: '100%', background: 'var(--border)', border: '1px solid var(--orange)', borderRadius: 'var(--r-sm)', padding: '3px 8px', color: 'var(--text)', fontSize: 13, fontFamily: 'Geist, sans-serif', outline: 'none' }}
           />
         ) : (
           <>
@@ -99,7 +99,7 @@ export default function TodoRow({ todo, last, onToggle, onDelete, onEdit, editin
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         {/* Project tag */}
         {todo.project && (
-          <span style={{ fontSize: 10, color: 'var(--blue)', fontFamily: 'Geist Mono, monospace', background: 'rgba(74,158,255,0.08)', padding: '2px 6px', borderRadius: 4 }}>
+          <span style={{ fontSize: 10, color: 'var(--blue)', fontFamily: 'Geist Mono, monospace', background: 'rgba(74,158,255,0.08)', padding: '2px 6px', borderRadius: 'var(--r-sm)' }}>
             {todo.project}
           </span>
         )}
@@ -118,7 +118,7 @@ export default function TodoRow({ todo, last, onToggle, onDelete, onEdit, editin
             fontSize: 10, fontFamily: 'Geist Mono, monospace',
             color:    overdue ? '#ff4444' : 'var(--dimmer)',
             background: overdue ? 'rgba(255,68,68,0.08)' : 'transparent',
-            padding:  '2px 6px', borderRadius: 4,
+            padding:  '2px 6px', borderRadius: 'var(--r-sm)',
           }}>
             {overdue && <AlertTriangleIcon size={10} />}{dueStr}
           </span>
@@ -130,7 +130,7 @@ export default function TodoRow({ todo, last, onToggle, onDelete, onEdit, editin
           return (
             <span style={{
               fontSize: 10, fontFamily: 'Geist Mono, monospace',
-              padding: '2px 6px', borderRadius: 4,
+              padding: '2px 6px', borderRadius: 'var(--r-sm)',
               background: todo.completed ? 'var(--border)' : hexToRgba(p.color, 0.12),
               color:      todo.completed ? 'var(--dimmer)' : p.color,
               opacity:    todo.completed ? 0.7 : 1,
@@ -141,7 +141,7 @@ export default function TodoRow({ todo, last, onToggle, onDelete, onEdit, editin
         })()}
 
         {/* Actions (visible on hover) */}
-        <div style={{ display: 'flex', gap: 3, opacity: hovered ? 1 : 0, transition: 'opacity 0.12s' }}>
+        <div style={{ display: 'flex', gap: 3, opacity: hovered ? 1 : 0, transition: 'opacity var(--transition-fast)' }}>
           {!todo.completed && (
             <RowBtn title="Edit (or double-click)" onClick={() => onEdit(todo)}>
               <EditIcon />

@@ -14,7 +14,7 @@ export default function ProjectCardGrid({ project, isRunning, onToggleFav, onCli
       style={{
         background:   hovered ? 'var(--card-hover)' : 'var(--card)',
         border:       `1px solid ${hovered ? 'var(--border-bright)' : 'var(--border)'}`,
-        borderRadius: 12, padding: 18, cursor: 'pointer',
+        borderRadius: 'var(--r-lg)', padding: 18, cursor: 'pointer',
         transform:    hovered ? 'translateY(-1px)' : 'translateY(0)',
         transition:   'all 0.15s', position: 'relative', overflow: 'hidden',
       }}
@@ -26,7 +26,7 @@ export default function ProjectCardGrid({ project, isRunning, onToggleFav, onCli
       {/* Header (Project Card header) */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 'var(--r-lg)', background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
             {project.emoji}
           </div>
           <div>
@@ -41,7 +41,7 @@ export default function ProjectCardGrid({ project, isRunning, onToggleFav, onCli
         </div>
         <button
           onClick={e => { e.stopPropagation(); onToggleFav(project.id) }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--dimmer)', opacity: hovered || project.favourite ? 1 : 0, transition: 'opacity 0.15s' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--dimmer)', opacity: hovered || project.favourite ? 1 : 0, transition: 'opacity var(--transition-base)' }}
         >
           <StarIcon filled={project.favourite} />
         </button>
@@ -53,7 +53,7 @@ export default function ProjectCardGrid({ project, isRunning, onToggleFav, onCli
       </div>
 
       {/* Language bar */}
-      <div style={{ height: 3, background: 'var(--border)', borderRadius: 10, overflow: 'hidden', display: 'flex', marginBottom: 12 }}>
+      <div style={{ height: 3, background: 'var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden', display: 'flex', marginBottom: 12 }}>
         {(project.languages || []).map((l, i) => (
           <div key={i} style={{ width: `${l.pct}%`, background: l.color, height: '100%' }} />
         ))}
@@ -82,7 +82,7 @@ export default function ProjectCardGrid({ project, isRunning, onToggleFav, onCli
         </div>
 
         {/* Quick actions */}
-        <div style={{ display: 'flex', gap: 4, opacity: hovered ? 1 : 0, transition: 'opacity 0.12s' }}>
+        <div style={{ display: 'flex', gap: 4, opacity: hovered ? 1 : 0, transition: 'opacity var(--transition-fast)' }}>
           <CardBtn title="Open in IDE" onClick={e => { e.stopPropagation(); window.api?.projects.openInIDE(project.id) }}><IDEIcon /></CardBtn>
         </div>
       </div>

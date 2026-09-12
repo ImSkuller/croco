@@ -118,7 +118,7 @@ export default function Trash() {
           {items.length > 0 && (
             <div style={{
               fontSize: 11, color: 'var(--dim)', background: 'var(--card)',
-              border: '1px solid var(--border)', borderRadius: 8,
+              border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
               padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8,
             }}>
               <AlertTriangleIcon />
@@ -176,11 +176,11 @@ function TrashRow({ item, index, onRestore, onDeleteForever, onOpen }) {
       style={{
         display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px',
         background: hovered ? 'var(--card-hover)' : index % 2 === 0 ? 'var(--card)' : 'transparent',
-        border: '1px solid transparent', borderRadius: 10,
-        cursor: canOpen ? 'pointer' : 'default', transition: 'all 0.12s',
+        border: '1px solid transparent', borderRadius: 'var(--r-lg)',
+        cursor: canOpen ? 'pointer' : 'default', transition: 'all var(--transition-fast)',
       }}
     >
-      <div style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--dim)', flexShrink: 0 }}>
+      <div style={{ width: 34, height: 34, borderRadius: 'var(--r-md)', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--dim)', flexShrink: 0 }}>
         {meta.icon}
       </div>
 
@@ -188,7 +188,7 @@ function TrashRow({ item, index, onRestore, onDeleteForever, onOpen }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title || '(untitled)'}</span>
           <span style={{
-            fontSize: 9, fontFamily: 'Geist Mono, monospace', padding: '2px 6px', borderRadius: 3,
+            fontSize: 9, fontFamily: 'Geist Mono, monospace', padding: '2px 6px', borderRadius: 'var(--r-sm)',
             textTransform: 'uppercase', letterSpacing: '0.06em',
             background: 'var(--border)', color: 'var(--dim)', flexShrink: 0,
           }}>
@@ -204,14 +204,14 @@ function TrashRow({ item, index, onRestore, onDeleteForever, onOpen }) {
         <button
           onClick={e => { e.stopPropagation(); onRestore() }}
           title="Restore"
-          style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 11, fontWeight: 500, fontFamily: 'Geist, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
+          style={{ padding: '6px 12px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 11, fontWeight: 500, fontFamily: 'Geist, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
         >
           <UndoIcon size={12} /> Restore
         </button>
         <button
           onClick={e => { e.stopPropagation(); onDeleteForever() }}
           title="Delete forever"
-          style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: 'none', cursor: 'pointer', background: 'rgba(255,68,68,0.1)', color: '#ff5555' }}
+          style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer', background: 'rgba(255,68,68,0.1)', color: '#ff5555' }}
         >
           <TrashIcon />
         </button>

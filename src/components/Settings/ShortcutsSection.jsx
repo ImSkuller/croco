@@ -29,10 +29,10 @@ export default function ShortcutsSection({ capturingId, setCapturingId, shortcut
                     key={def.id}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '8px 10px', borderRadius: 7, gap: 10,
+                      padding: '8px 10px', borderRadius: 'var(--r-md)', gap: 10,
                       background: isCapturing ? 'var(--accent-dim)' : 'transparent',
                       border: `1px solid ${isCapturing ? 'var(--accent)' : 'transparent'}`,
-                      transition: 'all 0.12s',
+                      transition: 'all var(--transition-fast)',
                     }}
                   >
                     <span style={{ fontSize: 12, color: 'var(--dim)' }}>{def.desc}</span>
@@ -46,7 +46,7 @@ export default function ShortcutsSection({ capturingId, setCapturingId, shortcut
                           {tokens.map((t, i) =>
                             t === 'then'
                               ? <span key={i} style={{ fontSize: 10, color: 'var(--dimmer)', alignSelf: 'center' }}>then</span>
-                              : <kbd key={i} style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text)', padding: '3px 6px', borderRadius: 5, boxShadow: '0 1px 0 var(--border)' }}>{formatKeyToken(t)}</kbd>
+                              : <kbd key={i} style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text)', padding: '3px 6px', borderRadius: 'var(--r-sm)', boxShadow: '0 1px 0 var(--border)' }}>{formatKeyToken(t)}</kbd>
                           )}
                           {override && (
                             <button
@@ -66,7 +66,7 @@ export default function ShortcutsSection({ capturingId, setCapturingId, shortcut
                       <button
                         onClick={() => setCapturingId(isCapturing ? null : def.id)}
                         style={{
-                          fontSize: 11, padding: '3px 10px', borderRadius: 5,
+                          fontSize: 11, padding: '3px 10px', borderRadius: 'var(--r-sm)',
                           border: `1px solid ${isCapturing ? 'var(--accent)' : 'var(--border)'}`,
                           background: isCapturing ? 'var(--accent)' : 'transparent',
                           color: isCapturing ? '#fff' : 'var(--dim)',
@@ -95,7 +95,7 @@ export default function ShortcutsSection({ capturingId, setCapturingId, shortcut
                 {def.display.map((t, ti) =>
                   t === 'then' || t === '–'
                     ? <span key={ti} style={{ fontSize: 10, color: 'var(--dimmer)', alignSelf: 'center' }}>{t}</span>
-                    : <kbd key={ti} style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--border)', border: '1px solid var(--border)', color: 'var(--dimmer)', padding: '3px 6px', borderRadius: 5 }}>{formatKeyToken(t)}</kbd>
+                    : <kbd key={ti} style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', background: 'var(--border)', border: '1px solid var(--border)', color: 'var(--dimmer)', padding: '3px 6px', borderRadius: 'var(--r-sm)' }}>{formatKeyToken(t)}</kbd>
                 )}
               </div>
             </div>

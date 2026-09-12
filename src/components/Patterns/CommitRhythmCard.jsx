@@ -10,7 +10,7 @@ function Bars({ values, formatLabel, height = 60 }) {
         <div key={i} title={`${formatLabel(i)}: ${v}`} style={{
           flex: 1, height: `${Math.max(2, (v / max) * 100)}%`,
           background: v > 0 ? 'var(--accent)' : 'var(--border)',
-          borderRadius: 2, opacity: v > 0 ? 0.85 : 0.4,
+          borderRadius: 'var(--r-sm)', opacity: v > 0 ? 0.85 : 0.4,
         }} />
       ))}
     </div>

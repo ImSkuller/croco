@@ -27,7 +27,7 @@ export default function UpdatesSection({
             disabled={updateChecking}
             style={{
               display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
-              padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)',
+              padding: '6px 14px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
               background: 'transparent', cursor: updateChecking ? 'default' : 'pointer',
               color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif',
               opacity: updateChecking ? 0.6 : 1,
@@ -39,7 +39,7 @@ export default function UpdatesSection({
 
         {updateInfo && !updateInfo.error && (
           <div style={{
-            padding: '14px 16px', borderRadius: 9,
+            padding: '14px 16px', borderRadius: 'var(--r-lg)',
             border: `1px solid ${updateInfo.hasUpdate ? 'var(--accent)' : 'var(--border)'}`,
             background: updateInfo.hasUpdate ? 'var(--accent-dim)' : 'var(--card)',
           }}>
@@ -71,7 +71,7 @@ export default function UpdatesSection({
                   }}
                   disabled={updateInstalling}
                   style={{
-                    padding: '7px 16px', borderRadius: 7, border: 'none',
+                    padding: '7px 16px', borderRadius: 'var(--r-md)', border: 'none',
                     background: updateInstalling ? 'var(--border)' : 'var(--accent)', color: updateInstalling ? 'var(--dim)' : '#000',
                     fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: updateInstalling ? 'default' : 'pointer',
                   }}
@@ -81,7 +81,7 @@ export default function UpdatesSection({
                 <button
                   onClick={() => window.api?.system.openExternal(`https://github.com/ImSkuller/croco/releases/tag/v${updateInfo.latest}`)}
                   style={{
-                    padding: '7px 16px', borderRadius: 7, border: '1px solid var(--border)',
+                    padding: '7px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
                     background: 'transparent', color: 'var(--dim)', fontSize: 12, fontFamily: 'Geist, sans-serif', cursor: 'pointer',
                   }}
                 >

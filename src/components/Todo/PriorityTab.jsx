@@ -6,11 +6,11 @@ export default function PriorityTab({ label, color = 'var(--dim)', bg = 'var(--b
     <button
       onClick={onClick}
       style={{
-        padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+        padding: '5px 10px', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer',
         fontSize: 11, fontFamily: 'Geist Mono, monospace', fontWeight: active ? 500 : 400,
         background: active ? bg : 'transparent',
         color:      active ? color : 'var(--dimmer)',
-        transition: 'all 0.12s',
+        transition: 'all var(--transition-fast)',
       }}
     >
       {label}

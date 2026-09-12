@@ -5,7 +5,7 @@ import DiffView from '../ProjectDetail/DiffView'
 import { authorColor, initials } from '../../lib/projectDetailHelpers'
 
 function selectStyle() {
-  return { background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 7, padding: '7px 10px', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist Mono, monospace', minWidth: 140 }
+  return { background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '7px 10px', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist Mono, monospace', minWidth: 140 }
 }
 
 // Compares any two refs (tags or branches) for a linked project — the
@@ -78,7 +78,7 @@ export default function ChangelogPanel({ projects }) {
         </select>
 
         <button onClick={compare} disabled={loadingRefs || comparing || !fromRef || !toRef}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 7, border: 'none', background: (!loadingRefs && !comparing && fromRef && toRef) ? 'var(--orange)' : 'var(--dimmer)', color: '#000', fontSize: 12, fontWeight: 600, cursor: (!loadingRefs && !comparing && fromRef && toRef) ? 'pointer' : 'not-allowed', fontFamily: 'Geist, sans-serif' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 'var(--r-md)', border: 'none', background: (!loadingRefs && !comparing && fromRef && toRef) ? 'var(--orange)' : 'var(--dimmer)', color: '#000', fontSize: 12, fontWeight: 600, cursor: (!loadingRefs && !comparing && fromRef && toRef) ? 'pointer' : 'not-allowed', fontFamily: 'Geist, sans-serif' }}>
           {comparing ? 'Comparing…' : 'Compare'}
         </button>
       </div>

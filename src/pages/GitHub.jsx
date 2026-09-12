@@ -51,7 +51,7 @@ export default function GitHubPage() {
               fontSize: 12, fontFamily: 'Geist, sans-serif', fontWeight: tab === t.id ? 500 : 400,
               color: tab === t.id ? 'var(--text)' : 'var(--dim)',
               borderBottom: tab === t.id ? '2px solid var(--orange)' : '2px solid transparent',
-              marginBottom: -1, transition: 'all 0.12s',
+              marginBottom: -1, transition: 'all var(--transition-fast)',
             }}>
             {t.label}
           </button>
