@@ -1210,7 +1210,7 @@ export default function Settings() {
 
                 <SettingsCard>
                   <FieldLabel>Glass Effect</FieldLabel>
-                  <FieldDesc>Translucent, blurred cards and sidebar over the current Theme's colours. Independent of Style — works with any theme.</FieldDesc>
+                  <FieldDesc>Real frosted-glass window (Windows 11 Mica, or Acrylic/Blur as a fallback) behind translucent cards and sidebar. Independent of Style — works with any theme. Falls back gracefully on older Windows versions and other platforms.</FieldDesc>
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                     {[{ v: false, label: 'off' }, { v: true, label: 'on' }].map(({ v, label }) => (
                       <ToggleChip
@@ -1223,6 +1223,7 @@ export default function Settings() {
                           setGlassEnabled(v)
                           applyTheme(selectedTheme, v, { accentColor, fontBody, fontDisplay, logoBg })
                           window.api?.settings.update({ appearance: { glass: v } }).catch(console.error)
+                          window.api?.system.setWindowGlass(v).catch(console.error)
                         }}
                       />
                     ))}

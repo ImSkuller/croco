@@ -372,19 +372,32 @@ html.style-minimal .pm-btn-secondary:hover {
    GLASSMORPHISM — semi-transparent cards per theme
    ══════════════════════════════════════════════ */
 
-html.glass                                { --card: rgba(22,22,22,0.72);      --sidebar-bg: rgba(13,13,13,0.84);      }
-html.glass.theme-catppuccin-mocha     { --card: rgba(30,30,46,0.78);    --sidebar-bg: rgba(17,17,27,0.86);     }
-html.glass.theme-neovim               { --card: rgba(26,27,38,0.78);    --sidebar-bg: rgba(19,19,26,0.86);     }
+/* `--base` drives every var(--base)-painted surface, including AppShell's
+   own inline-styled wrapper divs (custom properties resolve wherever
+   they're referenced, inline styles included) — so overriding it here is
+   what actually lets the real OS window material (Mica/Acrylic/Blur, see
+   system_set_window_glass in system.rs) show through, not just body's own
+   background, which AppShell's full-height wrapper normally paints over
+   completely. Low-ish alpha is deliberate: enough to genuinely reveal the
+   blur behind the window, not so low that text loses contrast.
+   `system_set_window_glass` also degrades silently (Mica -> Acrylic ->
+   Blur -> nothing) on unsupported OS/versions, in which case this same
+   translucency still applies against whatever is actually behind the
+   window (typically just the desktop compositor's own fallback), leaving
+   a merely-tinted look rather than an error. */
+html.glass                            { --base: rgba(10,10,10,0.55);   --card: rgba(22,22,22,0.72);   --sidebar-bg: rgba(13,13,13,0.6);  }
+html.glass.theme-catppuccin-mocha     { --base: rgba(17,17,27,0.55);   --card: rgba(30,30,46,0.78);   --sidebar-bg: rgba(17,17,27,0.6);  }
+html.glass.theme-neovim               { --base: rgba(19,19,26,0.55);   --card: rgba(26,27,38,0.78);   --sidebar-bg: rgba(19,19,26,0.6);  }
+html.glass.theme-futuristic           { --base: rgba(5,7,15,0.55);     --card: rgba(11,15,30,0.72);   --sidebar-bg: rgba(3,5,9,0.6);     }
 
-/* Glass body — visible blurred background */
+/* A soft tint over the real window material, replacing the old
+   near-opaque gradient (which fully hid whatever was behind the window). */
 html.glass body {
-  background: linear-gradient(135deg, rgba(30,30,50,0.9) 0%, rgba(10,10,20,0.95) 100%);
-  backdrop-filter: blur(0px);
+  background: linear-gradient(135deg, rgba(30,30,50,0.28) 0%, rgba(10,10,20,0.35) 100%);
 }
-html.glass.theme-catppuccin-mocha body  { background: linear-gradient(135deg, rgba(22,22,38,0.90) 0%, rgba(10,10,22,0.95) 100%); }
-html.glass.theme-neovim body            { background: linear-gradient(135deg, rgba(18,20,30,0.90) 0%, rgba(8,10,18,0.95) 100%); }
-html.glass.theme-futuristic             { --card: rgba(11,15,30,0.72);    --sidebar-bg: rgba(3,5,9,0.85);        }
-html.glass.theme-futuristic body        { background: linear-gradient(135deg, rgba(8,14,30,0.92) 0%, rgba(3,5,9,0.96) 100%); }
+html.glass.theme-catppuccin-mocha body  { background: linear-gradient(135deg, rgba(22,22,38,0.28) 0%, rgba(10,10,22,0.35) 100%); }
+html.glass.theme-neovim body            { background: linear-gradient(135deg, rgba(18,20,30,0.28) 0%, rgba(8,10,18,0.35) 100%); }
+html.glass.theme-futuristic body        { background: linear-gradient(135deg, rgba(8,14,30,0.30) 0%, rgba(3,5,9,0.38) 100%); }
 
 /* ══════════════════════════════════════════════
    FUTURISTIC THEME — extra flourish beyond palette

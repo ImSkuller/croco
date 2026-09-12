@@ -287,6 +287,11 @@ export const api = {
     openExternal: (url) => invoke('system_open_external', { url }),
     /** @param {string} label @param {string} url @param {string} title @returns {Promise<void>} */
     openInAppBrowser: (label, url, title) => invoke('system_open_in_app_browser', { label, url, title }),
+    // Real OS window material (Mica/Acrylic/Blur on Windows, vibrancy on
+    // macOS) — degrades silently on unsupported OS/versions. Distinct from
+    // the CSS-only translucent-panel look, which applies either way.
+    /** @param {boolean} enabled @returns {Promise<void>} */
+    setWindowGlass: (enabled) => invoke('system_set_window_glass', { enabled }),
 
     /** @param {string} [defaultPath] @returns {Promise<string | null>} */
     showFolderPicker: async (defaultPath) => {

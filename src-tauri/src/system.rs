@@ -9,6 +9,66 @@ use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
 
+// ─── Window material (frosted glass) ────────────────────────────────────────
+//
+// Real OS-compositor window transparency (Windows 11 Mica, falling back to
+// Acrylic/Blur on older Windows; a comparable macOS vibrancy material) — not
+// the CSS-only translucent-panel "Glass" look, which stays in place either
+// way. Requires `"transparent": true` on the window (tauri.conf.json).
+// Toggled by the same Settings -> Appearance -> Glass Effect control, and
+// applied once at launch in setup_app() if the setting was already on.
+//
+// Every OS/version combination degrades silently to the next-best effect
+// rather than surfacing an error — this is cosmetic, exactly like Discord
+// Rich Presence not being worth a toast when it can't connect.
+
+#[cfg(windows)]
+fn apply_glass_effect(window: &tauri::WebviewWindow) {
+    use tauri::window::{Effect, EffectsBuilder};
+    // Mica needs Windows 11; Acrylic and Blur both work back to Windows 10.
+    // set_effects returns Err on an unsupported OS/version rather than
+    // panicking, so trying each in order and keeping the first success is
+    // safe — worst case (very old Windows) all three fail and the window
+    // just stays whatever it already was.
+    for effect in [Effect::MicaDark, Effect::Acrylic, Effect::Blur] {
+        if window.set_effects(EffectsBuilder::new().effect(effect).build()).is_ok() {
+            return;
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn apply_glass_effect(window: &tauri::WebviewWindow) {
+    use tauri::window::{Effect, EffectsBuilder};
+    let _ = window.set_effects(EffectsBuilder::new().effect(Effect::HudWindow).build());
+}
+
+// Linux: unsupported by Tauri's vibrancy module (same "compiles, not yet
+// field-tested" stance as the rest of the codebase's non-Windows branches)
+// — silently leaves the window as-is.
+#[cfg(not(any(windows, target_os = "macos")))]
+fn apply_glass_effect(_window: &tauri::WebviewWindow) {}
+
+pub fn apply_window_glass_from_settings(app: &AppHandle) {
+    if !crate::read_settings(app)["appearance"]["glass"].as_bool().unwrap_or(false) {
+        return;
+    }
+    if let Some(window) = app.get_webview_window("main") {
+        apply_glass_effect(&window);
+    }
+}
+
+#[tauri::command]
+pub fn system_set_window_glass(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let window = app.get_webview_window("main").ok_or("No main window")?;
+    if enabled {
+        apply_glass_effect(&window);
+    } else {
+        window.set_effects(None).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn system_open_path(app: AppHandle, p: String) -> Result<(), String> {
     app.opener().open_path(&p, None::<&str>).map_err(|e| e.to_string())

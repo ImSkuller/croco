@@ -263,6 +263,10 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     // croco:// deep links (Phase 6 item 11) — see deep_link.rs.
     deep_link::init(&handle);
 
+    // Frosted-glass window material (Mica/Acrylic/Blur) — a no-op unless
+    // appearance.glass is already on, see system.rs.
+    apply_window_glass_from_settings(&handle);
+
     // Build tray menu
     let show  = MenuItem::with_id(app, "show",  "Show Window", true, None::<&str>)?;
     let sep   = PredefinedMenuItem::separator(app)?;
@@ -372,6 +376,7 @@ fn main() {
             activity_get_all, activity_clear,
             // system
             system_open_path, system_open_external, system_open_in_app_browser, system_path_exists,
+            system_set_window_glass,
             system_homedir, system_platform, system_user_data,
             system_lookup_community_user, system_validate_github_username,
             system_write_bytes, system_read_text_file,
