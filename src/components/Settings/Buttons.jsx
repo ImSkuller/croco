@@ -9,12 +9,12 @@ export function SmallBtn({ children, onClick }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: '6px 12px', borderRadius: 7, cursor: 'pointer',
+        padding: '6px 12px', borderRadius: 'var(--r-md)', cursor: 'pointer',
         border: '1px solid var(--border)',
         background: hovered ? 'var(--card-hover)' : 'var(--card)',
         color: hovered ? 'var(--text)' : 'var(--dim)',
         fontSize: 12, fontFamily: 'Geist, sans-serif',
-        transition: 'all 0.12s', flexShrink: 0,
+        transition: 'all var(--transition-fast)', flexShrink: 0,
       }}
     >
       {children}
@@ -31,12 +31,12 @@ export function SaveBtn({ saved, onClick }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        padding: '6px 14px', borderRadius: 7, cursor: 'pointer',
+        padding: '6px 14px', borderRadius: 'var(--r-md)', cursor: 'pointer',
         border: `1px solid ${saved ? 'var(--green)' : 'var(--border)'}`,
         background: saved ? 'rgba(74,255,145,0.1)' : (hovered ? 'var(--card)' : 'transparent'),
         color: saved ? 'var(--green)' : (hovered ? 'var(--text)' : 'var(--dim)'),
         fontSize: 12, fontWeight: 500, fontFamily: 'Geist, sans-serif',
-        transition: 'all 0.2s',
+        transition: 'all var(--transition-base)',
       }}
     >
       {saved ? <><CheckIcon /> Saved</> : <><SaveIcon /> Save Changes</>}

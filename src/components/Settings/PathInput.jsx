@@ -14,10 +14,10 @@ export default function PathInput({ value, onChange, onBrowse, onBlur, disabled 
         style={{
           flex: 1, background: disabled ? 'var(--hover-bg)' : 'var(--base)',
           border: `1px solid ${focused ? 'var(--border-bright)' : 'var(--border)'}`,
-          borderRadius: 8, padding: '8px 12px',
+          borderRadius: 'var(--r-md)', padding: '8px 12px',
           fontSize: 12, color: disabled ? 'var(--dimmer)' : 'var(--text)',
           fontFamily: 'Geist Mono, monospace',
-          outline: 'none', transition: 'border-color 0.15s',
+          outline: 'none', transition: 'border-color var(--transition-fast)',
           cursor: disabled ? 'not-allowed' : 'text',
         }}
       />
@@ -26,10 +26,10 @@ export default function PathInput({ value, onChange, onBrowse, onBlur, disabled 
           onClick={onBrowse}
           style={{
             display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px',
-            borderRadius: 8, border: '1px solid var(--border)',
+            borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
             background: 'transparent', color: 'var(--dim)',
             fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif',
-            flexShrink: 0, transition: 'all 0.12s',
+            flexShrink: 0, transition: 'all var(--transition-fast)',
           }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-bright)'; e.currentTarget.style.color = 'var(--text)' }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--dim)' }}

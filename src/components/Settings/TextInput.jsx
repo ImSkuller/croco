@@ -13,10 +13,10 @@ export default function TextInput({ value, onChange, onBlur, placeholder, mono, 
       style={{
         width: '100%', background: 'var(--base)',
         border: `1px solid ${focused ? 'var(--border-bright)' : 'var(--border)'}`,
-        borderRadius: 8, padding: '8px 12px',
+        borderRadius: 'var(--r-md)', padding: '8px 12px',
         fontSize: 13, color: 'var(--text)',
         fontFamily: mono ? 'Geist Mono, monospace' : 'Geist, sans-serif',
-        outline: 'none', transition: 'border-color 0.15s',
+        outline: 'none', transition: 'border-color var(--transition-fast)',
         ...extraStyle,
       }}
     />

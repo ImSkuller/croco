@@ -473,6 +473,19 @@ aside {
    REUSABLE COMPONENT CLASSES
    ══════════════════════════════════════════════ */
 
+/* IDE tab bar (components/IDE/CodeEditor.jsx) — a plain :hover suffices
+   here (no separate active/inactive selector needed since the active tab's
+   own --card background makes the extra hover tint imperceptible on it). */
+.ide-tab:hover {
+  background: var(--hover-bg);
+}
+
+/* AI page left nav (pages/AI.jsx) — same reasoning as .ide-tab above. */
+.ai-nav-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+
 .pm-card {
   background: var(--card);
   border: 1px solid var(--border);
