@@ -62,6 +62,27 @@ pub(crate) use ai::*;
 mod local_api;
 pub(crate) use local_api::*;
 
+mod discord;
+pub(crate) use discord::*;
+
+mod ide;
+pub(crate) use ide::*;
+
+mod ai_brain;
+pub(crate) use ai_brain::*;
+
+mod slack;
+pub(crate) use slack::*;
+
+mod docker;
+pub(crate) use docker::*;
+
+mod env_manager;
+pub(crate) use env_manager::*;
+
+mod focus;
+pub(crate) use focus::*;
+
 mod deep_link;
 
 // ─── Global state ──────────────────────────────────────────────────────────────
@@ -376,6 +397,27 @@ fn main() {
             obsidian_sync_all, obsidian_test_vault_path,
             // personality / work-habits tracking
             personality_get_profile, personality_backfill_from_activity, personality_scan_commits, personality_track_app_open,
+            // discord module (beta)
+            discord_set_activity, discord_clear_activity, settings_set_discord_webhook, discord_webhook_test,
+            // ide module (beta)
+            ide_read_file, ide_write_file,
+            // ai module (beta) — storage brain
+            brain_rebuild_index, brain_search,
+            brain_memory_create, brain_memory_update, brain_memory_delete, brain_memory_get, brain_memory_list,
+            brain_encyclopedia_create, brain_encyclopedia_update, brain_encyclopedia_delete, brain_encyclopedia_get, brain_encyclopedia_list,
+            brain_project_summary_generate, brain_project_summary_get,
+            brain_conversation_get, brain_conversation_delete,
+            ai_chat, ollama_list_models,
+            // slack module (beta)
+            settings_set_slack_webhook, slack_webhook_test,
+            // docker module (beta)
+            docker_compose_available, docker_compose_services, docker_compose_up,
+            docker_compose_stop, docker_compose_down, docker_compose_logs,
+            // env manager module (beta)
+            env_read, env_write,
+            // focus timer module (beta)
+            focus_session_start, focus_session_end, focus_session_get_active,
+            focus_session_get_history, focus_session_get_today_stats,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application")
