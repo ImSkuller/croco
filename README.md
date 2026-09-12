@@ -1,6 +1,6 @@
 # Croco — Project Manager
 
-A fast, minimal desktop project manager built for developers. ~8 MB binary, no browser engine overhead. Open source, built with Tauri + React.
+A fast, minimal desktop project manager built for developers. Small native binary, no bundled browser engine. Open source, built with Tauri + React.
 
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 ![Version](https://img.shields.io/github/v/release/ImSkuller/croco?label=latest)
@@ -21,27 +21,50 @@ Run the installer — Croco installs to `C:\Program Files\Croco` and adds a Star
 
 ## Features
 
-- **Projects** — Create from 26 starter templates including a Minecraft plugin/mod set (Paper, Fabric, NeoForge, Velocity, BungeeCord); redesigned minimal two-column create flow; import existing folders; open in IDE with one click; tag and filter; archived projects tucked into a collapsible dropdown on the "All" tab instead of a separate view
-- **Git & GitHub** — Commit, push, pull, view log, create branches, view an inline colorized diff per changed file, and selectively stage/unstage individual files instead of always staging everything; auto-create GitHub repos (choose public or private) on project creation; push/pull/fetch all retry with your stored GitHub token if your system has no credential helper configured, so private repos work out of the box
-- **Todos** — Scoped to projects or global, with due dates, completion date tracking, a 6-day revert lock, and **fully customizable priorities** — add, rename, recolor, reorder, and delete priority levels from the Priority Manager (⚙ next to the priority filter tabs), not just a fixed High/Medium/Low
-- **Notes** — Markdown editor with live preview, paste images from clipboard, archive/unarchive, star, pin, and link to projects; one-way sync to an Obsidian vault as markdown with frontmatter
-- **Patterns** — A real habit dashboard, not just a summary card: a GitHub-style contribution heatmap, a weekly commit trend chart, language mix across all tracked projects, todo completion rate, note-taking cadence, and which projects are getting attention vs. going quiet. Commit data is scanned straight from every tracked project's actual `git log` (not just commits made through Croco) and kept fresh automatically. Two independent streaks: a **commit streak** and an **app login streak** that stays alive even on days you don't push code
-- **Proactive Suggestions** — A Dashboard card nudges you about things worth knowing — a streak about to break, overdue todos, a quiet project, a growing high-priority backlog — dismissable per item
-- **Favourites** — Pin projects for quick access; drag to reorder, order persists across restarts
-- **Activity Log** — Tracks all project, todo, note, git, run, and settings events; filterable by category, grouped by day
-- **Terminal** — Per-project run commands with progress-bar support, graceful stop, and shell preference
-- **Ideas Scratchpad** — 69 curated ideas across 11 categories; canvas drawing with undo and eraser tool
-- **Themes & Styles** — Two independent appearance axes in Settings → Appearance. **Theme** picks the colour palette: Default, four Catppuccin variants (Latte/Frappé/Macchiato/Mocha), NeoVim Dark, Vim Classic, and Futuristic (neon cyan/violet with glow effects). **Style** picks the overall look-and-feel on top of any theme: Default (today's flat-card look) or Apple (liquid-glass — translucent blurred panels, pill buttons, spring motion); Pasta Galaxy is listed as coming soon
-- **SQLite Storage** — Switch from JSON files to a bundled SQLite database via Settings → Storage; one-click migration, JSON files kept as backup
-- **Croco Run** — Retro dino-style easter egg game; type `croco:game` in the search bar or click your profile 5 times; high score saved locally
-- **Keyboard Shortcuts** — Chord navigation (G+key), remappable via Settings → Shortcuts, displayed with the right modifier key for your OS; press `?` to see them all
-- **Auto-updates** — In-app update check; installs silently and restarts automatically on Windows and Linux (AppImage); on macOS the new version downloads and mounts, then you drag it to Applications as usual
+### Core
+
+- **Projects** — Create from 26 starter templates (web, backend, CLI, and a Minecraft plugin/mod set for Paper, Fabric, NeoForge, Velocity, BungeeCord), import an existing folder, or **clone straight from GitHub**. Open in your IDE with one click, hide projects from the Dashboard, archive the ones you're done with.
+- **Tags** — Colour-coded custom tags shared across projects and notes. Rename, merge, recolour and delete them from Settings → Tags and every card updates.
+- **Git** — Commit (with or without pushing), amend, push, pull, fetch; inline colourised diffs; selective staging; stash/unstash; discard changes; create, switch (with stash-and-switch when your tree is dirty) and delete branches locally or on the remote. Pushes retry with your stored GitHub token when no credential helper is configured, so private repos work out of the box.
+- **GitHub** — A dedicated page for every linked repo: overview, releases & tags with version diffing, issues & pull requests (open, comment, close, merge, and an **Open PR** flow from the Git tab), **Actions** run status, an auto-generated changelog, and contribution insights. Auto-create a public or private repo when you create a project.
+- **Todos** — Scoped to a project or global, with due dates, completion tracking, and fully customisable priority levels (add, rename, recolour, reorder).
+- **Schedules & Deadlines** — Recurring reminders and one-off deadlines per project with desktop notifications.
+- **Notes** — Markdown editor with live preview, image paste, star/pin/archive, project linking, and a tag filter. One-way sync to an Obsidian vault as markdown with frontmatter.
+- **Patterns** — A habit dashboard scanned from every tracked project's real `git log`: contribution heatmap, weekly trend, language mix, todo completion rate, note-taking cadence, per-project time tracking, and two independent streaks (commits and app logins).
+- **Proactive Suggestions** — A Dashboard card that surfaces a streak about to break, overdue todos, a quiet project, or a growing high-priority backlog.
+- **Favourites**, **Activity Log**, **per-project Terminal** with run/stop and streamed output, and an **Ideas** scratchpad with a drawing canvas.
+- **Desktop notifications** — Deadline reminders plus per-event toggles for run finished/failed, push succeeded/failed, AI replies and focus sessions (Settings → Behaviour).
+- **Command palette** — `Ctrl+K` with fuzzy matching across pages, projects, notes and actions; chord shortcuts (`G` + key) remappable in Settings → Shortcuts; press `?` to see them all.
+- **Deep links & local API** — `croco://` links open a project or note; an optional local HTTP API lets editors and scripts talk to Croco.
+- **SQLite or JSON storage** — Switch in Settings → Storage with one-click migration either way.
+- **Auto-updates** — In-app update check; installs silently and restarts on Windows and Linux (AppImage); on macOS the new version downloads and mounts for you to drag into Applications.
+
+### Modules (beta)
+
+Optional features, off by default, each toggled in **Settings → Modules**:
+
+- **AI** — Chat, Research, Plan and Code modes backed by a local *Storage Brain* that remembers what matters about your projects across sessions. Anthropic, OpenAI, Gemini or a local Ollama server; Research mode can use the provider's own web search. Also powers AI-generated commit messages and an **Ask AI** side panel inside the IDE that can insert or replace code in the open file.
+- **IDE** — A Monaco-based editor (the engine behind VS Code) embedded in the app, with a file explorer, tabs, format-on-save and per-editor preferences.
+- **Discord** — Rich Presence that follows what you're doing (browsing, editing a file, focusing, idle) with a "View on GitHub" button for the current repo or your profile, plus webhook posts for project events.
+- **Docker** — Docker Compose for the current project: see services, bring them up, stop or tear them down, and tail logs without leaving Croco.
+- **Env Manager** — An Env tab on each project for browsing and editing its `.env` files with values masked by default.
+- **Slack** — Webhook notifications for the same events as Discord.
+- **Focus Timer** — Pomodoro-style work/break sessions that run in the background (they finish and notify you even if you leave the page), with per-project daily stats.
+
+### Appearance
+
+Two independent axes in **Settings → Appearance**:
+
+- **Theme** picks the palette: Default, Catppuccin Mocha, NeoVim Dark, Futuristic.
+- **Style** picks the shape and motion on top of any theme: Minimal, Default, Apple (liquid glass), Natural.
+- **Glass Effect** turns the window itself into real frosted glass on Windows 11 (Mica, falling back to Acrylic/Blur), not a simulated blur.
+- Accent colour and font are free choices on top of both.
 
 ## System Requirements
 
-- Windows 10 or later (x64)
-- ~30 MB disk space
-- Internet connection for GitHub features and update checks (optional)
+- Windows 10 or later (x64); Windows 11 for the frosted-glass window
+- ~40 MB disk space
+- Internet connection for GitHub, AI providers and update checks (all optional)
 
 ## Updates
 
@@ -51,12 +74,12 @@ Croco checks for updates on launch. When one is available you'll see a banner in
 
 | Layer | Technology |
 |---|---|
-| UI | React 19, React Router v7, Vite 8 |
+| UI | React 19, React Router v7, Vite 8, Monaco (IDE module) |
 | Desktop | Tauri 2 (Rust) |
 | Styling | CSS custom properties (theme + style system) |
 | Fonts | Geist, Inter, IBM Plex Sans, Nunito, DM Sans, Geist Mono |
-| Storage | JSON files or bundled SQLite (`rusqlite` with `bundled` feature) |
-| HTTP | reqwest (GitHub API, community tags) |
+| Storage | JSON files or bundled SQLite (`rusqlite` with `bundled` feature); secrets in the OS keyring |
+| HTTP | reqwest (GitHub API, AI providers, webhooks) |
 
 ## Building from source
 
@@ -68,7 +91,7 @@ npm run tauri:dev    # dev mode with hot reload
 npm run tauri:build  # full production bundle
 ```
 
-`npm run build` builds just the frontend (useful for quickly catching JS errors); `cargo check` in `src-tauri/` does the same for the Rust side.
+`npm run build` builds just the frontend (useful for quickly catching JS errors); `cargo check` in `src-tauri/` does the same for the Rust side. `cargo test` runs the backend unit tests.
 
 ## Contributing
 
