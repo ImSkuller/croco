@@ -114,6 +114,8 @@ const BellIcon          = ({ size }) => <Icon size={size}><path d="M8 1.5a1 1 0 
 const WindowIcon        = ({ size }) => <Icon size={size}><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 5.5h13"/><circle cx="3.5" cy="4" r=".4" fill="currentColor" stroke="none"/></Icon>
 const EraserIcon        = ({ size }) => <Icon size={size}><path d="M10.5 1.5 14.5 5.5 6 14H2v-4z"/><path d="M8 4 12 8"/></Icon>
 const UndoIcon          = ({ size }) => <Icon size={size}><path d="M3 5.5H10a4 4 0 0 1 0 8H6"/><path d="M5.5 2.5 3 5.5l2.5 3"/></Icon>
+const DiscordIcon       = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><path d="M13.5 3.6a12.6 12.6 0 0 0-3-.9l-.2.4a10.8 10.8 0 0 1 2.6.9c-1.3-.6-2.7-.9-4.1-.9-1.4 0-2.8.3-4.1.9.8-.4 1.7-.7 2.6-.9l-.2-.4c-1 .2-2 .5-3 .9C2.2 5.9 1.7 8.3 1.9 10.7c1.1.8 2.2 1.3 3.4 1.6l.4-.6c-.6-.2-1.2-.5-1.7-.9l.3-.2c1.2.6 2.5.9 3.8.9s2.6-.3 3.8-.9l.3.2c-.5.4-1.1.7-1.7.9l.4.6c1.2-.3 2.3-.8 3.4-1.6.3-2.7-.4-5.1-2-7.1zM6.2 9.3c-.6 0-1.1-.6-1.1-1.3s.5-1.3 1.1-1.3 1.1.6 1.1 1.3-.5 1.3-1.1 1.3zm3.6 0c-.6 0-1.1-.6-1.1-1.3s.5-1.3 1.1-1.3 1.1.6 1.1 1.3-.5 1.3-1.1 1.3z" fill="#5865F2"/></svg>
+const SlackIcon         = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><rect x="6" y="1" width="2.2" height="6" rx="1.1" fill="#36C5F0"/><rect x="9" y="6" width="6" height="2.2" rx="1.1" fill="#2EB67D"/><rect x="7.8" y="9" width="2.2" height="6" rx="1.1" fill="#ECB22E"/><rect x="1" y="7.8" width="6" height="2.2" rx="1.1" fill="#E01E5A"/></svg>
 
 export {
   PlusIcon, MoreIcon, IDEIcon, IdeLogoIcon, CommitIcon, PlayIcon, StopIcon, CheckIcon, ClockIcon,
@@ -125,5 +127,5 @@ export {
   TerminalIcon, ActivityIcon, CopyIcon, AIIcon, KeyboardIcon, DatabaseIcon, GitInitIcon, UploadCloudIcon,
   VaultIcon, HomeIcon, BulbIcon, ImportIcon, PlusCircleIcon, GameIcon, GiftIcon, MusicNoteIcon,
   PuzzleIcon, CrocoIcon, CalendarIcon, PinIcon, PackageIcon, FileIcon, BellIcon, WindowIcon,
-  EraserIcon, UndoIcon, LockIcon, InfoIcon, FlameIcon, IssueIcon,
+  EraserIcon, UndoIcon, LockIcon, InfoIcon, FlameIcon, IssueIcon, DiscordIcon, SlackIcon,
 }

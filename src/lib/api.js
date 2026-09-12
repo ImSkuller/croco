@@ -78,6 +78,12 @@ export const api = {
     // Also keyring-backed — pass '' to clear. provider is 'anthropic' | 'openai' | 'gemini'.
     /** @param {string} provider @param {string} key @returns {Promise<void>} */
     setAiKey:    (provider, key)           => invoke('settings_set_ai_key', { provider, key }),
+    // Also keyring-backed — pass '' to clear.
+    /** @param {string} url @returns {Promise<void>} */
+    setDiscordWebhook: (url)               => invoke('settings_set_discord_webhook', { url }),
+    // Also keyring-backed — pass '' to clear.
+    /** @param {string} url @returns {Promise<void>} */
+    setSlackWebhook: (url)                 => invoke('settings_set_slack_webhook', { url }),
   },
 
   // ── Projects ─────────────────────────────────────────────────────────────────
@@ -328,6 +334,115 @@ export const api = {
     syncAll:       ()     => invoke('obsidian_sync_all'),
     /** @param {string} path @returns {Promise<any>} */
     testVaultPath: (path) => invoke('obsidian_test_vault_path', { path }),
+  },
+
+  // ── AI module (beta) — Storage Brain + chat ──────────────────────────────────
+  ai: {
+    /** @param {string} mode 'chat'|'research'|'plan'|'code' @param {string} provider @param {string|null} projectId @param {string} conversationId @param {string} message @returns {Promise<string>} */
+    chat: (mode, provider, projectId, conversationId, message) =>
+      invoke('ai_chat', { mode, provider, projectId, conversationId, message }),
+    /** @param {string} host @returns {Promise<string[]>} */
+    ollamaListModels: (host) => invoke('ollama_list_models', { host }),
+    brain: {
+      /** @returns {Promise<any[]>} */
+      rebuildIndex: () => invoke('brain_rebuild_index'),
+      /** @param {string} query @returns {Promise<any[]>} */
+      search:       (query) => invoke('brain_search', { query }),
+
+      /** @param {string} title @param {string} body @param {string|null} project @param {string[]} tags @param {number} importance @returns {Promise<any>} */
+      memoryCreate: (title, body, project, tags, importance) => invoke('brain_memory_create', { title, body, project, tags, importance }),
+      /** @returns {Promise<any>} */
+      memoryUpdate: (id, changes) => invoke('brain_memory_update', { id, ...changes }),
+      /** @returns {Promise<void>} */
+      memoryDelete: (id) => invoke('brain_memory_delete', { id }),
+      /** @returns {Promise<any>} */
+      memoryGet:    (id) => invoke('brain_memory_get', { id }),
+      /** @returns {Promise<any[]>} */
+      memoryList:   () => invoke('brain_memory_list'),
+
+      /** @returns {Promise<any>} */
+      encyclopediaCreate: (title, body, tags, importance) => invoke('brain_encyclopedia_create', { title, body, tags, importance }),
+      /** @returns {Promise<any>} */
+      encyclopediaUpdate: (id, changes) => invoke('brain_encyclopedia_update', { id, ...changes }),
+      /** @returns {Promise<void>} */
+      encyclopediaDelete: (id) => invoke('brain_encyclopedia_delete', { id }),
+      /** @returns {Promise<any>} */
+      encyclopediaGet:    (id) => invoke('brain_encyclopedia_get', { id }),
+      /** @returns {Promise<any[]>} */
+      encyclopediaList:   () => invoke('brain_encyclopedia_list'),
+
+      /** @returns {Promise<any>} */
+      projectSummaryGenerate: (projectId) => invoke('brain_project_summary_generate', { projectId }),
+      /** @returns {Promise<any|null>} */
+      projectSummaryGet:      (projectId) => invoke('brain_project_summary_get', { projectId }),
+
+      /** @returns {Promise<any[]>} */
+      conversationGet:    (id) => invoke('brain_conversation_get', { id }),
+      /** @returns {Promise<void>} */
+      conversationDelete: (id) => invoke('brain_conversation_delete', { id }),
+    },
+  },
+
+  // ── Slack module (beta) ──────────────────────────────────────────────────────
+  slack: {
+    /** @returns {Promise<void>} throws with a message on failure */
+    webhookTest: () => invoke('slack_webhook_test'),
+  },
+
+  // ── Docker module (beta) ─────────────────────────────────────────────────────
+  docker: {
+    /** @param {string} projectId @returns {Promise<boolean>} */
+    available:      (projectId)          => invoke('docker_compose_available', { projectId }),
+    /** @param {string} projectId @returns {Promise<{name:string, status:string}[]>} */
+    services:       (projectId)          => invoke('docker_compose_services',  { projectId }),
+    /** @param {string} projectId @param {string|null} service @returns {Promise<void>} */
+    up:             (projectId, service) => invoke('docker_compose_up',    { projectId, service }),
+    /** @param {string} projectId @param {string|null} service @returns {Promise<void>} */
+    stop:           (projectId, service) => invoke('docker_compose_stop',  { projectId, service }),
+    /** @param {string} projectId @returns {Promise<void>} */
+    down:           (projectId)          => invoke('docker_compose_down',  { projectId }),
+    /** @param {string} projectId @param {string|null} service @returns {Promise<string>} */
+    logs:           (projectId, service) => invoke('docker_compose_logs',  { projectId, service }),
+  },
+
+  // ── Env Manager module (beta) ────────────────────────────────────────────────
+  envManager: {
+    /** @param {string} projectId @returns {Promise<{key:string, value:string}[]>} */
+    read:  (projectId)          => invoke('env_read',  { projectId }),
+    /** @param {string} projectId @param {{key:string, value:string}[]} entries @returns {Promise<void>} */
+    write: (projectId, entries) => invoke('env_write', { projectId, entries }),
+  },
+
+  // ── Focus Timer module (beta) ────────────────────────────────────────────────
+  focus: {
+    /** @param {string|null} projectId @param {'work'|'break'} kind @returns {Promise<any>} */
+    start:          (projectId, kind) => invoke('focus_session_start', { projectId, kind }),
+    /** @param {string} id @returns {Promise<any>} */
+    end:            (id)              => invoke('focus_session_end', { id }),
+    /** @returns {Promise<any|null>} */
+    getActive:      ()                => invoke('focus_session_get_active'),
+    /** @param {number} [limit] @returns {Promise<any[]>} */
+    getHistory:     (limit)           => invoke('focus_session_get_history', { limit }),
+    /** @returns {Promise<{workMinutes:number, sessionsCompleted:number}>} */
+    getTodayStats:  ()                => invoke('focus_session_get_today_stats'),
+  },
+
+  // ── IDE module (beta) ────────────────────────────────────────────────────────
+  ide: {
+    /** @param {string} projectId @param {string} relPath @returns {Promise<string>} */
+    readFile:  (projectId, relPath)          => invoke('ide_read_file',  { projectId, relPath }),
+    /** @param {string} projectId @param {string} relPath @param {string} content @returns {Promise<void>} */
+    writeFile: (projectId, relPath, content) => invoke('ide_write_file', { projectId, relPath, content }),
+  },
+
+  // ── Discord module (beta) ────────────────────────────────────────────────────
+  discord: {
+    /** Silent no-op unless modules.discord.richPresence is on. @param {string} projectName @returns {Promise<void>} */
+    setActivity:   (projectName) => invoke('discord_set_activity', { projectName }),
+    /** @returns {Promise<void>} */
+    clearActivity: ()            => invoke('discord_clear_activity'),
+    /** @returns {Promise<void>} throws with a message on failure */
+    webhookTest:   ()            => invoke('discord_webhook_test'),
   },
 
   // ── Personality / work-habits tracking ───────────────────────────────────────

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function TextInput({ value, onChange, placeholder, mono, type = 'text', style: extraStyle = {} }) {
+export default function TextInput({ value, onChange, onBlur, placeholder, mono, type = 'text', style: extraStyle = {} }) {
   const [focused, setFocused] = useState(false)
   return (
     <input
@@ -8,7 +8,7 @@ export default function TextInput({ value, onChange, placeholder, mono, type = '
       value={value}
       onChange={e => onChange(e.target.value)}
       onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
+      onBlur={() => { setFocused(false); onBlur?.() }}
       placeholder={placeholder}
       style={{
         width: '100%', background: 'var(--base)',

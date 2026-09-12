@@ -26,6 +26,7 @@
     "croco": "node cli/croco.js"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-autostart": "^2.5.1",
     "@tauri-apps/plugin-dialog": "^2",
@@ -35,6 +36,7 @@
     "commander": "^15.0.0",
     "dompurify": "^3.4.11",
     "marked": "^18.0.11",
+    "monaco-editor": "^0.56.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.3",
