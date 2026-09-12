@@ -122,6 +122,85 @@ pub fn default_settings() -> Value {
             "deadlineReminders": {
                 "enabled": true
             }
+        },
+        // Modules (v2.0) — optional, beta, off-by-default features gated
+        // behind Settings → Modules rather than always-on parts of the app.
+        // See docs/modules-plan.md for the full design. Each module's own
+        // sub-settings live nested under it; secrets (the Discord webhook
+        // URL, the AI provider keys under ai.commitMessages/keysStored)
+        // never live here — see strip_secrets / the keyring-backed
+        // *Stored flags read_settings injects below.
+        "modules": {
+            "discord": {
+                "enabled": false,
+                // User-supplied, not compiled in — a hardcoded placeholder
+                // here would mean Rich Presence quietly stays broken until
+                // a code change, for every user, forever. Get one at
+                // discord.com/developers/applications and paste it in
+                // Settings → Modules → Discord.
+                "applicationId": "",
+                "richPresence": { "enabled": false },
+                "webhook": { "enabled": false }
+            },
+            "ide": {
+                "enabled": false,
+                // Editor preferences (Monaco natively supports all of
+                // these) — deliberately not a claim to "everything VS Code
+                // has" (no extensions/debugger), just the common editing
+                // preferences people actually reach for.
+                "editor": {
+                    "fontSize": 13,
+                    "tabSize": 2,
+                    "insertSpaces": true,
+                    "wordWrap": "off",
+                    "minimap": false,
+                    "lineNumbers": "on",
+                    "renderWhitespace": "none",
+                    "cursorBlinking": "blink",
+                    "formatOnSave": false
+                }
+            },
+            "ai": {
+                "enabled": false,
+                "provider": "anthropic",
+                "webAccess": { "enabled": false },
+                // Ollama needs no API key (it's a local server) — host is
+                // user-editable in case it's not running on the default
+                // port, or is reachable elsewhere on the LAN.
+                "ollama": { "host": "http://localhost:11434", "model": "" }
+            },
+            // Docker (beta) — per-project docker-compose service list +
+            // start/stop/logs via the user's own `docker` CLI. No daemon
+            // API calls, no extra crate — same run_ops.rs pattern as the
+            // existing run/stop feature, just pointed at `docker compose`.
+            "docker": {
+                "enabled": false
+            },
+            // Env Manager (beta) — a masked editor for a project's own
+            // .env file. The .env file itself is the only store (same
+            // philosophy as the IDE module treating project files as
+            // source of truth) — nothing is copied into the keyring, so
+            // this is exactly as secure/insecure as the .env file already
+            // was on disk.
+            "envManager": {
+                "enabled": false
+            },
+            // Slack (beta) — webhook notifications only (mirrors the
+            // Discord module's webhook half). No Slack "rich presence"
+            // equivalent exists, so there's no first half to add.
+            "slack": {
+                "enabled": false,
+                "webhook": { "enabled": false }
+            },
+            // Focus Timer (beta) — fully local Pomodoro-style work/break
+            // timer, zero network calls. Session history feeds a simple
+            // daily-focus-time stat; desktop notifications reuse the
+            // existing notify_send_desktop command.
+            "focusTimer": {
+                "enabled": false,
+                "workMinutes": 25,
+                "breakMinutes": 5
+            }
         }
     })
 }
@@ -239,6 +318,13 @@ pub fn read_settings(app: &AppHandle) -> Value {
     }
     if let Some(app_obj) = merged.get_mut("app").and_then(|a| a.as_object_mut()) {
         app_obj.insert("secretsFallbackActive".into(), Value::Bool(crate::fallback_in_use()));
+    }
+    if let Some(webhook) = merged.get_mut("modules")
+        .and_then(|m| m.get_mut("discord"))
+        .and_then(|d| d.get_mut("webhook"))
+        .and_then(|w| w.as_object_mut())
+    {
+        webhook.insert("urlStored".into(), Value::Bool(crate::get_secret(app, "discord_webhook_url").is_some()));
     }
     // user.avatar on disk is just a marker ("png"/"jpg" — see the Avatar
     // storage section below); rebuild the data URI here so callers see the
