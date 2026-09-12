@@ -4,10 +4,12 @@ import OverviewPanel from '../components/GitHub/OverviewPanel'
 import ReleasesTagsPanel from '../components/GitHub/ReleasesTagsPanel'
 import ChangelogPanel from '../components/GitHub/ChangelogPanel'
 import InsightsPanel from '../components/GitHub/InsightsPanel'
+import IssuesPrsPanel from '../components/GitHub/IssuesPrsPanel'
 
 const TABS = [
   { id: 'overview',  label: 'Overview' },
   { id: 'releases',  label: 'Releases & Tags' },
+  { id: 'issues',    label: 'Issues & PRs' },
   { id: 'changelog', label: 'Changelog' },
   { id: 'insights',  label: 'Insights' },
 ]
@@ -56,6 +58,7 @@ export default function GitHubPage() {
         <div key={tab} className="pm-tab-content" style={{ padding: '20px 28px' }}>
           {tab === 'overview'  && (linkedProjects.length ? <OverviewPanel projects={linkedProjects} /> : <EmptyLinkedState />)}
           {tab === 'releases'  && (linkedProjects.length ? <ReleasesTagsPanel projects={linkedProjects} /> : <EmptyLinkedState />)}
+          {tab === 'issues'    && (linkedProjects.length ? <IssuesPrsPanel projects={linkedProjects} /> : <EmptyLinkedState />)}
           {tab === 'changelog' && (linkedProjects.length ? <ChangelogPanel projects={linkedProjects} /> : <EmptyLinkedState />)}
           {/* Insights always renders — "Overall" mode uses cross-project data even with no linked repos */}
           {tab === 'insights'  && <InsightsPanel projects={linkedProjects} />}

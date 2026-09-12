@@ -112,6 +112,80 @@ pub async fn github_list_releases(app: AppHandle, id: String) -> Result<Vec<Valu
     })).collect())
 }
 
+// GitHub's /issues endpoint returns both issues AND pull requests (a PR is
+// a superset of an issue in their data model) — distinguished only by the
+// presence of a `pull_request` field. Filter those out so "Issues" doesn't
+// silently double up with the dedicated /pulls list below.
+#[tauri::command]
+pub async fn github_list_issues(app: AppHandle, id: String, state: Option<String>) -> Result<Vec<Value>, String> {
+    let state = state.unwrap_or_else(|| "open".to_string());
+    let body = github_get(&app, &id, &format!("/issues?state={state}&per_page=30")).await?;
+    let arr = body.as_array().cloned().unwrap_or_default();
+    Ok(arr.into_iter()
+        .filter(|i| i.get("pull_request").is_none())
+        .map(|i| json!({
+            "id": i["id"],
+            "number": i["number"],
+            "title": i["title"],
+            "state": i["state"],
+            "htmlUrl": i["html_url"],
+            "author": i["user"]["login"],
+            "createdAt": i["created_at"],
+            "updatedAt": i["updated_at"],
+            "comments": i["comments"],
+            "labels": (i["labels"].as_array().cloned().unwrap_or_default())
+                .into_iter().map(|l| json!({ "name": l["name"], "color": l["color"] })).collect::<Vec<_>>(),
+        }))
+        .collect())
+}
+
+#[tauri::command]
+pub async fn github_list_pull_requests(app: AppHandle, id: String, state: Option<String>) -> Result<Vec<Value>, String> {
+    let state = state.unwrap_or_else(|| "open".to_string());
+    let body = github_get(&app, &id, &format!("/pulls?state={state}&per_page=30")).await?;
+    let arr = body.as_array().cloned().unwrap_or_default();
+    Ok(arr.into_iter().map(|p| json!({
+        "id": p["id"],
+        "number": p["number"],
+        "title": p["title"],
+        "state": p["state"],
+        "draft": p["draft"].as_bool().unwrap_or(false),
+        "merged": p["merged_at"].is_string(),
+        "htmlUrl": p["html_url"],
+        "author": p["user"]["login"],
+        "createdAt": p["created_at"],
+        "updatedAt": p["updated_at"],
+        "baseBranch": p["base"]["ref"],
+        "headBranch": p["head"]["ref"],
+    })).collect())
+}
+
+#[tauri::command]
+pub async fn github_create_issue(app: AppHandle, id: String, title: String, body: String) -> Result<Value, String> {
+    let repo  = owner_repo(&app, &id)?;
+    let title = title.trim().to_string();
+    if title.is_empty() { return Err("Title is required".into()); }
+    let token = crate::stored_github_token(&app).filter(|t| !t.is_empty())
+        .ok_or("No GitHub token — add one in Settings → User")?;
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(format!("https://api.github.com/repos/{}/issues", repo))
+        .header("Authorization", format!("token {}", token))
+        .header("User-Agent", crate::UA)
+        .header("Accept", "application/vnd.github.v3+json")
+        .json(&json!({ "title": title, "body": body }))
+        .send().await.map_err(|e| e.to_string())?;
+    let status = resp.status().as_u16();
+    let response: Value = resp.json().await.unwrap_or(json!({}));
+    if status != 201 {
+        let msg = response["message"].as_str().unwrap_or("Failed to create issue").to_string();
+        return Err(msg);
+    }
+    crate::activity_log(&app, "github.issue_created", json!({ "projectId": id, "number": response["number"] }));
+    crate::emit_toast(&app, "Issue created", &title, "success");
+    Ok(json!({ "ok": true, "url": response["html_url"], "number": response["number"] }))
+}
+
 // Each parameter is one field of the IPC payload the frontend sends for
 // this command — grouping them into a struct would just move the same
 // count into a nested object without reducing real complexity.

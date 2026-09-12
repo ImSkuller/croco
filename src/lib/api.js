@@ -434,6 +434,14 @@ export const api = {
      */
     createRelease: (id, { tagName, target, name, body, draft, prerelease }) =>
       invoke('github_create_release', { id, tagName, target, name, body, draft, prerelease }),
+
+    // Issues & PRs — GitHub page (Issues & PRs tab)
+    /** @param {string} id @param {string} [state] 'open'|'closed'|'all' @returns {Promise<any[]>} */
+    listIssues:       (id, state) => invoke('github_list_issues',        { id, state }),
+    /** @param {string} id @param {string} [state] 'open'|'closed'|'all' @returns {Promise<any[]>} */
+    listPullRequests: (id, state) => invoke('github_list_pull_requests', { id, state }),
+    /** @param {string} id @param {string} title @param {string} body @returns {Promise<any>} */
+    createIssue:      (id, title, body) => invoke('github_create_issue', { id, title, body }),
   },
 
   // ── Storage ──────────────────────────────────────────────────────────────────

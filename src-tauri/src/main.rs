@@ -324,6 +324,7 @@ fn main() {
             git_get_commit_dates,
             // github api (GitHub page: Overview, Releases tabs)
             github_get_repo_info, github_list_releases, github_create_release,
+            github_list_issues, github_list_pull_requests, github_create_issue,
             // run
             run_start, run_stop, run_get_running, run_is_running,
             // notes
