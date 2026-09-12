@@ -33,6 +33,11 @@
       "endpoints": [
         "https://github.com/ImSkuller/croco/releases/latest/download/latest.json"
       ]
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": ["croco"]
+      }
     }
   },
   "bundle": {

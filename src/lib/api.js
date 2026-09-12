@@ -75,6 +75,9 @@ export const api = {
     // Stored in the OS keyring, never in settings.json — pass '' to clear.
     /** @param {string} token @returns {Promise<void>} */
     setGithubToken: (token)                => invoke('settings_set_github_token', { token }),
+    // Also keyring-backed — pass '' to clear. provider is 'anthropic' | 'openai' | 'gemini'.
+    /** @param {string} provider @param {string} key @returns {Promise<void>} */
+    setAiKey:    (provider, key)           => invoke('settings_set_ai_key', { provider, key }),
   },
 
   // ── Projects ─────────────────────────────────────────────────────────────────
@@ -143,6 +146,14 @@ export const api = {
     setArchived:          (id, archived)  => invoke('projects_set_archived',         { id, archived }),
     /** @param {string} id @param {string} repoName @param {string} description @param {boolean} priv @returns {Promise<any>} */
     publishToGithub:      (id, repoName, description, priv) => invoke('projects_publish_to_github', { id, repoName, description, private: priv }),
+
+    // Community templates (Phase 6 item 12) — local-first export/import,
+    // no hosted marketplace. Export returns the template JSON for the
+    // frontend to write wherever the user picks (system.showSavePicker +
+    // system.writeBytes); import is just projects.create with the parsed
+    // file's `files` passed straight through as templateFiles.
+    /** @param {string} id @param {string} name @param {string} [description] @returns {Promise<any>} */
+    exportAsTemplate: (id, name, description) => invoke('projects_export_as_template', { id, name, description: description || '' }),
   },
 
   // ── Templates ────────────────────────────────────────────────────────────────
@@ -228,6 +239,19 @@ export const api = {
     diffBetweenRefs:   (id, fromRef, toRef)   => invoke('git_diff_between_refs',   { id, fromRef, toRef }),
     /** @param {string} id @param {number} [limit] @returns {Promise<any[]>} */
     getCommitDates:    (id, limit)         => invoke('git_get_commit_dates',    { id, limit }),
+
+    // AI-generated commit message (Phase 6 item 6) — opt-in, see Settings → AI.
+    /** @param {string} id @returns {Promise<string>} */
+    generateCommitMessage: (id) => invoke('ai_generate_commit_message', { id }),
+  },
+
+  // ── Local HTTP API (Phase 6 item 7) — opt-in, see Settings → Local API ─────────
+  localApi: {
+    /** Re-applies settings.api.{enabled,port}: stops/starts the loopback server as needed.
+     * @returns {Promise<{running: boolean, port?: number, tokenJustGenerated?: string|null}>} */
+    apply: () => invoke('local_api_apply'),
+    /** @returns {Promise<string>} the new token (shown once — not retrievable afterward) */
+    regenerateToken: () => invoke('local_api_regenerate_token'),
   },
 
   // ── System ───────────────────────────────────────────────────────────────────
@@ -257,6 +281,8 @@ export const api = {
 
     /** @param {string} path @param {number[]} data @returns {Promise<any>} */
     writeBytes:             (path, data) => invoke('system_write_bytes',            { path, data }),
+    /** @param {string} path @returns {Promise<string>} */
+    readTextFile:           (path)       => invoke('system_read_text_file',         { path }),
     /** @param {string} p @returns {Promise<boolean>} */
     pathExists:             (p)        => invoke('system_path_exists',              { p }),
     /** @returns {Promise<string>} */
@@ -269,6 +295,13 @@ export const api = {
     lookupCommunityUser:    (username) => invoke('system_lookup_community_user',    { githubUsername: username }),
     /** @param {string} username @returns {Promise<any>} */
     validateGithubUsername: (username) => invoke('system_validate_github_username', { username }),
+
+    // croco:// deep links (Phase 6 item 11) — fires with a router path
+    // (e.g. "/projects/<id>") whenever this launch was triggered by, or
+    // later receives, a registered deep link. Rust-side only; no
+    // @tauri-apps/plugin-deep-link needed on this side.
+    /** @param {(path: string) => void} cb @returns {() => void} */
+    onDeepLink: (cb) => sub('deep-link:navigate', cb),
   },
 
   // ── Notes ────────────────────────────────────────────────────────────────────
@@ -418,6 +451,14 @@ export const api = {
      */
     createRelease: (id, { tagName, target, name, body, draft, prerelease }) =>
       invoke('github_create_release', { id, tagName, target, name, body, draft, prerelease }),
+
+    // Issues & PRs — GitHub page (Issues & PRs tab)
+    /** @param {string} id @param {string} [state] 'open'|'closed'|'all' @returns {Promise<any[]>} */
+    listIssues:       (id, state) => invoke('github_list_issues',        { id, state }),
+    /** @param {string} id @param {string} [state] 'open'|'closed'|'all' @returns {Promise<any[]>} */
+    listPullRequests: (id, state) => invoke('github_list_pull_requests', { id, state }),
+    /** @param {string} id @param {string} title @param {string} body @returns {Promise<any>} */
+    createIssue:      (id, title, body) => invoke('github_create_issue', { id, title, body }),
   },
 
   // ── Storage ──────────────────────────────────────────────────────────────────

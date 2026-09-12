@@ -8,10 +8,13 @@
 // rather than deriving everything from the capped log on every read.
 //
 // Scope, deliberately: commits, todos, notes, and per-project attention —
-// all backed by solid existing timestamps. Session-length tracking is NOT
-// included (no app open/close hooks exist today, and Croco's close-to-tray
-// default makes "session end" ambiguous) — a future addition, not an
-// oversight. Commit stats are periodically recomputed from `git log` across
+// all backed by solid existing timestamps. UI session-length tracking is
+// NOT included (no app open/close hooks exist today, and Croco's
+// close-to-tray default makes "session end" ambiguous) — but per-project
+// *run* time is (Phase 6 item 9, projectStats.<id>.runSeconds): a dev/
+// build/test command's start and stop are unambiguous regardless of what
+// the UI is doing, see run_ops.rs's run_start/run_stop. Commit stats are
+// periodically recomputed from `git log` across
 // every tracked project's repo (see personality_scan_commits), so commits
 // made outside Croco — via terminal, another IDE, etc — count too, not just
 // ones made through Croco's own commit UI.
@@ -100,10 +103,29 @@ fn touch_project_stat(v: &mut Value, project_id: &str, field: &str, at: &str) {
     }
     let entry = &mut v["projectStats"][project_id];
     if entry.is_null() {
-        *entry = json!({ "opens": 0, "commits": 0, "todos": 0, "lastActivityAt": at });
+        *entry = json!({ "opens": 0, "commits": 0, "todos": 0, "runSeconds": 0, "lastActivityAt": at });
     }
     let cur = entry[field].as_i64().unwrap_or(0);
     entry[field] = json!(cur + 1);
+    entry["lastActivityAt"] = json!(at);
+}
+
+// Per-project time tracking (Phase 6 item 9): adds an arbitrary number of
+// seconds rather than incrementing by 1 like touch_project_stat — a run
+// session's duration, not an event count. Deliberately scoped to "how long
+// has this project's dev/build/test command been running", not "how long
+// was the UI open" — an unambiguous start/stop unlike UI session length
+// (see this file's top-of-file note on why that was originally left out).
+fn add_project_run_time(v: &mut Value, project_id: &str, seconds: u64, at: &str) {
+    if project_id.is_empty() {
+        return;
+    }
+    let entry = &mut v["projectStats"][project_id];
+    if entry.is_null() {
+        *entry = json!({ "opens": 0, "commits": 0, "todos": 0, "runSeconds": 0, "lastActivityAt": at });
+    }
+    let cur = entry["runSeconds"].as_u64().unwrap_or(0);
+    entry["runSeconds"] = json!(cur + seconds);
     entry["lastActivityAt"] = json!(at);
 }
 
@@ -141,6 +163,12 @@ pub fn track(app: &AppHandle, metric: &str, data: Value) {
         }
         "project_open" => {
             touch_project_stat(&mut habits, &project_id, "opens", &now_utc);
+        }
+        "project_run_time" => {
+            let seconds = data["seconds"].as_u64().unwrap_or(0);
+            if seconds > 0 {
+                add_project_run_time(&mut habits, &project_id, seconds, &now_utc);
+            }
         }
         _ => return,
     }
@@ -341,5 +369,30 @@ mod tests {
         let mut v = json!({ "projectStats": {} });
         touch_project_stat(&mut v, "", "commits", "2026-07-05T10:00:00Z");
         assert_eq!(v["projectStats"], json!({}));
+    }
+
+    #[test]
+    fn add_project_run_time_accumulates_across_calls() {
+        let mut v = json!({ "projectStats": {} });
+        add_project_run_time(&mut v, "proj-1", 90, "2026-07-05T10:00:00Z");
+        add_project_run_time(&mut v, "proj-1", 30, "2026-07-05T11:00:00Z");
+        assert_eq!(v["projectStats"]["proj-1"]["runSeconds"], json!(120));
+        assert_eq!(v["projectStats"]["proj-1"]["lastActivityAt"], json!("2026-07-05T11:00:00Z"));
+    }
+
+    #[test]
+    fn add_project_run_time_ignores_empty_project_id() {
+        let mut v = json!({ "projectStats": {} });
+        add_project_run_time(&mut v, "", 90, "2026-07-05T10:00:00Z");
+        assert_eq!(v["projectStats"], json!({}));
+    }
+
+    #[test]
+    fn add_project_run_time_does_not_clobber_other_fields() {
+        let mut v = json!({ "projectStats": {} });
+        touch_project_stat(&mut v, "proj-1", "commits", "2026-07-05T10:00:00Z");
+        add_project_run_time(&mut v, "proj-1", 60, "2026-07-05T11:00:00Z");
+        assert_eq!(v["projectStats"]["proj-1"]["commits"], json!(1));
+        assert_eq!(v["projectStats"]["proj-1"]["runSeconds"], json!(60));
     }
 }

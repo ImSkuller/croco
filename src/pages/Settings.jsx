@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, LockIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon } from '../constants/SimpleSvgExports'
+import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, LockIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon, AIIcon, EyeIcon, EyeOffIcon, APIIcon, CopyIcon, AlertTriangleIcon } from '../constants/SimpleSvgExports'
 import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, PathInput, IDEOption, ToggleChip, Toggle, InfoBox, SmallBtn, SaveBtn } from '../components/Settings/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { THEMES, applyTheme, getThemeAccentSwatch, normalizeThemeId } from '../lib/theme.js'
@@ -46,6 +46,8 @@ const NAV_SECTIONS = [
   { id: 'paths',      label: 'Paths',        icon: <FolderIcon />  },
   { id: 'defaults',   label: 'Defaults',     icon: <SaveIcon />    },
   { id: 'github',     label: 'GitHub',       icon: <GitIcon />     },
+  { id: 'ai',         label: 'AI',           icon: <AIIcon />      },
+  { id: 'localApi',   label: 'Local API',    icon: <APIIcon />     },
   { id: 'appearance', label: 'Appearance',   icon: <PaletteIcon /> },
   { id: 'behaviour',  label: 'Behaviour',    icon: <TagIcon />     },
   { id: 'storage',    label: 'Storage',      icon: <DatabaseIcon /> },
@@ -91,6 +93,23 @@ export default function Settings() {
   const [ghTokenStored, setGhTokenStored] = useState(false)
   const [ghTestStatus,  setGhTestStatus]  = useState(null) // null | 'testing' | {ok, login, message}
   const [secretsFallbackActive, setSecretsFallbackActive] = useState(false)
+  const [aiEnabled,     setAiEnabled]     = useState(false)
+  const [aiProvider,    setAiProvider]    = useState('anthropic')
+  const [aiKeysStored,  setAiKeysStored]  = useState({ anthropic: false, openai: false, gemini: false })
+  // Same "only holds what was just typed this session" rule as ghToken —
+  // settings_get never returns a real stored AI key.
+  const [aiKeyInput,    setAiKeyInput]    = useState('')
+  const [aiKeyVisible,  setAiKeyVisible]  = useState(false)
+  const [aiKeySaving,   setAiKeySaving]   = useState(false)
+  const [apiEnabled,    setApiEnabled]    = useState(false)
+  const [apiPort,       setApiPort]       = useState(3131)
+  const [apiRunning,    setApiRunning]    = useState(false)
+  const [apiTokenStored,setApiTokenStored]= useState(false)
+  // Only ever holds a token this session just generated/regenerated — the
+  // backend never returns a stored token's real value, by design (same
+  // "shown once" rule as e.g. a GitHub OAuth device code).
+  const [apiTokenReveal,setApiTokenReveal]= useState(null)
+  const [apiBusy,       setApiBusy]       = useState(false)
   const [userAvatar,    setUserAvatar]    = useState(null)
   const [oauthEnabled,  setOauthEnabled]  = useState(true) // optimistic default (always true in shipped builds); corrected after the async check below
   const [oauthData,     setOauthData]     = useState(null) // {user_code, verification_uri, device_code, interval}
@@ -228,6 +247,13 @@ export default function Settings() {
     setGhUsername(s.user?.github?.username || '')
     setGhTokenStored(!!s.user?.github?.tokenStored)
     setSecretsFallbackActive(!!s.app?.secretsFallbackActive)
+    setAiEnabled(!!s.ai?.commitMessages?.enabled)
+    setAiProvider(s.ai?.commitMessages?.provider || 'anthropic')
+    setAiKeysStored(s.ai?.keysStored || { anthropic: false, openai: false, gemini: false })
+    setApiEnabled(!!s.api?.enabled)
+    setApiPort(s.api?.port || 3131)
+    setApiRunning(!!s.api?.running)
+    setApiTokenStored(!!s.api?.tokenStored)
     setCloseBehavior(s.app?.closeBehavior || 'tray')
     setCustomDataPath(s.app?.dataPath || '')
     const color = s.appearance?.accentColor || '#e8e4dc'
@@ -377,6 +403,86 @@ export default function Settings() {
       window.api?.settings.update({ app: { deadlineReminders: { enabled: next } } }).catch(() => {})
       return next
     })
+  }
+
+  const handleAiToggle = () => {
+    setAiEnabled(prev => {
+      const next = !prev
+      window.api?.settings.update({ ai: { commitMessages: { enabled: next, provider: aiProvider } } }).catch(() => {})
+      return next
+    })
+  }
+
+  const handleAiProviderChange = (provider) => {
+    setAiProvider(provider)
+    setAiKeyInput('')
+    window.api?.settings.update({ ai: { commitMessages: { enabled: aiEnabled, provider } } }).catch(() => {})
+  }
+
+  const handleAiKeySave = async () => {
+    if (!aiKeyInput.trim() || !window.api) return
+    setAiKeySaving(true)
+    try {
+      await window.api.settings.setAiKey(aiProvider, aiKeyInput.trim())
+      setAiKeysStored(prev => ({ ...prev, [aiProvider]: true }))
+      setAiKeyInput('')
+      toast.success('API key saved')
+    } catch (e) {
+      toast.error('Could not save key', e.message)
+    } finally {
+      setAiKeySaving(false)
+    }
+  }
+
+  const handleAiKeyClear = async () => {
+    if (!window.api) return
+    await window.api.settings.setAiKey(aiProvider, '').catch(() => {})
+    setAiKeysStored(prev => ({ ...prev, [aiProvider]: false }))
+  }
+
+  const applyLocalApi = async () => {
+    if (!window.api) return
+    setApiBusy(true)
+    try {
+      const result = await window.api.localApi.apply()
+      setApiRunning(!!result.running)
+      setApiTokenStored(prev => prev || !!result.tokenJustGenerated)
+      if (result.tokenJustGenerated) setApiTokenReveal(result.tokenJustGenerated)
+    } catch (e) {
+      toast.error('Local API', e.message)
+    } finally {
+      setApiBusy(false)
+    }
+  }
+
+  const handleApiToggle = async () => {
+    const next = !apiEnabled
+    setApiEnabled(next)
+    await window.api?.settings.update({ api: { enabled: next, port: apiPort } }).catch(() => {})
+    await applyLocalApi()
+  }
+
+  const handleApiPortChange = async (port) => {
+    const n = Math.max(1024, Math.min(65535, Number(port) || 3131))
+    setApiPort(n)
+    await window.api?.settings.update({ api: { enabled: apiEnabled, port: n } }).catch(() => {})
+    if (apiEnabled) await applyLocalApi()
+  }
+
+  const handleRegenerateToken = async () => {
+    if (!window.api) return
+    setApiBusy(true)
+    try {
+      const token = await window.api.localApi.regenerateToken()
+      setApiTokenStored(true)
+      setApiTokenReveal(token)
+      setApiRunning(true)
+      toast.success('Token regenerated', 'Copy it now — it will not be shown again.')
+    } catch (e) {
+      toast.error('Could not regenerate token', e.message)
+    } finally {
+      setApiBusy(false)
+    }
   }
 
   const handleRequestDesktopPermission = async () => {
@@ -893,6 +999,148 @@ export default function Settings() {
                     )}
                   </div>
                 </SettingsCard>
+              </>
+            )}
+
+            {/* AI */}
+            {activeSection === 'ai' && (
+              <>
+                <SectionTitle icon={<AIIcon />} title="AI" desc="Generate a commit message from your staged changes. Strictly opt-in — nothing here is called unless you turn it on and provide your own API key." />
+
+                <SettingsCard>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <FieldLabel>AI Commit Messages</FieldLabel>
+                      <FieldDesc>Adds a "Generate with AI" button to the commit box in each project's Git tab. The diff is sent to the provider below — review the generated message before committing, it's never used automatically.</FieldDesc>
+                    </div>
+                    <Toggle value={aiEnabled} onChange={handleAiToggle} />
+                  </div>
+                </SettingsCard>
+
+                <SettingsCard>
+                  <FieldLabel>Provider</FieldLabel>
+                  <FieldDesc>Each provider needs its own API key, entered below.</FieldDesc>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    {[
+                      { id: 'anthropic', label: 'Anthropic' },
+                      { id: 'openai',    label: 'OpenAI'    },
+                      { id: 'gemini',    label: 'Gemini'    },
+                    ].map(opt => (
+                      <ToggleChip
+                        key={opt.id}
+                        label={<>{opt.label}{aiKeysStored[opt.id] && <CheckIcon size={11} />}</>}
+                        active={aiProvider === opt.id}
+                        color="var(--accent)"
+                        bg="var(--accent-dim)"
+                        onClick={() => handleAiProviderChange(opt.id)}
+                      />
+                    ))}
+                  </div>
+
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                    <FieldLabel>{{ anthropic: 'Anthropic', openai: 'OpenAI', gemini: 'Gemini' }[aiProvider]} API Key</FieldLabel>
+                    <FieldDesc>
+                      {aiKeysStored[aiProvider]
+                        ? 'A key is currently stored for this provider — paste a new one to replace it.'
+                        : 'Paste a key from your provider account. Stored in your OS credential store, never in settings.json.'}
+                    </FieldDesc>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <div style={{ flex: 1, position: 'relative' }}>
+                        <TextInput
+                          type={aiKeyVisible ? 'text' : 'password'}
+                          value={aiKeyInput}
+                          onChange={setAiKeyInput}
+                          placeholder={aiKeysStored[aiProvider] ? '••••••••  (stored — paste to replace)' : 'sk-...'}
+                          mono
+                        />
+                        <button
+                          onClick={() => setAiKeyVisible(v => !v)}
+                          title={aiKeyVisible ? 'Hide' : 'Show'}
+                          style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', display: 'flex' }}
+                        >
+                          {aiKeyVisible ? <EyeOffIcon size={14} /> : <EyeIcon size={14} />}
+                        </button>
+                      </div>
+                      <SmallBtn onClick={handleAiKeySave}>{aiKeySaving ? 'Saving…' : 'Save Key'}</SmallBtn>
+                      {aiKeysStored[aiProvider] && <SmallBtn onClick={handleAiKeyClear}>Clear</SmallBtn>}
+                    </div>
+                    {secretsFallbackActive && (
+                      <InfoBox style={{ marginTop: 10 }}>
+                        Your OS credential store isn't available, so this key is stored in an encrypted local file instead. It's protected from casual disk access but not from other processes on this machine.
+                      </InfoBox>
+                    )}
+                  </div>
+                </SettingsCard>
+              </>
+            )}
+
+            {/* Local API */}
+            {activeSection === 'localApi' && (
+              <>
+                <SectionTitle icon={<APIIcon />} title="Local API" desc="A small HTTP server on your own machine so editor extensions or scripts can drive Croco — list projects, create notes/todos, start or stop a run. Off by default; every request needs the token below." />
+
+                <SettingsCard>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <FieldLabel>Enable Local API</FieldLabel>
+                      <FieldDesc>
+                        Binds to <code style={codeStyle}>127.0.0.1</code> only — never reachable from another machine or over the internet.
+                        {apiEnabled && (apiRunning
+                          ? <span style={{ color: 'var(--green)' }}> Running on port {apiPort}.</span>
+                          : <span style={{ color: 'var(--orange)' }}> Not running — check the port isn't already in use.</span>)}
+                      </FieldDesc>
+                    </div>
+                    <Toggle value={apiEnabled} onChange={handleApiToggle} />
+                  </div>
+                </SettingsCard>
+
+                {apiEnabled && (
+                  <>
+                    <SettingsCard>
+                      <FieldLabel>Port</FieldLabel>
+                      <FieldDesc>Restart isn't needed — the server rebinds immediately when this changes.</FieldDesc>
+                      <div style={{ marginTop: 8, maxWidth: 140 }}>
+                        <TextInput type="number" value={apiPort} onChange={handleApiPortChange} mono />
+                      </div>
+                    </SettingsCard>
+
+                    <SettingsCard>
+                      <FieldLabel>Access Token</FieldLabel>
+                      <FieldDesc>
+                        Send it as <code style={codeStyle}>Authorization: Bearer &lt;token&gt;</code> on every request except <code style={codeStyle}>/health</code>.
+                        {apiTokenStored && !apiTokenReveal && ' A token is already set — regenerating invalidates it immediately.'}
+                      </FieldDesc>
+                      {apiTokenReveal ? (
+                        <div style={{ marginTop: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--base)', border: '1px solid var(--border-bright)', borderRadius: 8, padding: '10px 12px' }}>
+                            <code style={{ ...codeStyle, flex: 1, fontSize: 12, wordBreak: 'break-all' }}>{apiTokenReveal}</code>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(apiTokenReveal); toast.success('Copied') }}
+                              title="Copy"
+                              style={{ display: 'flex', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dim)', flexShrink: 0 }}
+                            ><CopyIcon size={14} /></button>
+                          </div>
+                          <InfoBox style={{ marginTop: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><AlertTriangleIcon size={12} /> Copy this now — Croco won't show it again. Regenerate to get a new one.</div>
+                          </InfoBox>
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: 10 }}>
+                          <SmallBtn onClick={handleRegenerateToken}>{apiBusy ? 'Working…' : apiTokenStored ? 'Regenerate Token' : 'Generate Token'}</SmallBtn>
+                        </div>
+                      )}
+                    </SettingsCard>
+
+                    <SettingsCard>
+                      <FieldLabel>Example</FieldLabel>
+                      <FieldDesc>List projects from a terminal:</FieldDesc>
+                      <pre style={{ marginTop: 8, padding: '10px 12px', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11, fontFamily: 'Geist Mono, monospace', color: 'var(--dim)', overflowX: 'auto' }}>
+{`curl http://127.0.0.1:${apiPort}/projects \\
+  -H "Authorization: Bearer <token>"`}
+                      </pre>
+                    </SettingsCard>
+                  </>
+                )}
               </>
             )}
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeftIcon, FolderIcon, GithubIcon, CheckCircleIcon, EyeIcon, EyeOffIcon, AlertTriangleIcon, WindowIcon, DatabaseIcon, TerminalIcon, PackageIcon, GameIcon } from '../constants/SimpleSvgExports'
+import { ArrowLeftIcon, FolderIcon, GithubIcon, CheckCircleIcon, EyeIcon, EyeOffIcon, AlertTriangleIcon, WindowIcon, DatabaseIcon, TerminalIcon, PackageIcon, GameIcon, UploadCloudIcon, XCircleIcon } from '../constants/SimpleSvgExports'
 
 // Templates carry an `icon` key (from templates_list() in system.rs) rather
 // than a hand-drawn brand logo per language/framework — keeps the picker
@@ -77,6 +77,10 @@ export default function ProjectForm() {
   const [catFilter,    setCatFilter]    = useState('All')
   const [shell,        setShell]        = useState('')
   const [platform,     setPlatform]     = useState('win32')
+  // Community templates (Phase 6 item 12) — a locally-imported custom
+  // template overrides the built-in TEMPLATES selection entirely.
+  const [importedTemplate, setImportedTemplate] = useState(null)
+  const [importError,      setImportError]      = useState(null)
 
   const SHELL_OPTIONS_MAP = {
     win32: [{ value: '', label: 'cmd.exe' }, { value: 'powershell', label: 'PowerShell' }],
@@ -115,13 +119,33 @@ export default function ProjectForm() {
     if (picked) setCustomPath(picked)
   }
 
+  const pickCustomTemplate = async () => {
+    if (!window.api) return
+    setImportError(null)
+    const picked = await window.api.system.showFilePicker(null, [{ name: 'Croco Template', extensions: ['json'] }])
+    if (!picked) return
+    try {
+      const raw = await window.api.system.readTextFile(picked)
+      const parsed = JSON.parse(raw)
+      if (parsed.kind !== 'croco-custom-template' || !parsed.files || typeof parsed.files !== 'object') {
+        throw new Error('Not a valid Croco template file')
+      }
+      setImportedTemplate(parsed)
+      setTemplateId('empty')
+    } catch (err) {
+      setImportError(err?.message || 'Could not read that template file')
+    }
+  }
+
   const handleCreate = async () => {
     if (!name.trim()) { setErrors({ name: 'Required' }); return }
     setSaving(true)
     try {
       const result = await window.api.projects.create({
         name, description, emoji, visibility, ide, shell: shell || null,
-        github: github || null, path: customPath || null, tags, templateId,
+        github: github || null, path: customPath || null, tags,
+        templateId: importedTemplate ? 'custom' : templateId,
+        templateFiles: importedTemplate ? importedTemplate.files : undefined,
         initGit: initGit || createRepo,
         createGithubRepo: createRepo,
         githubRepoPrivate: createRepo ? githubRepoPrivate : undefined,
@@ -366,8 +390,20 @@ export default function ProjectForm() {
         {/* Right: Template picker */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 32px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* Selected template preview */}
-          {selectedTemplate && (
+          {/* Imported custom template — takes over selection entirely */}
+          {importedTemplate ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border-bright)', borderRadius: 10 }}>
+              <PackageIcon size={22} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{importedTemplate.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 2 }}>{importedTemplate.description || `${importedTemplate.fileCount} files`}</div>
+              </div>
+              <button onClick={() => setImportedTemplate(null)} title="Use a built-in template instead"
+                style={{ display: 'flex', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)' }}>
+                <XCircleIcon size={16} />
+              </button>
+            </div>
+          ) : selectedTemplate && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border-bright)', borderRadius: 10 }}>
               <TemplateIcon icon={selectedTemplate.icon} color={selectedTemplate.color} size={22} />
               <div style={{ flex: 1 }}>
@@ -380,8 +416,14 @@ export default function ProjectForm() {
             </div>
           )}
 
+          {importError && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#ff6666' }}>
+              <AlertTriangleIcon size={12} /> {importError}
+            </div>
+          )}
+
           {/* Category filter */}
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
             {categories.map(c => {
               const col = CATEGORY_COLOR[c] || 'var(--accent)'
               const active = catFilter === c
@@ -392,15 +434,19 @@ export default function ProjectForm() {
                 </button>
               )
             })}
+            <button onClick={pickCustomTemplate}
+              style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 20, fontSize: 10, cursor: 'pointer', fontFamily: 'Geist, sans-serif', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dimmer)' }}>
+              <UploadCloudIcon size={11} /> Import Custom Template
+            </button>
           </div>
 
           {/* Template grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 7 }}>
             {visibleTemplates.map(t => {
-              const selected = templateId === t.id
+              const selected = !importedTemplate && templateId === t.id
               const catColor = CATEGORY_COLOR[t.category] || 'var(--accent)'
               return (
-                <button key={t.id} onClick={() => setTemplateId(t.id)}
+                <button key={t.id} onClick={() => { setTemplateId(t.id); setImportedTemplate(null) }}
                   style={{ padding: '11px 11px 9px', borderRadius: 10, cursor: 'pointer', textAlign: 'left', border: `1px solid ${selected ? catColor : 'var(--border)'}`, background: selected ? `${catColor}10` : 'var(--card)', transition: 'all 0.12s', display: 'flex', flexDirection: 'column', gap: 4 }}
                   onMouseEnter={e => { if (!selected) { e.currentTarget.style.borderColor = 'var(--border-bright)'; e.currentTarget.style.background = 'var(--card-hover)' } }}
                   onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--card)' } }}

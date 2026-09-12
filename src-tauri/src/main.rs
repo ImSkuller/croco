@@ -56,6 +56,14 @@ pub(crate) use entitlements::*;
 mod projects;
 pub(crate) use projects::*;
 
+mod ai;
+pub(crate) use ai::*;
+
+mod local_api;
+pub(crate) use local_api::*;
+
+mod deep_link;
+
 // ─── Global state ──────────────────────────────────────────────────────────────
 
 // User-Agent for all GitHub API calls — always matches the app version.
@@ -227,6 +235,13 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     check_and_send_deadline_reminders(&handle);
     start_deadline_reminder_scheduler(handle.clone());
 
+    // Local HTTP API (Phase 6 item 7): a no-op if settings.api.enabled is
+    // false, which is the default — see local_api.rs.
+    tauri::async_runtime::spawn(local_api_apply(handle.clone()));
+
+    // croco:// deep links (Phase 6 item 11) — see deep_link.rs.
+    deep_link::init(&handle);
+
     // Build tray menu
     let show  = MenuItem::with_id(app, "show",  "Show Window", true, None::<&str>)?;
     let sep   = PredefinedMenuItem::separator(app)?;
@@ -285,11 +300,13 @@ fn main() {
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_deep_link::init())
         .setup(|app| setup_app(app))
         .invoke_handler(tauri::generate_handler![
             // settings
             settings_get, settings_set, settings_update, settings_reset,
             settings_test_github, settings_save_avatar, settings_set_github_token,
+            settings_set_ai_key,
             // projects
             projects_get_all, projects_get_by_id, projects_create, projects_import,
             projects_edit, projects_delete, projects_restore, projects_delete_permanently,
@@ -299,16 +316,22 @@ fn main() {
             projects_get_dependencies, projects_install_dependencies, projects_update_dependencies,
             projects_add_dependency, projects_remove_dependency, projects_get_file_tree,
             projects_get_scripts, projects_rename, projects_set_archived,
+            projects_export_as_template,
             // git
             git_status, git_commit, git_get_log, git_is_repo, git_get_branches,
             git_switch_branch, git_create_branch, git_push, git_get_readme, git_pull,
             git_stage_files, git_unstage_files, git_diff_file,
             git_get_ahead_behind,
+            // ai
+            ai_generate_commit_message,
+            // local api
+            local_api_apply, local_api_regenerate_token,
             // git tags & version diffing (GitHub page: Releases, Changelog, Insights tabs)
             git_list_tags, git_create_tag, git_get_commits_between, git_diff_between_refs,
             git_get_commit_dates,
             // github api (GitHub page: Overview, Releases tabs)
             github_get_repo_info, github_list_releases, github_create_release,
+            github_list_issues, github_list_pull_requests, github_create_issue,
             // run
             run_start, run_stop, run_get_running, run_is_running,
             // notes
@@ -326,7 +349,7 @@ fn main() {
             system_open_path, system_open_external, system_open_in_app_browser, system_path_exists,
             system_homedir, system_platform, system_user_data,
             system_lookup_community_user, system_validate_github_username,
-            system_write_bytes,
+            system_write_bytes, system_read_text_file,
             // templates
             templates_list,
             // notify
