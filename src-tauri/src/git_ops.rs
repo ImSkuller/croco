@@ -438,6 +438,8 @@ pub async fn git_push(app: AppHandle, id: String) -> Result<Value, String> {
         Ok(_) => {
             let name = crate::get_project(&app, &id).and_then(|p| p["name"].as_str().map(|s| s.to_string())).unwrap_or_default();
             crate::emit_toast(&app, "Pushed to remote", &name, "success");
+            crate::webhook_notify(&app, "Pushed to remote", &format!("**{name}** — branch `{branch}`"));
+            crate::slack_webhook_notify(&app, &format!("Pushed to remote: *{name}* (branch `{branch}`)"));
             Ok(json!({ "ok": true }))
         }
         Err(e) => Ok(json!({ "ok": false, "message": e }))

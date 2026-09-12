@@ -562,6 +562,8 @@ pub async fn projects_create(app: AppHandle, data: Value) -> Result<Value, Strin
 
     upsert_project(&app, project.clone())?;
     crate::activity_log(&app, "project.created", json!({ "projectId": project["id"], "projectName": project["name"], "templateId": data["templateId"] }));
+    crate::webhook_notify(&app, "New project", &format!("📁 {}", project["name"].as_str().unwrap_or("")));
+    crate::slack_webhook_notify(&app, &format!("New project: {}", project["name"].as_str().unwrap_or("")));
     let mut result = to_ui(project);
     if let Value::Object(ref mut m) = result { m.insert("setupWarnings".into(), json!(warnings)); }
     Ok(result)

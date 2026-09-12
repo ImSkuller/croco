@@ -398,6 +398,8 @@ pub fn todos_toggle(app: AppHandle, id: String) -> Result<Value, String> {
     if completed {
         crate::activity_log(&app, "todo.completed", json!({ "projectId": project_id, "title": title }));
         crate::personality::track(&app, "todo_completed", json!({}));
+        crate::webhook_notify(&app, "Todo completed", &format!("✅ {title}"));
+        crate::slack_webhook_notify(&app, &format!("Todo completed: {title}"));
     } else {
         crate::activity_log(&app, "todo.reverted", json!({ "projectId": project_id, "title": title }));
     }
