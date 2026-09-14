@@ -4,6 +4,7 @@ import { AIIcon, CheckIcon } from '../../../constants/SimpleSvgExports'
 import { SettingsCard, FieldLabel, FieldDesc, TextInput, Toggle, ToggleChip, InfoBox } from '../Exports'
 import ModuleHeader from './ModuleHeader'
 import ApiKeyField from './ApiKeyField'
+import { patchModule } from './moduleUpdate'
 
 const PROVIDERS = [
   { id: 'anthropic', label: 'Anthropic', needsKey: true },
@@ -19,7 +20,7 @@ export default function AiModuleCard({ aiKeysStored }) {
   const [ollamaError, setOllamaError] = useState(null)
   if (!settings) return null
 
-  const update = (patch) => window.api?.settings.update({ modules: { ai: patch } }).catch(() => {})
+  const update = (patch) => patchModule('ai', patch).catch(() => {})
   const provider = ai.provider || 'anthropic'
   const ollama = ai.ollama || { host: 'http://localhost:11434', model: '' }
 

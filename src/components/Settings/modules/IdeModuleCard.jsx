@@ -2,6 +2,7 @@ import { useData } from '../../../lib/store'
 import { IDEIcon } from '../../../constants/SimpleSvgExports'
 import { SettingsCard, FieldLabel, FieldDesc, TextInput, Toggle, ToggleChip, InfoBox } from '../Exports'
 import ModuleHeader from './ModuleHeader'
+import { patchModule } from './moduleUpdate'
 
 const DEFAULT_EDITOR = {
   fontSize: 13, tabSize: 2, insertSpaces: true, wordWrap: 'off',
@@ -15,7 +16,7 @@ export default function IdeModuleCard() {
   if (!settings) return null
   const editor = { ...DEFAULT_EDITOR, ...(ide.editor || {}) }
 
-  const updateModule = (patch) => window.api?.settings.update({ modules: { ide: patch } }).catch(() => {})
+  const updateModule = (patch) => patchModule('ide', patch).catch(() => {})
   const updateEditor = (patch) => updateModule({ editor: patch })
 
   return (

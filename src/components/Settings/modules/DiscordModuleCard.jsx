@@ -3,6 +3,7 @@ import { DiscordIcon } from '../../../constants/SimpleSvgExports'
 import { SettingsCard, FieldLabel, FieldDesc, Toggle } from '../Exports'
 import WebhookFields from './WebhookFields'
 import ModuleHeader from './ModuleHeader'
+import { patchModule } from './moduleUpdate'
 
 export default function DiscordModuleCard() {
   const settings = useData('settings')
@@ -10,7 +11,7 @@ export default function DiscordModuleCard() {
 
   if (!settings) return null
 
-  const update = (patch) => window.api?.settings.update({ modules: { discord: patch } }).catch(() => {})
+  const update = (patch) => patchModule('discord', patch).catch(() => {})
 
   const toggleModule = () => {
     update({ enabled: !d.enabled })

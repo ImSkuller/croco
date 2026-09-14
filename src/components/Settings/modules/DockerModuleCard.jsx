@@ -2,13 +2,14 @@ import { useData } from '../../../lib/store'
 import { PackageIcon } from '../../../constants/SimpleSvgExports'
 import { SettingsCard, InfoBox } from '../Exports'
 import ModuleHeader from './ModuleHeader'
+import { patchModule } from './moduleUpdate'
 
 export default function DockerModuleCard() {
   const settings = useData('settings')
   const d = settings?.modules?.docker
   if (!settings) return null
 
-  const update = (patch) => window.api?.settings.update({ modules: { docker: patch } }).catch(() => {})
+  const update = (patch) => patchModule('docker', patch).catch(() => {})
 
   return (
     <SettingsCard>

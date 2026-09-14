@@ -2,13 +2,14 @@ import { useData } from '../../../lib/store'
 import { ClockIcon } from '../../../constants/SimpleSvgExports'
 import { SettingsCard, FieldLabel, TextInput } from '../Exports'
 import ModuleHeader from './ModuleHeader'
+import { patchModule } from './moduleUpdate'
 
 export default function FocusTimerModuleCard() {
   const settings = useData('settings')
   const f = settings?.modules?.focusTimer
   if (!settings) return null
 
-  const update = (patch) => window.api?.settings.update({ modules: { focusTimer: patch } }).catch(() => {})
+  const update = (patch) => patchModule('focusTimer', patch).catch(() => {})
 
   return (
     <SettingsCard>

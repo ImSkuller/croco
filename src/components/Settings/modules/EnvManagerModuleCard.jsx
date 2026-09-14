@@ -2,13 +2,14 @@ import { useData } from '../../../lib/store'
 import { LockIcon } from '../../../constants/SimpleSvgExports'
 import { SettingsCard, InfoBox } from '../Exports'
 import ModuleHeader from './ModuleHeader'
+import { patchModule } from './moduleUpdate'
 
 export default function EnvManagerModuleCard() {
   const settings = useData('settings')
   const e = settings?.modules?.envManager
   if (!settings) return null
 
-  const update = (patch) => window.api?.settings.update({ modules: { envManager: patch } }).catch(() => {})
+  const update = (patch) => patchModule('envManager', patch).catch(() => {})
 
   return (
     <SettingsCard>

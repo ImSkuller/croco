@@ -3,13 +3,14 @@ import { SlackIcon } from '../../../constants/SimpleSvgExports'
 import { SettingsCard } from '../Exports'
 import ModuleHeader from './ModuleHeader'
 import WebhookFields from './WebhookFields'
+import { patchModule } from './moduleUpdate'
 
 export default function SlackModuleCard() {
   const settings = useData('settings')
   const s = settings?.modules?.slack
   if (!settings) return null
 
-  const update = (patch) => window.api?.settings.update({ modules: { slack: patch } }).catch(() => {})
+  const update = (patch) => patchModule('slack', patch).catch(() => {})
 
   return (
     <SettingsCard>
