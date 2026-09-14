@@ -3,9 +3,28 @@
 
 <head>
   <meta charset="UTF-8" />
+  <script>
+    // Repaint the last-known theme/style instantly, before React mounts.
+    // Without this, every launch showed a flash of the default/wrong-theme
+    // look for the window between first paint and the async settings.get()
+    // round-trip in App.jsx resolving. Reads what lib/appearanceCache.js
+    // wrote on the previous real apply (applyTheme/applyStyle) — App.jsx
+    // still re-applies from the real settings on mount, so this is a
+    // best-effort head start, never the source of truth.
+    (function () {
+      try {
+        var cached = localStorage.getItem('croco:appearance-cache')
+        if (!cached) return
+        var c = JSON.parse(cached)
+        var html = document.documentElement
+        if (c.className) html.className = c.className
+        if (c.vars) for (var k in c.vars) html.style.setProperty(k, c.vars[k])
+      } catch (e) { /* private window / storage disabled — repaints after mount instead */ }
+    })()
+  </script>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pac Man</title>
+  <title>Croco</title>
 </head>
 
 <body>

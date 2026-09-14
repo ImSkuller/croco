@@ -10,16 +10,20 @@ export default function AppShell() {
   const navigate  = useNavigate()
   const location  = useLocation()
   const [showHelp,  setShowHelp]  = useState(false)
-  const [checked,   setChecked]   = useState(false)
   const [overrides, setOverrides] = useState({})
 
-  // First-launch redirect
+  // First-launch redirect — renders the real shell immediately (see the
+  // removed `if (!checked) return null` this used to gate) instead of a
+  // blank window until this IPC round-trip resolves. For the overwhelming
+  // majority of launches (already onboarded) that gate bought nothing but
+  // a delay; the cost of removing it is a brief flash of the Dashboard
+  // before redirecting away, and only on someone's very first-ever launch.
   useEffect(() => {
-    if (!window.api || location.pathname === '/onboarding') { Promise.resolve().then(() => setChecked(true)); return }
+    if (!window.api || location.pathname === '/onboarding') return
     window.api.settings.get().then(s => {
       if (!s?.app?.onboarded) navigate('/onboarding', { replace: true })
       setOverrides(s?.app?.shortcuts || {})
-    }).catch(() => {}).finally(() => setChecked(true))
+    }).catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps -- first-launch check runs exactly once per mount by design
   }, [])
 
@@ -88,8 +92,6 @@ export default function AppShell() {
     window.addEventListener('keydown', handler)
     return () => { window.removeEventListener('keydown', handler); clearTimeout(gTimer) }
   }, [navigate, overrides])
-
-  if (!checked) return null
 
   return (
     <ToastProvider>

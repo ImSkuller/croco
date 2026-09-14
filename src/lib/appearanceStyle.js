@@ -2,6 +2,7 @@
 // theme.js). Theme picks colours; Style picks the overall look-and-feel —
 // shapes, blur, motion, chrome. They compose: e.g. the Futuristic theme's
 // cyan accent still applies under the Apple style's frosted-glass chrome.
+import { cacheAppearance } from './appearanceCache'
 
 export const STYLES = [
   {
@@ -37,4 +38,6 @@ export function applyStyle(styleId) {
   styleId = normalizeStyleId(styleId)
   STYLES.forEach(s => html.classList.remove(`${STYLE_CLASS_PREFIX}${s.id}`))
   html.classList.add(`${STYLE_CLASS_PREFIX}${styleId}`)
+
+  cacheAppearance()
 }

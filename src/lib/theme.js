@@ -1,4 +1,5 @@
 import { lazyLoadGoogleFont } from './lazyGoogleFont'
+import { cacheAppearance } from './appearanceCache'
 
 export const THEMES = [
   { id: 'default',                    label: 'Default',              dark: true  },
@@ -54,6 +55,8 @@ export function applyTheme(themeId, glass = false, overrides = {}) {
     )
   }
   if (logoBg) html.style.setProperty('--logo-bg', logoBg)
+
+  cacheAppearance()
 }
 
 export function getThemeAccentSwatch(themeId) {
