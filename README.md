@@ -56,7 +56,7 @@ Optional features, off by default, each toggled in **Settings → Modules**:
 Two independent axes in **Settings → Appearance**:
 
 - **Theme** picks the palette: Default, Catppuccin Mocha, NeoVim Dark, Futuristic.
-- **Style** picks the shape and motion on top of any theme: Minimal, Default, Apple (liquid glass), Natural.
+- **Style** picks the shape and motion on top of any theme: Default (liquid-glass — translucent frosted chrome, spring motion) or Natural (calmer and flatter, no glow).
 - **Glass Effect** turns the window itself into real frosted glass on Windows 11 (Mica, falling back to Acrylic/Blur), not a simulated blur.
 - Accent colour and font are free choices on top of both.
 

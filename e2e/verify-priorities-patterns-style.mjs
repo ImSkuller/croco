@@ -2,7 +2,8 @@
 // session: user-configurable Todo priorities (add/edit/delete via the real
 // Priority Manager UI), the Patterns page's two independent streaks
 // (commit + app-login), and the Settings -> Appearance "Style" picker
-// (Apple applies its html.style-apple class and Default removes it).
+// (the former "Apple" style — id 'apple', relabelled "Default" — applies
+// html.style-apple; "Natural" applies html.style-natural instead).
 // See .claude/skills/run-croco-e2e/SKILL.md for shared setup/gotchas.
 //
 // Run with: node e2e/verify-priorities-patterns-style.mjs
@@ -168,24 +169,29 @@ async function main() {
     assert(patternsLower.includes('app login streak'), 'app login streak card renders')
     assert(patternsLower.includes('login streak'), 'StreakHero banner renders (login streak copy)')
 
-    // ── Settings -> Appearance -> Style: Apple applies its html class ────
+    // ── Settings -> Appearance -> Style: id 'apple' (labelled "Default")
+    //    applies its html class, "Natural" applies a different one ───────
     await driver.executeScript("location.hash = '#/settings'")
     await driver.findElement(By.xpath("//button[contains(., 'Appearance')]")).click()
     // Style labels come from src/lib/appearanceStyle.js STYLES — Pasta Galaxy
-    // was retired in Phase 4, so wait for two that actually exist.
-    await waitForBodyText(driver, t => t.includes('Apple') && t.includes('Natural'), 'Style picker to render')
+    // was retired in Phase 4. The Style picker's "Default" is a different
+    // button from the Theme picker's own "Default" theme lower on the same
+    // page (a real, intentional label collision since the rename), so these
+    // selectors match on each style's unique description text instead of
+    // its label to stay unambiguous.
+    await waitForBodyText(driver, t => t.includes('Liquid-glass') && t.includes('Natural'), 'Style picker to render')
 
-    await driver.findElement(By.xpath("//span[text()='Apple']")).click()
+    await driver.findElement(By.xpath("//span[contains(text(),'Liquid-glass')]/ancestor::button")).click()
     let hasAppleClass = await driver.executeScript("return document.documentElement.classList.contains('style-apple')")
-    assert(hasAppleClass === true, 'selecting Apple applied html.style-apple')
+    assert(hasAppleClass === true, 'selecting the former-Apple/now-"Default" style applied html.style-apple')
 
     const settingsAfterStyle = await callApi(driver, 'settings.get')
-    assert(settingsAfterStyle.appearance?.style === 'apple', 'style:"apple" persisted to settings')
-    assert(settingsAfterStyle.appearance?.fontBody === 'Inter', 'Apple style curated the Inter font pairing')
+    assert(settingsAfterStyle.appearance?.style === 'apple', 'style:"apple" persisted to settings (label changed, id did not)')
+    assert(settingsAfterStyle.appearance?.fontBody === 'Inter', 'that style still curates the Inter font pairing')
 
-    await driver.findElement(By.xpath("//span[text()='Default']/ancestor::button")).click()
+    await driver.findElement(By.xpath("//span[contains(text(),'Calmer and less')]/ancestor::button")).click()
     let hasAppleClassAfter = await driver.executeScript("return document.documentElement.classList.contains('style-apple')")
-    assert(hasAppleClassAfter === false, 'switching back to Default removed html.style-apple')
+    assert(hasAppleClassAfter === false, 'switching to Natural removed html.style-apple')
 
     // ── Console error sweep ────────────────────────────────────────────
     const logs = await getConsoleErrors(driver)
