@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { VisibilityBadge, CardBtn } from './Exports.jsx'
 import { IDEIcon, StarIcon } from '../../constants/SimpleSvgExports.jsx'
 import TagChip from '../ui/TagChip.jsx'
+import { ProjectIcon } from '../ui/ProjectIcon'
 
 export default function ProjectCardGrid({ project, isRunning, onToggleFav, onClick }) {
   const [hovered, setHovered] = useState(false)
@@ -27,7 +28,7 @@ export default function ProjectCardGrid({ project, isRunning, onToggleFav, onCli
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 38, height: 38, borderRadius: 'var(--r-lg)', background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
-            {project.emoji}
+            <ProjectIcon value={project.emoji} size={18} />
           </div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: -0.2, display: 'flex', alignItems: 'center', gap: 6 }}>

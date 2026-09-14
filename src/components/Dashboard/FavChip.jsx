@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ProjectIcon } from '../ui/ProjectIcon'
 
 export default function FavChip({ fav }) {
   const navigate = useNavigate()
@@ -21,7 +22,7 @@ export default function FavChip({ fav }) {
         transition:  'all 0.12s',
       }}
     >
-      <span style={{ fontSize: 14 }}>{fav.emoji}</span>
+      <span style={{ fontSize: 14 }}><ProjectIcon value={fav.emoji} size={14} /></span>
       <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)' }}>{fav.name}</span>
       <span style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', background: 'var(--border)', padding: '2px 6px', borderRadius: 'var(--r-sm)' }}>
         {fav.ide}

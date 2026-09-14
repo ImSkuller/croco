@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import SettingsCard from '../Settings/SettingsCard'
 import Spinner from '../ProjectDetail/Spinner'
-import { RefreshIcon, ExternalLinkIcon, FolderIcon } from '../../constants/SimpleSvgExports'
+import { RefreshIcon, ExternalLinkIcon } from '../../constants/SimpleSvgExports'
+import { ProjectIcon } from '../ui/ProjectIcon'
 
 function Stat({ label, value }) {
   return (
@@ -34,7 +35,7 @@ export default function RepoInfoCard({ project }) {
   return (
     <SettingsCard style={{ margin: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 16, flexShrink: 0, display: 'flex', color: 'var(--dim)' }}>{project.emoji || <FolderIcon size={16} />}</span>
+        <span style={{ fontSize: 16, flexShrink: 0, display: 'flex', color: 'var(--dim)' }}><ProjectIcon value={project.emoji} size={16} /></span>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {project.name}
         </span>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast/useToast.js'
 import useDiscordPresence from '../hooks/useDiscordPresence'
 import { EmptyState } from '../components/ui/EmptyState'
+import { isIconValue } from '../lib/projectIcons'
 import {
   EditIcon, RefreshIcon, CheckCircleIcon, DownloadIcon, BulbIcon,
   NoteIcon2, EraserIcon, UndoIcon, SaveIcon,
@@ -673,7 +674,10 @@ export default function Ideas() {
                     >
                       <option value="">No project</option>
                       {projects.filter(p => !p.archived).map(p => (
-                        <option key={p.id} value={p.id}>{p.emoji || '📁'} {p.name}</option>
+                        // A native <option> can't render an SVG icon, so an
+                        // "icon:<id>" project falls back to the plain folder
+                        // emoji here rather than showing the raw string.
+                        <option key={p.id} value={p.id}>{(!p.emoji || isIconValue(p.emoji)) ? '📁' : p.emoji} {p.name}</option>
                       ))}
                     </select>
                   </div>

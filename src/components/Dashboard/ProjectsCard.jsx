@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IDEIcon } from '../../constants/SimpleSvgExports.jsx'
+import { ProjectIcon } from '../ui/ProjectIcon'
 
 export default function ProjectCard({ project }) {
   const navigate = useNavigate()
@@ -30,7 +31,7 @@ export default function ProjectCard({ project }) {
       {/* Icon + IDE badge */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ width: 36, height: 36, borderRadius: 'var(--r-lg)', background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
-          {project.emoji}
+          <ProjectIcon value={project.emoji} size={16} />
         </div>
         <button
           onClick={e => { e.stopPropagation(); window.api?.projects.openInIDE(project.id) }}

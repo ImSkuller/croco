@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CardBtn, VisibilityBadge } from './Exports.jsx'
 import { GithubIcon, IDEIcon, FolderIcon, StarIcon } from '../../constants/SimpleSvgExports.jsx'
 import TagChip from '../ui/TagChip.jsx'
+import { ProjectIcon } from '../ui/ProjectIcon'
 
 export default function ProjectCardList({ project, isRunning, onToggleFav, index, onClick }) {
   const [hovered, setHovered] = useState(false)
@@ -24,7 +25,7 @@ export default function ProjectCardList({ project, isRunning, onToggleFav, index
       }}
     >
       <div style={{ width: 34, height: 34, borderRadius: 'var(--r-md)', background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-        {project.emoji}
+        <ProjectIcon value={project.emoji} size={16} />
       </div>
 
       {/* Name + desc */}

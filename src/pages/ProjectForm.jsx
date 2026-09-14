@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeftIcon, FolderIcon, GithubIcon, CheckCircleIcon, EyeIcon, EyeOffIcon, AlertTriangleIcon, WindowIcon, DatabaseIcon, TerminalIcon, PackageIcon, GameIcon, UploadCloudIcon, XCircleIcon } from '../constants/SimpleSvgExports'
 import useDiscordPresence from '../hooks/useDiscordPresence'
+import { EMOJI_OPTIONS, SVG_ICON_OPTIONS, iconValueFor } from '../lib/projectIcons'
+import { ProjectIcon } from '../components/ui/ProjectIcon'
 
 // Templates carry an `icon` key (from templates_list() in system.rs) rather
 // than a hand-drawn brand logo per language/framework — keeps the picker
@@ -28,13 +30,6 @@ const IDE_OPTIONS = [
   { value: 'sublime',   label: 'Sublime'   },
   { value: 'neovim',    label: 'Neovim'    },
   { value: 'vim',       label: 'Vim'       },
-]
-
-const EMOJI_PRESETS = [
-  '⚡','🌐','🔧','🎮','🤖','📡','🚀','📦','🔬','🎨','💡','🛠️',
-  '💀','☠️','🩵','🎁','☕','🧾','🔖','📑','📗','📘','📙',
-  '🏗️','🔐','📱','🧠','🔮','🏆','🛡️','🔭','🧩','🌿','🦊',
-  '🎯','🌟','💎','🎵','🌈','🦾','🐙','🦋','🌊','🔥','❄️','🌙',
 ]
 
 const CATEGORY_ORDER = ['Blank', 'Frontend', 'Fullstack', 'Backend', 'CLI', 'Desktop', 'Minecraft', 'Discord', 'Other']
@@ -65,6 +60,7 @@ export default function ProjectForm() {
   const [tagInput,     setTagInput]     = useState('')
   const [tags,         setTags]         = useState([])
   const [showEmoji,    setShowEmoji]    = useState(false)
+  const [iconTab,      setIconTab]      = useState('emoji')
   const [errors,       setErrors]       = useState({})
   const [saving,       setSaving]       = useState(false)
   const [setupDone,    setSetupDone]    = useState(null)
@@ -229,17 +225,39 @@ export default function ProjectForm() {
                 onClick={() => setShowEmoji(p => !p)}
                 style={{ width: 46, height: 46, borderRadius: 'var(--r-lg)', background: 'var(--card)', border: `1px solid ${showEmoji ? 'var(--border-bright)' : 'var(--border)'}`, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all var(--transition-fast)' }}
               >
-                {emoji}
+                <ProjectIcon value={emoji} size={20} />
               </button>
               {showEmoji && (
-                <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-lg)', padding: 8, display: 'flex', flexWrap: 'wrap', gap: 3, width: 192, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
-                  {EMOJI_PRESETS.map(e => (
-                    <button key={e} onClick={() => { setEmoji(e); setShowEmoji(false) }}
-                      style={{ fontSize: 18, background: 'none', border: 'none', cursor: 'pointer', padding: '3px 5px', borderRadius: 'var(--r-sm)', transition: 'background var(--transition-fast)' }}
-                      onMouseEnter={e2 => e2.currentTarget.style.background = 'var(--card)'}
-                      onMouseLeave={e2 => e2.currentTarget.style.background = 'none'}
-                    >{e}</button>
-                  ))}
+                <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-lg)', width: 224, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+                    {[['emoji', 'Emoji'], ['icons', 'Icons']].map(([id, label]) => (
+                      <button key={id} onClick={() => setIconTab(id)}
+                        style={{
+                          flex: 1, padding: '7px 0', background: 'none', border: 'none', cursor: 'pointer',
+                          fontSize: 11, fontFamily: 'Geist, sans-serif', fontWeight: iconTab === id ? 600 : 400,
+                          color: iconTab === id ? 'var(--text)' : 'var(--dimmer)',
+                          borderBottom: `2px solid ${iconTab === id ? 'var(--accent)' : 'transparent'}`,
+                          marginBottom: -1, transition: 'color var(--transition-fast)',
+                        }}
+                      >{label}</button>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, padding: 8, maxHeight: 176, overflowY: 'auto' }}>
+                    {iconTab === 'emoji' ? EMOJI_OPTIONS.map(e => (
+                      <button key={e} onClick={() => { setEmoji(e); setShowEmoji(false) }}
+                        style={{ fontSize: 18, background: 'none', border: 'none', cursor: 'pointer', padding: '3px 5px', borderRadius: 'var(--r-sm)', transition: 'background var(--transition-fast)' }}
+                        onMouseEnter={e2 => e2.currentTarget.style.background = 'var(--card)'}
+                        onMouseLeave={e2 => e2.currentTarget.style.background = 'none'}
+                      >{e}</button>
+                    )) : SVG_ICON_OPTIONS.map(({ id, Icon, color }) => (
+                      <button key={id} onClick={() => { setEmoji(iconValueFor(id)); setShowEmoji(false) }}
+                        title={id}
+                        style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--r-sm)', color, transition: 'background var(--transition-fast)' }}
+                        onMouseEnter={e2 => e2.currentTarget.style.background = 'var(--card)'}
+                        onMouseLeave={e2 => e2.currentTarget.style.background = 'none'}
+                      ><Icon size={16} /></button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

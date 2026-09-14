@@ -29,6 +29,8 @@ import { useData } from '../lib/store'
 import useDiscordPresence from '../hooks/useDiscordPresence'
 import TagChip from '../components/ui/TagChip'
 import { EmptyState } from '../components/ui/EmptyState'
+import { EMOJI_OPTIONS, SVG_ICON_OPTIONS, iconValueFor } from '../lib/projectIcons'
+import { ProjectIcon } from '../components/ui/ProjectIcon'
 
 // Lazy — monaco-editor is several MB and must never sit in the main bundle
 // for users who don't enable the IDE module (see lib/monacoSetup.js).
@@ -119,6 +121,7 @@ export default function ProjectDetail() {
   const [todoPriority, setTodoPriority] = useState('med')
   const [todoEmoji,    setTodoEmoji]    = useState('')
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
+  const [settingsIconTab, setSettingsIconTab] = useState('emoji')
   const [linkingTodoId, setLinkingTodoId] = useState(null)
   const [todoNoteId,    setTodoNoteId]    = useState(null)
   const [todoNotePicker, setTodoNotePicker] = useState(false)
@@ -580,7 +583,7 @@ export default function ProjectDetail() {
           onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--dim)' }}
         ><ArrowLeftIcon /> Projects</button>
         <span style={{ color: 'var(--border)' }}>/</span>
-        <span style={{ fontSize: 14 }}>{project.emoji}</span>
+        <span style={{ fontSize: 14 }}><ProjectIcon value={project.emoji} size={14} /></span>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: -0.2 }}>{project.name}</span>
 
         {isRunning && (
@@ -715,7 +718,7 @@ export default function ProjectDetail() {
       <div style={{ padding: '16px 28px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
           <div style={{ width: 50, height: 50, borderRadius: 'var(--r-lg)', background: project.emojiColor || 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
-            {project.emoji}
+            <ProjectIcon value={project.emoji} size={24} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -1346,12 +1349,6 @@ export default function ProjectDetail() {
 
           {/* ─ SETTINGS ──────────────────────────────────── */}
           {tab === 'settings' && editDraft && (() => {
-            const COMMON_EMOJIS = [
-              '📁','🚀','⚡','🔥','💡','🛠️','🎯','🌟','💎','🏗️','🎮','🤖',
-              '🧪','📊','🔐','🌐','📱','🎨','⚙️','🧠','🔮','🏆','🦾','🌈',
-              '🎵','🛡️','🔭','🧩','🌿','🦊','💀','☠️','🩵','🎁','☕','🧾',
-              '🔖','📑','📗','📘','📙','🐙','🦋','🌊','❄️','🌙','🎁','🔴',
-            ]
             const IDE_OPTIONS = [
               { value: 'code',      label: 'VS Code' },
               { value: 'cursor',    label: 'Cursor' },
@@ -1370,17 +1367,42 @@ export default function ProjectDetail() {
                 {/* Emoji picker */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div style={labelStyle}>Project Icon</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ fontSize: 36, width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)' }}>
-                      {editDraft.emoji}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{ fontSize: 30, width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', flexShrink: 0 }}>
+                      <ProjectIcon value={editDraft.emoji} size={26} />
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, flex: 1 }}>
-                      {COMMON_EMOJIS.map(e => (
-                        <button key={e} onClick={() => setEditDraft(d => ({ ...d, emoji: e }))}
-                          style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, borderRadius: 'var(--r-md)', cursor: 'pointer', background: editDraft.emoji === e ? 'var(--border-bright)' : 'var(--card)', border: `1px solid ${editDraft.emoji === e ? 'var(--border-bright)' : 'var(--border)'}`, transition: 'background var(--transition-fast)' }}>
-                          {e}
-                        </button>
-                      ))}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+                        {[['emoji', 'Emoji'], ['icons', 'Icons']].map(([id, tlabel]) => (
+                          <button key={id} onClick={() => setSettingsIconTab(id)}
+                            style={{
+                              padding: '3px 10px', borderRadius: 'var(--r-sm)', border: 'none', cursor: 'pointer',
+                              fontSize: 10.5, fontFamily: 'Geist, sans-serif', fontWeight: settingsIconTab === id ? 600 : 400,
+                              color: settingsIconTab === id ? 'var(--text)' : 'var(--dimmer)',
+                              background: settingsIconTab === id ? 'var(--border)' : 'transparent',
+                              transition: 'all var(--transition-fast)',
+                            }}
+                          >{tlabel}</button>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxHeight: 108, overflowY: 'auto' }}>
+                        {settingsIconTab === 'emoji' ? EMOJI_OPTIONS.map(e => (
+                          <button key={e} onClick={() => setEditDraft(d => ({ ...d, emoji: e }))}
+                            style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, borderRadius: 'var(--r-md)', cursor: 'pointer', background: editDraft.emoji === e ? 'var(--border-bright)' : 'var(--card)', border: `1px solid ${editDraft.emoji === e ? 'var(--border-bright)' : 'var(--border)'}`, transition: 'background var(--transition-fast)' }}>
+                            {e}
+                          </button>
+                        )) : SVG_ICON_OPTIONS.map(({ id, Icon, color }) => {
+                          const value = iconValueFor(id)
+                          const active = editDraft.emoji === value
+                          return (
+                            <button key={id} onClick={() => setEditDraft(d => ({ ...d, emoji: value }))}
+                              title={id}
+                              style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color, borderRadius: 'var(--r-md)', cursor: 'pointer', background: active ? 'var(--border-bright)' : 'var(--card)', border: `1px solid ${active ? 'var(--border-bright)' : 'var(--border)'}`, transition: 'background var(--transition-fast)' }}>
+                              <Icon size={16} />
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>

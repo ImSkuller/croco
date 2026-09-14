@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { GridIcon, ListIcon, Logo, NoteIcon, SearchIcon, SettingsIcon, TodoIcon } from '../../constants/SvgExports.jsx'
 import {
   StarIcon, ActivityIcon, TrendIcon, GithubIcon, TrashIcon, HomeIcon, BulbIcon,
-  PlusCircleIcon, ImportIcon, PaletteIcon, SaveIcon, FolderIcon, NoteIcon2, CheckCircleIcon,
+  PlusCircleIcon, ImportIcon, PaletteIcon, SaveIcon, NoteIcon2, CheckCircleIcon,
   GameIcon, GiftIcon, MusicNoteIcon, PuzzleIcon, AIIcon, IDEIcon, ClockIcon,
 } from '../../constants/SimpleSvgExports.jsx'
 import ManagerVersion from '../../constants/versionManager.jsx'
@@ -14,6 +14,7 @@ import { refreshCapabilitiesOnLaunch } from '../../lib/capabilities'
 import { applyTheme, THEMES, getThemeAccentSwatch } from '../../lib/theme'
 import CrocoGame from '../CrocoGame/CrocoGame.jsx'
 import CloneModal from '../Projects/CloneModal.jsx'
+import { ProjectIcon } from '../ui/ProjectIcon'
 
 const TYPE_COLOR = {
   project: 'var(--blue)',
@@ -229,10 +230,9 @@ export default function Sidebar() {
       label: p.name,
       sub:   p.tags?.join(' · ') || p.ide || 'project',
       to:    `/projects/${p.id}`,
-      // A project's own chosen emoji (if any) is real user content, not app
-      // chrome — kept as-is; only the fallback (no custom emoji set) uses
-      // an SVG icon.
-      icon:  p.emoji || <FolderIcon />,
+      // ProjectIcon renders the project's own chosen emoji/SVG icon, or
+      // falls back to the default folder emoji if none is set.
+      icon:  <ProjectIcon value={p.emoji} />,
     })),
     ...notes.filter(n => !n.trashedAt).map(n => ({
       type:  'note',
