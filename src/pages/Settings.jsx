@@ -270,7 +270,7 @@ export default function Settings() {
     const glass = s.appearance?.glass || false
     setSelectedTheme(theme)
     setGlassEnabled(glass)
-    setSelectedStyle(normalizeStyleId(s.appearance?.style || 'default'))
+    setSelectedStyle(normalizeStyleId(s.appearance?.style || 'apple'))
     setFontBody(s.appearance?.fontBody || 'Geist')
     setFontDisplay(s.appearance?.fontDisplay || 'Lora')
     setLogoBg(s.appearance?.logoBg || '#ffffff')
@@ -1184,16 +1184,13 @@ export default function Settings() {
                 <SettingsCard>
                   <FieldLabel>Style</FieldLabel>
                   <FieldDesc>Picks the overall look-and-feel — shapes, blur, motion. Independent of Theme, which only picks colours.</FieldDesc>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginTop: 12 }}>
                     {STYLES.map(style => {
                       const isActive = selectedStyle === style.id
-                      const isComingSoon = style.status === 'coming-soon'
                       return (
                         <button
                           key={style.id}
-                          disabled={isComingSoon}
                           onClick={() => {
-                            if (isComingSoon) return
                             setSelectedStyle(style.id)
                             applyStyle(style.id)
                             const patch = { appearance: { style: style.id } }
@@ -1207,25 +1204,17 @@ export default function Settings() {
                             }
                             window.api?.settings.update(patch).catch(console.error)
                           }}
-                          title={style.status === 'coming-soon' ? `${style.label} — coming soon` : style.label}
+                          title={style.label}
                           style={{
                             display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6,
                             padding: '12px 14px', borderRadius: 'var(--r-lg)', textAlign: 'left',
                             border: isActive ? '2px solid var(--accent)' : '2px solid var(--border)',
                             background: isActive ? 'var(--accent-dim)' : 'var(--card)',
-                            cursor: isComingSoon ? 'default' : 'pointer',
-                            opacity: isComingSoon ? 0.55 : 1,
+                            cursor: 'pointer',
                             transition: 'all var(--transition-base)',
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>
-                            <span style={{ fontSize: 12.5, fontWeight: 600, color: isActive ? 'var(--text)' : 'var(--dim)' }}>{style.label}</span>
-                            {isComingSoon && (
-                              <span style={{ marginLeft: 'auto', fontSize: 9, fontFamily: 'Geist Mono, monospace', color: 'var(--dimmer)', background: 'var(--border)', padding: '1px 6px', borderRadius: 'var(--r-lg)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                                Soon
-                              </span>
-                            )}
-                          </div>
+                          <span style={{ fontSize: 12.5, fontWeight: 600, color: isActive ? 'var(--text)' : 'var(--dim)' }}>{style.label}</span>
                           <span style={{ fontSize: 10.5, color: 'var(--dimmer)', lineHeight: 1.4 }}>{style.description}</span>
                         </button>
                       )

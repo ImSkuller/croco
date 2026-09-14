@@ -38,7 +38,7 @@ export default function App() {
           logoBg:      s?.appearance?.logoBg,
         }
       )
-      applyStyle(s?.appearance?.style || 'default')
+      applyStyle(s?.appearance?.style || 'apple')
     }).catch(() => {})
     // Once per launch, for the Patterns page's login streak.
     window.api.personality?.trackAppOpen?.().catch(() => {})

@@ -5,21 +5,9 @@
 
 export const STYLES = [
   {
-    id:          'minimal',
-    label:       'Minimal',
-    description: 'The new default (Phase 4.4) — near-zero radius, no shadows or glow, a narrower sidebar, motion capped at 150ms. One accent colour, used only for the primary action and current-state.',
-    status:      'available',
-  },
-  {
-    id:          'default',
-    label:       'Default',
-    description: 'The classic Croco look — flat cards, minimal chrome.',
-    status:      'available',
-  },
-  {
     id:          'apple',
     label:       'Apple',
-    description: 'Liquid-glass: frosted translucent black panels, blur, spring motion.',
+    description: 'Liquid-glass: frosted translucent black panels, blur, spring motion. The default.',
     status:      'available',
   },
   {
@@ -29,14 +17,17 @@ export const STYLES = [
     status:      'available',
   },
 ]
-// 'pasta-galaxy' (removed in the Phase 4 UI rearchitecture, docs/ui-audit.md
-// §6) was a permanent "coming soon" placeholder — one line in this file,
-// zero CSS, zero logic anywhere else in the repo. normalizeStyleId already
-// falls back any unknown/unavailable id to 'default', so existing users who
-// had it selected land on Default automatically, same as a removed Theme.
+// 'default' (flat cards, no glass/motion treatment) and 'minimal'
+// (Phase 4.4 — near-zero radius, narrower sidebar) were both retired here:
+// Apple is now the one true default, and Natural covers the "calmer, flatter"
+// use case on its own. normalizeStyleId already falls back any unknown/
+// unavailable id to 'apple', so existing users who had either selected land
+// on Apple automatically, same as a removed Theme. 'pasta-galaxy' (removed
+// earlier, docs/ui-audit.md §6) was a permanent "coming soon" placeholder —
+// one line in this file, zero CSS, zero logic anywhere else in the repo.
 
 export function normalizeStyleId(styleId) {
-  return STYLES.some(s => s.id === styleId && s.status === 'available') ? styleId : 'default'
+  return STYLES.some(s => s.id === styleId && s.status === 'available') ? styleId : 'apple'
 }
 
 const STYLE_CLASS_PREFIX = 'style-'
@@ -45,5 +36,5 @@ export function applyStyle(styleId) {
   const html = document.documentElement
   styleId = normalizeStyleId(styleId)
   STYLES.forEach(s => html.classList.remove(`${STYLE_CLASS_PREFIX}${s.id}`))
-  if (styleId !== 'default') html.classList.add(`${STYLE_CLASS_PREFIX}${styleId}`)
+  html.classList.add(`${STYLE_CLASS_PREFIX}${styleId}`)
 }
