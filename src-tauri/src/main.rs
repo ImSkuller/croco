@@ -193,55 +193,75 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         fs::create_dir_all(data_dir.join(sub)).ok();
     }
 
-    // Hidden projects dir
-    let settings = read_settings(&handle);
-    if let Some(hidden) = settings["paths"]["hiddenProjects"].as_str() {
-        fs::create_dir_all(hidden).ok();
-        #[cfg(windows)]
-        { let mut c = Command::new("attrib"); c.args(["+h", hidden]); no_window(&mut c); c.output().ok(); }
-    }
-
-    // Ensure settings.json exists
+    // Ensure settings.json exists — before anything else reads it, so the
+    // very first IPC call (settings_get, fired by the frontend the moment
+    // the window loads) sees real defaults instead of racing this write.
     let sp = settings_path(&handle);
     if !sp.exists() {
         let _ = write_settings(&handle, &default_settings());
     }
 
-    // Secret storage: probe the OS keyring once so the UI's fallback warning
-    // is accurate from launch, then sweep any plaintext secret left by a
-    // pre-1.14 install into it (idempotent — a no-op on every later launch).
-    probe_keyring_available();
-    migrate_secrets_to_keyring(&handle);
-    migrate_away_premium_stub(&handle);
-    migrate_avatar_out_of_settings(&handle);
-    // Must run after migrate_secrets_to_keyring — see its own doc comment.
-    migrate_away_dead_ai_api_config(&handle);
+    // Everything below is a one-time idempotent migration/cleanup pass or a
+    // "catch up since last launch" check — none of it needs to finish
+    // before the frontend can start talking to the app. Running it
+    // synchronously here used to delay the very first settings_get — a
+    // sync command, dispatched on this same main thread (see CLAUDE.md's
+    // async-command rule) — behind however long trash-purging, a backup
+    // catch-up, and four settings migrations took, which was exactly the
+    // "blank window before the UI shows up" delay on every launch. Moved
+    // to a background thread so `.setup()` returns almost immediately and
+    // the window is responsive right away; each of these is either already
+    // idempotent (migrations, purges) or fine to land a moment late (a
+    // backup catch-up, a deadline reminder, closing out a stale focus
+    // session).
+    let bg_handle = handle.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        // Hidden projects dir (Explorer attribute — cosmetic, not required
+        // for the app to function).
+        let settings = read_settings(&bg_handle);
+        if let Some(hidden) = settings["paths"]["hiddenProjects"].as_str() {
+            fs::create_dir_all(hidden).ok();
+            #[cfg(windows)]
+            { let mut c = Command::new("attrib"); c.args(["+h", hidden]); no_window(&mut c); c.output().ok(); }
+        }
 
-    // Storage sanity — see data_transfer.rs::warn_if_storage_backend_mismatch.
-    warn_if_storage_backend_mismatch(&handle);
+        // Secret storage: probe the OS keyring once so the UI's fallback
+        // warning is accurate from launch, then sweep any plaintext secret
+        // left by a pre-1.14 install into it (idempotent — a no-op on
+        // every later launch).
+        probe_keyring_available();
+        migrate_secrets_to_keyring(&bg_handle);
+        migrate_away_premium_stub(&bg_handle);
+        migrate_avatar_out_of_settings(&bg_handle);
+        // Must run after migrate_secrets_to_keyring — see its own doc comment.
+        migrate_away_dead_ai_api_config(&bg_handle);
 
-    // Undo/trash (Phase 6): permanently remove anything past its retention
-    // window. Safe to run on every launch — a no-op when nothing has aged out.
-    purge_expired_project_trash(&handle);
-    purge_expired_notes_todos_trash(&handle);
+        // Storage sanity — see data_transfer.rs::warn_if_storage_backend_mismatch.
+        warn_if_storage_backend_mismatch(&bg_handle);
 
-    // Scheduled automatic backups (Phase 6): catch up immediately if one's
-    // overdue (covers "launched once a day" — the common case), then keep
-    // checking hourly for the rest of the process lifetime so a long-running
-    // session left open across a day boundary doesn't need a relaunch.
-    maybe_run_scheduled_backup(&handle);
+        // Undo/trash (Phase 6): permanently remove anything past its
+        // retention window. Safe to run on every launch — a no-op when
+        // nothing has aged out.
+        purge_expired_project_trash(&bg_handle);
+        purge_expired_notes_todos_trash(&bg_handle);
+
+        // Scheduled automatic backups (Phase 6): catch up immediately if
+        // one's overdue (covers "launched once a day" — the common case).
+        maybe_run_scheduled_backup(&bg_handle);
+
+        // Desktop notifications for schedules/deadlines (Phase 6): same
+        // catch-up pattern.
+        check_and_send_deadline_reminders(&bg_handle);
+
+        // Focus Timer: finish any session that expired while the app was closed.
+        end_due_focus_sessions(&bg_handle, false);
+    });
+
+    // The recurring schedulers just spawn their own background loops —
+    // cheap to start immediately, no reason to wait on the catch-up pass
+    // above finishing first.
     start_backup_scheduler(handle.clone());
-
-    // Desktop notifications for schedules/deadlines (Phase 6): same
-    // catch-up-at-startup-then-keep-checking pattern, but every minute
-    // rather than hourly — deadlines are time-sensitive.
-    check_and_send_deadline_reminders(&handle);
     start_deadline_reminder_scheduler(handle.clone());
-
-    // Focus Timer: finish any session that expired while the app was closed
-    // (silently), then keep ending due sessions every few seconds so the
-    // timer works without the Focus page being open — see focus.rs.
-    end_due_focus_sessions(&handle, false);
     start_focus_scheduler(handle.clone());
 
     // Local HTTP API (Phase 6 item 7): a no-op if settings.api.enabled is
