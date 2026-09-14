@@ -50,6 +50,14 @@ pub fn default_settings() -> Value {
             // (both retired) gets normalized to 'apple' on load instead
             // (normalizeStyleId), with no separate migration prompt needed.
             "style": "apple",
+            // Off by default used to leave the 'apple'/Default style's own
+            // "liquid-glass" description non-functional out of the box —
+            // the CSS that actually makes cards translucent/blurred only
+            // fires under html.glass (see index.css), which this toggle
+            // controls; without it every new install just saw flat opaque
+            // cards no matter which Style was selected. On by default now,
+            // same deep_merge/existing-settings-win rule as `style` above.
+            "glass": true,
             "accentColor": "#E8E4DC",
             "fontBody": "Geist",
             "fontDisplay": "Lora"
