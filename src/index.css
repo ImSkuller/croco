@@ -264,7 +264,7 @@ html.style-apple ::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.25);
 }
 
-/* ── Natural: calmer, less "AI-generated" — flat cards, no gradient
+/* ── Natural: calmer and more deliberate — flat cards, no gradient
    accents or glow, quieter motion. Doesn't touch colour (that's Theme's
    job), only the flourish that Style controls. ── */
 html.style-natural {

@@ -21,7 +21,7 @@ export const STYLES = [
   {
     id:          'natural',
     label:       'Natural',
-    description: 'Calmer and less "AI-generated" — flatter cards, no gradient accents or glow, quieter motion.',
+    description: 'Calmer and more deliberate — flatter cards, no gradient accents or glow, quieter motion.',
     status:      'available',
   },
 ]
