@@ -386,23 +386,31 @@ html.theme-futuristic ::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, rgba(0,240,255,0.6), rgba(192,132,255,0.6));
 }
 
-/* Apply blur to key structural surfaces and opt-in cards */
+/* Apply blur to key structural surfaces and opt-in cards.
+   NOTE: -webkit-backdrop-filter must come BEFORE the unprefixed property
+   in every pair in this file. With the reverse order, the production CSS
+   minifier (Vite 8 / rolldown) was treating the *unprefixed* declaration
+   as the redundant one and stripping it, leaving only a vendor-prefixed
+   property that modern WebView2/Edge doesn't implement at all (confirmed
+   via CSS.supports('-webkit-backdrop-filter', ...) === false at runtime)
+   — every frosted-glass surface in the shipped app silently rendered flat,
+   with no blur whatsoever, regardless of Style/Glass Effect settings. */
 html.glass aside,
 html.glass .pm-card,
 html.glass .glass-card {
-  backdrop-filter: blur(20px) saturate(150%);
   -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
 }
 
 .glass-card {
-  backdrop-filter: var(--panel-blur);
   -webkit-backdrop-filter: var(--panel-blur);
+  backdrop-filter: var(--panel-blur);
   transition: background var(--transition-base), border-color var(--transition-base);
 }
 
 aside {
-  backdrop-filter: var(--panel-blur);
   -webkit-backdrop-filter: var(--panel-blur);
+  backdrop-filter: var(--panel-blur);
 }
 
 /* ══════════════════════════════════════════════
@@ -427,8 +435,8 @@ aside {
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   padding: var(--density-pad);
-  backdrop-filter: var(--panel-blur);
   -webkit-backdrop-filter: var(--panel-blur);
+  backdrop-filter: var(--panel-blur);
   transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-base), transform var(--transition-base);
 }
 .pm-card:hover {

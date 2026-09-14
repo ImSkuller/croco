@@ -189,7 +189,7 @@ async function main() {
     assert(settingsAfterStyle.appearance?.style === 'apple', 'style:"apple" persisted to settings (label changed, id did not)')
     assert(settingsAfterStyle.appearance?.fontBody === 'Inter', 'that style still curates the Inter font pairing')
 
-    await driver.findElement(By.xpath("//span[contains(text(),'Calmer and less')]/ancestor::button")).click()
+    await driver.findElement(By.xpath("//span[contains(text(),'Calmer and more deliberate')]/ancestor::button")).click()
     let hasAppleClassAfter = await driver.executeScript("return document.documentElement.classList.contains('style-apple')")
     assert(hasAppleClassAfter === false, 'switching to Natural removed html.style-apple')
 
