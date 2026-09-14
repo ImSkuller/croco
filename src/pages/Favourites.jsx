@@ -9,6 +9,7 @@ import { CardBtn, ViewBtn } from '../components/Projects/Exports'
 import { useData, patchData, refreshData } from '../lib/store'
 import useDiscordPresence from '../hooks/useDiscordPresence'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ProjectIcon } from '../components/ui/ProjectIcon'
 
 export default function Favourites() {
   useDiscordPresence('Browsing Croco', 'Favourites')
@@ -67,7 +68,13 @@ export default function Favourites() {
     const toI   = arr.indexOf(targetId)
     if (fromI !== -1 && toI !== -1) {
       arr.splice(fromI, 1)
-      arr.splice(toI, 0, dragId)
+      // Removing the dragged item shifts every index after it left by one —
+      // when dragging forward (fromI < toI), the target's own position in
+      // `arr` just moved to `toI - 1`. Without this adjustment, dropping on
+      // a target landed the item one slot past it (after, not at) whenever
+      // dragging down the list, while dragging up happened to look right —
+      // an inconsistent, "half-broken-looking" reorder.
+      arr.splice(fromI < toI ? toI - 1 : toI, 0, dragId)
       persistOrder(arr)
     }
     setDragId(null); setDragOverId(null)
@@ -191,7 +198,7 @@ function FavCard({ project, onRemove, onOpen, dragging, dragOver, ...dragProps }
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
         <div style={{ width: 44, height: 44, borderRadius: 'var(--r-lg)', background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-          {project.emoji}
+          <ProjectIcon value={project.emoji} size={20} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
@@ -276,7 +283,7 @@ function FavListRow({ project, index, onRemove, onOpen, dragging, dragOver, ...d
       <div style={{ width: 24, textAlign: 'center', fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', flexShrink: 0 }}>{index + 1}</div>
       <div style={{ color: 'var(--dimmer)', opacity: hovered ? 1 : 0, transition: 'opacity var(--transition-fast)', flexShrink: 0 }}><DragIcon /></div>
       <div style={{ width: 34, height: 34, borderRadius: 'var(--r-md)', background: project.emojiColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-        {project.emoji}
+        <ProjectIcon value={project.emoji} size={16} />
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
