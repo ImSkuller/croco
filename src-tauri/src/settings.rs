@@ -60,7 +60,22 @@ pub fn default_settings() -> Value {
             "glass": true,
             "accentColor": "#E8E4DC",
             "fontBody": "Geist",
-            "fontDisplay": "Lora"
+            "fontDisplay": "Lora",
+            // v2.0: app-wide micro-interaction/transition polish — page
+            // entrances, panel swaps, hover/press states, the sidebar-
+            // position swap animation, etc. On by default (this is the bar
+            // the app is held to); the existing @media
+            // (prefers-reduced-motion: reduce) block in index.css already
+            // forces near-zero durations regardless of this flag, so a user
+            // with that OS setting is covered either way — this toggle is
+            // for someone who wants the calmer look without changing an OS
+            // accessibility setting.
+            "smoothAnimations": true,
+            // Which edge Croco's own navigation sidebar docks to. Kept
+            // alongside modules.ide.layout.explorerSide (not merged into a
+            // single flag) because the IDE explorer's position is
+            // independently customizable — see that key's own comment.
+            "sidebarPosition": "left"
         },
         "todos": {
             "priorities": [
@@ -171,7 +186,41 @@ pub fn default_settings() -> Value {
                     "lineNumbers": "on",
                     "renderWhitespace": "none",
                     "cursorBlinking": "blink",
-                    "formatOnSave": false
+                    "formatOnSave": false,
+                    // 'catppuccin-mocha': a real ported syntax-highlighting
+                    // token theme (not just re-themed chrome) — the default
+                    // look for the editor regardless of which app-wide Croco
+                    // theme is active, since a code editor's own theme is
+                    // conventionally chosen independently of the rest of an
+                    // app's chrome (this is how every real IDE works). See
+                    // src/lib/monacoSetup.js. 'croco' keeps the old
+                    // behavior of deriving editor colors from the live
+                    // Croco theme/accent instead.
+                    "colorTheme": "catppuccin-mocha"
+                },
+                // Panel layout — independent of editor prefs above.
+                // explorerSide is user-customizable (Settings → Modules →
+                // IDE); toggling it also flips appearance.sidebarPosition
+                // to match, with both panels animating to swap edges
+                // together, since having Croco's own nav sidebar and the
+                // IDE's file explorer stacked on the same side reads as
+                // redundant/cramped.
+                "layout": {
+                    "explorerSide": "left"
+                },
+                // Embedded Claude Code CLI panel (opt-in, off by default —
+                // it shells out to the user's own locally-installed `claude`
+                // CLI, so it only works/appears once that's present, same
+                // "requires the user's own tool" philosophy as the Docker
+                // module). See claude_cli.rs. permissionMode intentionally
+                // defaults to the safest non-interactive choice ("plan" —
+                // read-only, Claude can look around and propose but not
+                // edit files or run commands) rather than anything that
+                // auto-executes; the panel offers escalating it per-session,
+                // never persisted more permissive than what the user picks.
+                "claudeCode": {
+                    "enabled": false,
+                    "permissionMode": "plan"
                 }
             },
             "ai": {
