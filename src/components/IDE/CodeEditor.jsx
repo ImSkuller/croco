@@ -5,7 +5,7 @@ import { FolderIcon, FolderOpenIcon, FileIcon, SaveIcon, RefreshIcon } from '../
 import FileTypeIcon from './FileTypeIcon'
 import ClaudeCodePanel from './ClaudeCodePanel'
 import { useToast } from '../Toast/useToast.js'
-import { useData } from '../../lib/store'
+import { useData, patchData } from '../../lib/store'
 import useDiscordPresence from '../../hooks/useDiscordPresence'
 import useSideSwapFlip from '../../hooks/useSideSwapFlip'
 import ChatPanel from '../AI/ChatPanel'
@@ -203,6 +203,17 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
   const shellRef = useRef(null)
   useSideSwapFlip(shellRef, explorerSide)
 
+  // Quick in-panel flip — same setting as Settings → Modules → IDE →
+  // Explorer Position, just reachable without leaving the page. Patches the
+  // store optimistically so the swap (and the app sidebar following it,
+  // see AppShell.jsx) animates immediately on click, not after the store's
+  // next revalidation.
+  const toggleExplorerSide = () => {
+    const next = explorerSide === 'right' ? 'left' : 'right'
+    patchData('settings', prev => prev ? { ...prev, modules: { ...prev.modules, ide: { ...prev.modules?.ide, layout: { ...prev.modules?.ide?.layout, explorerSide: next } } } } : prev)
+    window.api?.settings.update({ modules: { ide: { layout: { explorerSide: next } } } }).catch(() => {})
+  }
+
   // Re-theme whenever the color-theme choice or (for the 'croco' variant
   // only) the app's own theme/accent changes.
   useEffect(() => {
@@ -342,13 +353,22 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 6px', flexShrink: 0 }}>
           <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--dimmer)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Explorer</span>
-          <button
-            onClick={() => loadTree(false)}
-            title="Refresh file tree"
-            style={{ display: 'flex', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', padding: 2, borderRadius: 'var(--r-sm)', transition: 'color var(--transition-fast)' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--dim)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--dimmer)'}
-          ><RefreshIcon size={12} /></button>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button
+              onClick={toggleExplorerSide}
+              title={explorerSide === 'right' ? 'Move explorer to the left' : 'Move explorer to the right'}
+              style={{ display: 'flex', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', padding: 2, borderRadius: 'var(--r-sm)', transition: 'color var(--transition-fast)' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--dim)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--dimmer)'}
+            ><FlipSideIcon size={12} flipped={explorerSide === 'right'} /></button>
+            <button
+              onClick={() => loadTree(false)}
+              title="Refresh file tree"
+              style={{ display: 'flex', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', padding: 2, borderRadius: 'var(--r-sm)', transition: 'color var(--transition-fast)' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--dim)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--dimmer)'}
+            ><RefreshIcon size={12} /></button>
+          </div>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 8 }}>
           {loadingTree ? (
@@ -543,6 +563,16 @@ function ClaudeGlyph({ size = 12 }) {
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="8" cy="8" r="6" />
       <path d="M8 5v3l2 2" />
+    </svg>
+  )
+}
+
+function FlipSideIcon({ size = 12, flipped = false }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" style={{ transform: flipped ? 'scaleX(-1)' : 'none', transition: 'transform var(--transition-fast)' }}>
+      <rect x="1.5" y="2.5" width="5" height="11" rx="1" />
+      <rect x="9.5" y="2.5" width="5" height="11" rx="1" opacity="0.4" />
+      <path d="M9.5 8h4M11.5 6l2 2-2 2" />
     </svg>
   )
 }

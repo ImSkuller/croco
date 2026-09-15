@@ -14,7 +14,15 @@ export default function AppShell() {
   const [showHelp,  setShowHelp]  = useState(false)
   const [overrides, setOverrides] = useState({})
   const settings = useData('settings')
-  const sidebarPosition = settings?.appearance?.sidebarPosition === 'right' ? 'right' : 'left'
+  // The sidebar only ever moves to the right while the user is actually
+  // looking at the IDE, and only then because the IDE's own explorer-side
+  // setting put it there — it's not a general-purpose "flip my whole app"
+  // preference. Everywhere else, left, always. See CodeEditor.jsx for the
+  // IDE's own explorer panel, which flips independently using the same
+  // explorerSide value and the same animation.
+  const onIdePage = location.pathname.startsWith('/ide')
+  const ideExplorerSide = settings?.modules?.ide?.layout?.explorerSide === 'right' ? 'right' : 'left'
+  const sidebarPosition = onIdePage && ideExplorerSide === 'right' ? 'right' : 'left'
   const shellRef = useRef(null)
   useSideSwapFlip(shellRef, sidebarPosition)
 

@@ -1,4 +1,4 @@
-import { useData, patchData } from '../../../lib/store'
+import { useData } from '../../../lib/store'
 import { IDEIcon } from '../../../constants/SimpleSvgExports'
 import { SettingsCard, FieldLabel, FieldDesc, TextInput, Toggle, ToggleChip, InfoBox } from '../Exports'
 import ModuleHeader from './ModuleHeader'
@@ -23,22 +23,12 @@ export default function IdeModuleCard() {
   const updateLayout = (patch) => updateModule({ layout: patch })
   const updateClaudeCode = (patch) => updateModule({ claudeCode: patch })
 
-  // Flipping the explorer to the other edge also flips Croco's own nav
-  // sidebar to match (both animate to swap sides together — see
-  // AppShell.jsx/Sidebar.jsx and CodeEditor.jsx's useSideSwapFlip) — having
-  // the app's nav and the IDE's file explorer stacked on the same edge
-  // reads as redundant, so the two settings move together from this one
-  // control rather than needing to be set independently.
-  const setExplorerSide = (side) => {
-    updateLayout({ explorerSide: side })
-    // patchModule already patches the local store optimistically for the
-    // `modules.ide` half of this — do the same for `appearance` here so
-    // Sidebar/AppShell (which read settings straight from the store) swap
-    // sides immediately instead of waiting on the store's normal 30s TTL
-    // revalidation.
-    patchData('settings', prev => prev ? { ...prev, appearance: { ...prev.appearance, sidebarPosition: side } } : prev)
-    window.api?.settings.update({ appearance: { sidebarPosition: side } }).catch(() => {})
-  }
+  // While the user is actually looking at the IDE, Croco's own nav sidebar
+  // follows this same value (see AppShell.jsx) and animates to match —
+  // having the app's nav and the IDE's file explorer stacked on the same
+  // edge reads as redundant. That's purely a read of this one setting,
+  // scoped to the /ide route — nothing else here needs to change for it.
+  const setExplorerSide = (side) => updateLayout({ explorerSide: side })
 
   return (
     <SettingsCard>
@@ -52,7 +42,7 @@ export default function IdeModuleCard() {
 
           <div>
             <FieldLabel>Explorer Position</FieldLabel>
-            <FieldDesc>Which side the file explorer sits on. Switching also flips Croco's own sidebar to match, with both animating to swap sides.</FieldDesc>
+            <FieldDesc>Which side the file explorer sits on. While the IDE page is open, Croco's own sidebar follows this too, animating to the same side — everywhere else in the app, the sidebar stays put. There's also a quick-flip button right in the explorer panel itself.</FieldDesc>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <ToggleChip label="Left" active={layout.explorerSide !== 'right'} color="var(--accent)" bg="var(--accent-dim)" onClick={() => setExplorerSide('left')} />
               <ToggleChip label="Right" active={layout.explorerSide === 'right'} color="var(--accent)" bg="var(--accent-dim)" onClick={() => setExplorerSide('right')} />

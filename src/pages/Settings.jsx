@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, LockIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon, AIIcon, EyeIcon, EyeOffIcon, APIIcon, CopyIcon, AlertTriangleIcon, PuzzleIcon } from '../constants/SimpleSvgExports'
-import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, PathInput, IDEOption, ToggleChip, Toggle, InfoBox, SmallBtn, SaveBtn } from '../components/Settings/Exports'
+import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, PathInput, IDEOption, ToggleChip, Toggle, InfoBox, SmallBtn } from '../components/Settings/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { THEMES, applyTheme, getThemeAccentSwatch, normalizeThemeId } from '../lib/theme.js'
 import { STYLES, applyStyle, normalizeStyleId, applySmoothAnimations } from '../lib/appearanceStyle.js'
@@ -72,7 +72,6 @@ export default function Settings() {
   const toast = useToast()
   const [activeSection, setActiveSection] = useState('user')
   useDiscordPresence('In Settings', NAV_SECTIONS.find(s => s.id === activeSection)?.label)
-  const [saved,         setSaved]         = useState(false)
   const [loading,       setLoading]       = useState(true)
 
   // Opt-in font picker previews need their real faces loaded to render
@@ -135,7 +134,6 @@ export default function Settings() {
   const [selectedStyle,    setSelectedStyle]    = useState('default')
   const [glassEnabled,     setGlassEnabled]     = useState(false)
   const [smoothAnimations, setSmoothAnimations] = useState(true)
-  const [sidebarPosition,  setSidebarPosition]  = useState('left')
   const [fontBody,         setFontBody]         = useState('Geist')
   const [fontDisplay,      setFontDisplay]      = useState('Lora')
   const [logoBg,           setLogoBg]           = useState('#ffffff')
@@ -274,7 +272,6 @@ export default function Settings() {
     setSelectedTheme(theme)
     setGlassEnabled(glass)
     setSmoothAnimations(s.appearance?.smoothAnimations ?? true)
-    setSidebarPosition(s.appearance?.sidebarPosition === 'right' ? 'right' : 'left')
     setSelectedStyle(normalizeStyleId(s.appearance?.style || 'apple'))
     setFontBody(s.appearance?.fontBody || 'Geist')
     setFontDisplay(s.appearance?.fontDisplay || 'Lora')
@@ -337,10 +334,10 @@ export default function Settings() {
     }
   }
 
-  const pickFolder = async (setter) => {
+  const pickFolder = async (setter, onPicked) => {
     if (!window.api) return
     const picked = await window.api.system.showFolderPicker()
-    if (picked) setter(picked)
+    if (picked) { setter(picked); onPicked?.(picked) }
   }
 
   const handleObsidianToggle = () => {
@@ -627,26 +624,25 @@ export default function Settings() {
     }
   }
 
-  const handleSave = async () => {
-    if (window.api) {
-      // Only touch the stored token if the user actually typed a new one —
-      // an empty field here means "leave it alone", not "clear it".
-      if (ghToken.trim()) {
-        await window.api.settings.setGithubToken(ghToken.trim()).catch(console.error)
-        setGhTokenStored(true)
-        setGhToken('')
-      }
-      await window.api.settings.update({
-        user: { name: userName, tag: userTag, github: { username: ghUsername } },
-        paths: { publicProjects: publicPath, hiddenProjects: hiddenPath },
-        defaults: { ide: defaultIDE, gitBranch: defaultBranch, visibility: defaultVisibility, shell: defaultShell },
-        appearance: { accentColor, theme: selectedTheme, style: selectedStyle, glass: glassEnabled, fontBody, fontDisplay, logoBg },
-        app: { closeBehavior, dataPath: customDataPath, shortcuts: shortcutOverrides },
-      }).catch(console.error)
-    }
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-    toast.success('Settings saved')
+  // Every control on this page saves itself the moment it changes — a chip/
+  // toggle/swatch/select persists immediately on click (same instant-apply
+  // pattern Theme/Glass already used); a free-text field persists onBlur
+  // instead of on every keystroke. Nothing on this page depends on a
+  // separate "Save Changes" action anymore. `saveField` is the shared
+  // one-line persist call each of those wires up to.
+  const saveField = (patch) => window.api?.settings.update(patch).catch(console.error)
+
+  // GitHub's personal access token is the one field on this page that still
+  // needs an explicit save (same reasoning as the AI key's own "Save Key"
+  // button below): it's a secret written to the OS keyring, not a plain
+  // settings.json field, so it shouldn't fire on every blur — a stray tab-
+  // away mid-paste would write a half-typed token.
+  const handleSaveGithubToken = async () => {
+    if (!ghToken.trim() || !window.api) return
+    await window.api.settings.setGithubToken(ghToken.trim()).catch(console.error)
+    setGhTokenStored(true)
+    setGhToken('')
+    toast.success('GitHub token saved')
   }
 
   const handleReset = async () => {
@@ -707,8 +703,8 @@ export default function Settings() {
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
           {NAV_SECTIONS.find(s => s.id === activeSection)?.label}
         </span>
-        <div style={{ marginLeft: 'auto' }}>
-          <SaveBtn saved={saved} onClick={handleSave} />
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--dimmer)' }}>
+          <CheckIcon size={12} /> Changes save automatically
         </div>
       </div>
 
@@ -760,7 +756,7 @@ export default function Settings() {
                 <SettingsCard>
                   <FieldLabel>Display Name</FieldLabel>
                   <FieldDesc>Shown in the sidebar and on the dashboard greeting.</FieldDesc>
-                  <TextInput value={userName} onChange={setUserName} placeholder="Your name" />
+                  <TextInput value={userName} onChange={setUserName} onBlur={() => saveField({ user: { name: userName } })} placeholder="Your name" />
                 </SettingsCard>
 
                 <SettingsCard>
@@ -785,7 +781,7 @@ export default function Settings() {
                       {PRESET_TAGS.map(tag => (
                         <button
                           key={tag}
-                          onClick={() => setUserTag(tag)}
+                          onClick={() => { setUserTag(tag); saveField({ user: { tag } }) }}
                           style={{
                             padding: '5px 12px', borderRadius: 'var(--r-xl)', cursor: 'pointer',
                             fontFamily: 'Geist, sans-serif', fontSize: 12,
@@ -812,13 +808,23 @@ export default function Settings() {
                 <SettingsCard>
                   <FieldLabel>Public Projects Path</FieldLabel>
                   <FieldDesc>Default location where new public projects are stored.</FieldDesc>
-                  <PathInput value={publicPath} onChange={setPublicPath} onBrowse={() => pickFolder(setPublicPath)} />
+                  <PathInput
+                    value={publicPath}
+                    onChange={setPublicPath}
+                    onBlur={() => saveField({ paths: { publicProjects: publicPath } })}
+                    onBrowse={() => pickFolder(setPublicPath, (p) => saveField({ paths: { publicProjects: p } }))}
+                  />
                 </SettingsCard>
 
                 <SettingsCard>
                   <FieldLabel>Hidden Projects Path</FieldLabel>
                   <FieldDesc>Location for private/hidden projects. This folder is hidden from the OS file explorer.</FieldDesc>
-                  <PathInput value={hiddenPath} onChange={setHiddenPath} onBrowse={() => pickFolder(setHiddenPath)} />
+                  <PathInput
+                    value={hiddenPath}
+                    onChange={setHiddenPath}
+                    onBlur={() => saveField({ paths: { hiddenProjects: hiddenPath } })}
+                    onBrowse={() => pickFolder(setHiddenPath, (p) => saveField({ paths: { hiddenProjects: p } }))}
+                  />
                   <InfoBox>On Windows this folder has the Hidden attribute set via <code style={codeStyle}>attrib +h</code>. On macOS/Linux the dot prefix hides it automatically.</InfoBox>
                 </SettingsCard>
 
@@ -834,7 +840,8 @@ export default function Settings() {
                   <PathInput
                     value={customDataPath}
                     onChange={setCustomDataPath}
-                    onBrowse={() => pickFolder(setCustomDataPath)}
+                    onBlur={() => saveField({ app: { dataPath: customDataPath } })}
+                    onBrowse={() => pickFolder(setCustomDataPath, (p) => saveField({ app: { dataPath: p } }))}
                     placeholder="Leave empty for App Data default"
                   />
                   {customDataPath && (
@@ -858,7 +865,7 @@ export default function Settings() {
                         key={ide.value}
                         ide={ide}
                         selected={defaultIDE === ide.value}
-                        onClick={() => setDefaultIDE(ide.value)}
+                        onClick={() => { setDefaultIDE(ide.value); saveField({ defaults: { ide: ide.value } }) }}
                       />
                     ))}
                   </div>
@@ -867,7 +874,7 @@ export default function Settings() {
                 <SettingsCard>
                   <FieldLabel>Default Git Branch</FieldLabel>
                   <FieldDesc>Branch used for git commit and push operations.</FieldDesc>
-                  <TextInput value={defaultBranch} onChange={setDefaultBranch} placeholder="main" mono />
+                  <TextInput value={defaultBranch} onChange={setDefaultBranch} onBlur={() => saveField({ defaults: { gitBranch: defaultBranch } })} placeholder="main" mono />
                 </SettingsCard>
 
                 <SettingsCard>
@@ -881,7 +888,7 @@ export default function Settings() {
                         active={defaultVisibility === v}
                         color={v === 'hidden' ? 'var(--purple)' : 'var(--blue)'}
                         bg={v === 'hidden' ? 'rgba(168,85,247,0.1)' : 'rgba(74,158,255,0.1)'}
-                        onClick={() => setDefaultVisibility(v)}
+                        onClick={() => { setDefaultVisibility(v); saveField({ defaults: { visibility: v } }) }}
                       />
                     ))}
                   </div>
@@ -898,7 +905,7 @@ export default function Settings() {
                         active={defaultShell === opt.value}
                         color="var(--accent)"
                         bg="var(--accent-dim)"
-                        onClick={() => setDefaultShell(opt.value)}
+                        onClick={() => { setDefaultShell(opt.value); saveField({ defaults: { shell: opt.value } }) }}
                       />
                     ))}
                   </div>
@@ -943,7 +950,7 @@ export default function Settings() {
                 <SettingsCard>
                   <FieldLabel>GitHub Username</FieldLabel>
                   <FieldDesc>Your GitHub username — used for linking repos and author info on commits.</FieldDesc>
-                  <TextInput value={ghUsername} onChange={setGhUsername} placeholder="your-username" mono />
+                  <TextInput value={ghUsername} onChange={setGhUsername} onBlur={() => saveField({ user: { github: { username: ghUsername } } })} placeholder="your-username" mono />
                 </SettingsCard>
 
                 <SettingsCard>
@@ -989,10 +996,11 @@ export default function Settings() {
                     <FieldLabel>Personal Access Token</FieldLabel>
                     <FieldDesc>
                       Fallback when one-click login isn't available. Needs the <code style={codeStyle}>repo</code> scope — generate one at github.com/settings/tokens.
-                      {ghTokenStored && ' A token is currently stored — paste a new one here and Save to replace it.'}
+                      {ghTokenStored && ' A token is currently stored — paste a new one here and save to replace it.'}
                     </FieldDesc>
                     <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                       <TextInput type="password" value={ghToken} onChange={setGhToken} placeholder={ghTokenStored ? '••••••••  (stored — paste to replace)' : 'ghp_...'} mono />
+                      <SmallBtn onClick={handleSaveGithubToken} disabled={!ghToken.trim()}>Save Token</SmallBtn>
                       <SmallBtn onClick={handleTestGithub}>{ghTestStatus === 'testing' ? 'Testing…' : 'Test Connection'}</SmallBtn>
                     </div>
                     {secretsFallbackActive && (
@@ -1274,26 +1282,6 @@ export default function Settings() {
                 </SettingsCard>
 
                 <SettingsCard>
-                  <FieldLabel>Sidebar Position</FieldLabel>
-                  <FieldDesc>Which edge of the window Croco's own navigation sidebar docks to. Switching animates the sidebar sliding to the other side — the IDE module's file explorer follows this same setting (customizable separately in Settings → Modules → IDE).</FieldDesc>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    {[{ v: 'left', label: 'left' }, { v: 'right', label: 'right' }].map(({ v, label }) => (
-                      <ToggleChip
-                        key={label}
-                        label={label}
-                        active={sidebarPosition === v}
-                        color="var(--accent)"
-                        bg="var(--accent-dim)"
-                        onClick={() => {
-                          setSidebarPosition(v)
-                          window.api?.settings.update({ appearance: { sidebarPosition: v } }).catch(console.error)
-                        }}
-                      />
-                    ))}
-                  </div>
-                </SettingsCard>
-
-                <SettingsCard>
                   <FieldLabel>Theme</FieldLabel>
                   <FieldDesc>Choose a colour theme for the entire app.</FieldDesc>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginTop: 12 }}>
@@ -1361,7 +1349,7 @@ export default function Settings() {
                     {['#e8e4dc', '#ff6b35', '#4a9eff', '#4aff91', '#a855f7', '#ffd700', '#ff4444'].map(color => (
                       <button
                         key={color}
-                        onClick={() => setAccentColor(color)}
+                        onClick={() => { setAccentColor(color); saveField({ appearance: { accentColor: color } }) }}
                         style={{
                           width: 28, height: 28, borderRadius: '50%', background: color,
                           border: accentColor === color ? '2px solid #fff' : '2px solid transparent',
@@ -1374,7 +1362,7 @@ export default function Settings() {
                     <input
                       type="color"
                       value={accentColor}
-                      onChange={e => setAccentColor(e.target.value)}
+                      onChange={e => { setAccentColor(e.target.value); saveField({ appearance: { accentColor: e.target.value } }) }}
                       style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--border)', cursor: 'pointer', background: 'var(--card)', padding: 2 }}
                     />
                   </div>
@@ -1399,7 +1387,7 @@ export default function Settings() {
                     ].map(f => (
                       <button
                         key={f.id}
-                        onClick={() => setFontBody(f.id)}
+                        onClick={() => { setFontBody(f.id); saveField({ appearance: { fontBody: f.id } }) }}
                         style={{
                           padding: '11px 14px', borderRadius: 'var(--r-md)', cursor: 'pointer', textAlign: 'left',
                           border: `1px solid ${fontBody === f.id ? 'var(--accent)' : 'var(--border)'}`,
@@ -1425,7 +1413,7 @@ export default function Settings() {
                     ].map(f => (
                       <button
                         key={f.id}
-                        onClick={() => setFontDisplay(f.id)}
+                        onClick={() => { setFontDisplay(f.id); saveField({ appearance: { fontDisplay: f.id } }) }}
                         style={{
                           padding: '11px 14px', borderRadius: 'var(--r-md)', cursor: 'pointer', textAlign: 'left',
                           border: `1px solid ${fontDisplay === f.id ? 'var(--accent)' : 'var(--border)'}`,
@@ -1462,7 +1450,7 @@ export default function Settings() {
                         active={closeBehavior === opt.id}
                         color="var(--accent)"
                         bg="var(--accent-dim)"
-                        onClick={() => setCloseBehavior(opt.id)}
+                        onClick={() => { setCloseBehavior(opt.id); saveField({ app: { closeBehavior: opt.id } }) }}
                       />
                     ))}
                   </div>

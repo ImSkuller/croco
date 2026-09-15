@@ -70,12 +70,7 @@ pub fn default_settings() -> Value {
             // with that OS setting is covered either way — this toggle is
             // for someone who wants the calmer look without changing an OS
             // accessibility setting.
-            "smoothAnimations": true,
-            // Which edge Croco's own navigation sidebar docks to. Kept
-            // alongside modules.ide.layout.explorerSide (not merged into a
-            // single flag) because the IDE explorer's position is
-            // independently customizable — see that key's own comment.
-            "sidebarPosition": "left"
+            "smoothAnimations": true
         },
         "todos": {
             "priorities": [
@@ -200,11 +195,12 @@ pub fn default_settings() -> Value {
                 },
                 // Panel layout — independent of editor prefs above.
                 // explorerSide is user-customizable (Settings → Modules →
-                // IDE); toggling it also flips appearance.sidebarPosition
-                // to match, with both panels animating to swap edges
-                // together, since having Croco's own nav sidebar and the
-                // IDE's file explorer stacked on the same side reads as
-                // redundant/cramped.
+                // IDE, or a quick-flip button in the explorer panel itself).
+                // While the /ide page is actually open, Croco's own nav
+                // sidebar reads this same value and animates to match it
+                // (see AppShell.jsx) — scoped to that page only, since it's
+                // the IDE's own layout preference, not a general app-wide
+                // one.
                 "layout": {
                     "explorerSide": "left"
                 },
