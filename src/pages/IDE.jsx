@@ -10,12 +10,22 @@ const CodeEditor = lazy(() => import('../components/IDE/CodeEditor'))
 // Standalone IDE page (Settings → Modules → IDE, beta). Same CodeEditor
 // component ProjectDetail's "Code" tab uses — this just adds the project
 // picker so it's reachable without opening a specific project first.
+const LAST_PROJECT_KEY = 'croco:ide:lastProjectId'
+
 export default function IDE() {
   const projects = useData('projects') || EMPTY_LIST
-  const [projectId, setProjectId] = useState(null)
+  // Persisted across navigation (Settings and back, etc.) — previously reset
+  // to "Choose a project…" on every remount since this was plain local
+  // state with no backing store.
+  const [projectId, setProjectId] = useState(() => { try { return localStorage.getItem(LAST_PROJECT_KEY) || null } catch { return null } })
 
   const activeProjects = useMemo(() => projects.filter(p => !p.trashedAt && !p.archived), [projects])
   const selected = activeProjects.find(p => p.id === projectId) || null
+
+  const selectProject = (id) => {
+    setProjectId(id)
+    try { id ? localStorage.setItem(LAST_PROJECT_KEY, id) : localStorage.removeItem(LAST_PROJECT_KEY) } catch { /* private mode */ }
+  }
 
   useDiscordPresence('Using the IDE', selected ? `Browsing ${selected.name}` : null, selected?.github ? selected.githubUrl : null)
 
@@ -29,7 +39,7 @@ export default function IDE() {
         </>}
         <select
           value={projectId || ''}
-          onChange={e => setProjectId(e.target.value || null)}
+          onChange={e => selectProject(e.target.value || null)}
           style={{
             marginLeft: 'auto', background: 'var(--card)', color: 'var(--text)',
             border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '6px 10px',

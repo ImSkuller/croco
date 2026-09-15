@@ -1017,14 +1017,24 @@ pub async fn projects_remove_dependency(app: AppHandle, id: String, name: String
     exec_in_root(&app, &id, &format!("npm uninstall {}", name))
 }
 
+// Returns Err for the two "this project can't be browsed at all" cases
+// (unknown id, root folder missing/moved/deleted) instead of silently
+// returning an empty array like a genuinely empty directory would — the IDE
+// module's file explorer (CodeEditor.jsx) used to render the exact same
+// "No files" empty state for both, giving no indication that the project's
+// folder is actually gone. ProjectDetail's own file-tree tab already
+// treats a rejected promise the same as an empty tree, so this is a
+// backward-compatible tightening, not a breaking change for that caller.
 #[tauri::command]
-pub async fn projects_get_file_tree(app: AppHandle, id: String) -> Value {
-    if crate::validate_safe_id(&id).is_err() { return json!([]); }
-    let project = match get_project(&app, &id) { Some(p) => p, None => return json!([]) };
+pub async fn projects_get_file_tree(app: AppHandle, id: String) -> Result<Value, String> {
+    crate::validate_safe_id(&id)?;
+    let project = get_project(&app, &id).ok_or("Project not found")?;
     let root = project_root_str(&project);
     let root = Path::new(&root);
-    if !root.exists() { return json!([]); }
-    walk_file_tree(root, root, 0)
+    if !root.exists() {
+        return Err("This project's folder could not be found on disk — it may have been moved or deleted.".into());
+    }
+    Ok(walk_file_tree(root, root, 0))
 }
 
 // Community templates (Phase 6 item 12) — local-first: export a project's

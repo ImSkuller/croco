@@ -1,16 +1,19 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import Editor from '@monaco-editor/react'
-import { applyCrocoMonacoTheme } from '../../lib/monacoSetup' // self-hosts Monaco locally instead of the default CDN loader — see that file
+import { setMonacoColorTheme } from '../../lib/monacoSetup' // self-hosts Monaco locally instead of the default CDN loader — see that file
 import { FolderIcon, FolderOpenIcon, FileIcon, SaveIcon, RefreshIcon } from '../../constants/SimpleSvgExports'
+import FileTypeIcon from './FileTypeIcon'
+import ClaudeCodePanel from './ClaudeCodePanel'
 import { useToast } from '../Toast/useToast.js'
 import { useData } from '../../lib/store'
 import useDiscordPresence from '../../hooks/useDiscordPresence'
+import useSideSwapFlip from '../../hooks/useSideSwapFlip'
 import ChatPanel from '../AI/ChatPanel'
 
 const DEFAULT_EDITOR_PREFS = {
   fontSize: 13, tabSize: 2, insertSpaces: true, wordWrap: 'off',
   minimap: false, lineNumbers: 'on', renderWhitespace: 'none',
-  cursorBlinking: 'blink', formatOnSave: false,
+  cursorBlinking: 'blink', formatOnSave: false, colorTheme: 'catppuccin-mocha',
 }
 
 const LANG_BY_EXT = {
@@ -24,19 +27,6 @@ const LANG_BY_EXT = {
   '.sh': 'shell', '.sql': 'sql', '.php': 'php', '.rb': 'ruby',
 }
 function langForExt(ext) { return LANG_BY_EXT[ext] || 'plaintext' }
-
-// A little VS Code-style per-extension color coding for file icons — purely
-// cosmetic, makes a busy tree scannable at a glance.
-const ICON_COLOR_BY_EXT = {
-  '.js': '#e8c547', '.jsx': '#61dafb', '.mjs': '#e8c547', '.cjs': '#e8c547',
-  '.ts': '#4a9eff', '.tsx': '#4a9eff',
-  '.json': '#e5854f', '.md': '#b48cf2', '.mdx': '#b48cf2',
-  '.rs': '#e5646a', '.py': '#6fdd9a', '.go': '#4ad9d9', '.java': '#e5854f',
-  '.c': '#6aa8f0', '.h': '#6aa8f0', '.cpp': '#6aa8f0', '.hpp': '#6aa8f0', '.cs': '#b48cf2',
-  '.html': '#e5854f', '.css': '#4a9eff', '.scss': '#e56aad', '.less': '#4a9eff',
-  '.yml': '#b48cf2', '.yaml': '#b48cf2', '.toml': '#b48cf2',
-}
-function iconColorForExt(ext) { return ICON_COLOR_BY_EXT[ext] || 'var(--dimmer)' }
 
 function TreeRow({ children, depth, active, onClick }) {
   const [hovered, setHovered] = useState(false)
@@ -71,18 +61,103 @@ function TreeNode({ node, depth, openPath, onOpenFile, expanded, toggleExpanded 
           </span>
           <span style={{ color: 'var(--dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
         </TreeRow>
-        {isOpen && node.children?.map(child => (
-          <TreeNode key={child.rel} node={child} depth={depth + 1} openPath={openPath} onOpenFile={onOpenFile} expanded={expanded} toggleExpanded={toggleExpanded} />
-        ))}
+        {isOpen && (
+          <div className="pm-tab-content">
+            {node.children?.map(child => (
+              <TreeNode key={child.rel} node={child} depth={depth + 1} openPath={openPath} onOpenFile={onOpenFile} expanded={expanded} toggleExpanded={toggleExpanded} />
+            ))}
+          </div>
+        )}
       </div>
     )
   }
   const active = node.rel === openPath
   return (
     <TreeRow depth={depth} active={active} onClick={() => onOpenFile(node)}>
-      <span style={{ display: 'flex', flexShrink: 0, color: iconColorForExt(node.ext) }}><FileIcon size={13} /></span>
+      <FileTypeIcon name={node.name} ext={node.ext} size={13} />
       <span style={{ color: active ? 'var(--text)' : 'var(--dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
     </TreeRow>
+  )
+}
+
+// Flattens the tree into a plain file list for the quick-open palette
+// (Ctrl/Cmd+P) — directories/ignored subtrees excluded.
+function flattenFiles(nodes, out = []) {
+  for (const node of nodes || []) {
+    if (node.type === 'dir') { if (!node.ignored) flattenFiles(node.children, out) }
+    else out.push(node)
+  }
+  return out
+}
+
+function fuzzyScore(q, text) {
+  if (!q) return 1
+  const t = (text || '').toLowerCase()
+  if (!t) return 0
+  const idx = t.indexOf(q)
+  if (idx === 0) return 100
+  if (idx > 0) return 80 - Math.min(idx, 20)
+  let ti = 0, score = 0, prev = -2
+  for (let qi = 0; qi < q.length; qi++) {
+    const c = q[qi]
+    const found = t.indexOf(c, ti)
+    if (found === -1) return 0
+    score += 2
+    if (found === prev + 1) score += 3
+    prev = found
+    ti = found + 1
+  }
+  return Math.min(score, 60)
+}
+
+function QuickOpen({ files, onPick, onClose }) {
+  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState(0)
+  const inputRef = useRef(null)
+  useEffect(() => { inputRef.current?.focus() }, [])
+  const q = query.trim().toLowerCase()
+  const results = useMemo(() => {
+    const scored = files
+      .map(f => ({ f, score: Math.max(fuzzyScore(q, f.name), fuzzyScore(q, f.rel) * 0.8) }))
+      .filter(r => !q || r.score > 0)
+      .sort((a, b) => b.score - a.score)
+    return scored.slice(0, 60).map(r => r.f)
+  }, [files, q])
+  // Reset the selection whenever the query changes — adjusted during render
+  // (React's own recommended pattern for this) rather than in an effect, to
+  // avoid an extra cascading render on every keystroke.
+  const [prevQuery, setPrevQuery] = useState(query)
+  if (query !== prevQuery) { setPrevQuery(query); setSelected(0) }
+  const onKey = (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setSelected(s => Math.min(s + 1, results.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setSelected(s => Math.max(s - 1, 0)) }
+    else if (e.key === 'Enter') { if (results[selected]) onPick(results[selected]) }
+    else if (e.key === 'Escape') onClose()
+  }
+  return (
+    <div onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 60 }}>
+      <div onClick={e => e.stopPropagation()} className="pm-scale-in" style={{ width: 460, maxWidth: '90%', background: 'var(--surface)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-lg)' }}>
+        <input
+          ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={onKey}
+          placeholder="Go to file…"
+          style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', outline: 'none', color: 'var(--text)', fontSize: 13, fontFamily: 'Geist, sans-serif' }}
+        />
+        <div style={{ maxHeight: 320, overflowY: 'auto', padding: '4px 0' }}>
+          {results.length === 0 ? (
+            <div style={{ padding: '18px 14px', fontSize: 12, color: 'var(--dimmer)', textAlign: 'center' }}>No matching files</div>
+          ) : results.map((f, i) => (
+            <div
+              key={f.rel} onClick={() => onPick(f)} onMouseEnter={() => setSelected(i)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', cursor: 'pointer', background: selected === i ? 'var(--card)' : 'transparent' }}
+            >
+              <FileTypeIcon name={f.name} ext={f.ext} size={12} />
+              <span style={{ fontSize: 12.5, color: 'var(--text)' }}>{f.name}</span>
+              <span style={{ fontSize: 10.5, color: 'var(--dimmer)', marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.rel}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -93,33 +168,54 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
   const toast = useToast()
   const settings = useData('settings')
   const [tree, setTree] = useState(null)
+  const [treeError, setTreeError] = useState(null)
   const [expanded, setExpanded] = useState({})
   const [tabs, setTabs] = useState([]) // [{ rel, name, ext, content, savedContent, dirty }]
   const [activeRel, setActiveRel] = useState(null)
   const [loadingTree, setLoadingTree] = useState(true)
-  const [aiOpen, setAiOpen] = useState(() => { try { return localStorage.getItem('croco:ide:aiOpen') === '1' } catch { return false } })
+  const [quickOpen, setQuickOpen] = useState(false)
+  const [panelTab, setPanelTab] = useState(() => { try { return localStorage.getItem(`croco:ide:panelTab:${projectId}`) || 'ai' } catch { return 'ai' } })
+  const [panelOpen, setPanelOpen] = useState(() => { try { return localStorage.getItem(`croco:ide:panelOpen:${projectId}`) === '1' } catch { return false } })
   const tabsRef = useRef(tabs)
   useEffect(() => { tabsRef.current = tabs }, [tabs])
-  useEffect(() => { try { localStorage.setItem('croco:ide:aiOpen', aiOpen ? '1' : '0') } catch { /* private mode */ } }, [aiOpen])
+  // Scoped per-project (not global) — opening the AI/Claude panel in one
+  // project used to force it open in every other project too.
+  useEffect(() => { try { localStorage.setItem(`croco:ide:panelOpen:${projectId}`, panelOpen ? '1' : '0') } catch { /* private mode */ } }, [panelOpen, projectId])
+  useEffect(() => { try { localStorage.setItem(`croco:ide:panelTab:${projectId}`, panelTab) } catch { /* private mode */ } }, [panelTab, projectId])
 
   const prefs = { ...DEFAULT_EDITOR_PREFS, ...(settings?.modules?.ide?.editor || {}) }
-  // "Ask AI" is only offered when the AI module is on; provider follows
-  // whatever the AI page last selected so the two never disagree.
   const aiEnabled = !!settings?.modules?.ai?.enabled
   const aiProvider = settings?.modules?.ai?.provider || 'anthropic'
+  const claudeCodeEnabled = !!settings?.modules?.ide?.claudeCode?.enabled
+  const settingsPermissionMode = settings?.modules?.ide?.claudeCode?.permissionMode || 'plan'
+  const [claudePermissionMode, setClaudePermissionMode] = useState(settingsPermissionMode)
+  const [prevSettingsPermissionMode, setPrevSettingsPermissionMode] = useState(settingsPermissionMode)
+  if (settingsPermissionMode !== prevSettingsPermissionMode) {
+    setPrevSettingsPermissionMode(settingsPermissionMode)
+    setClaudePermissionMode(settingsPermissionMode)
+  }
+  const onPermissionModeChange = (mode) => {
+    setClaudePermissionMode(mode)
+    window.api?.settings.update({ modules: { ide: { claudeCode: { permissionMode: mode } } } }).catch(() => {})
+  }
 
-  // Re-theme whenever the app's own theme/accent changes, not just once on
-  // mount — matches the rest of the UI updating live from Settings.
+  const explorerSide = settings?.modules?.ide?.layout?.explorerSide === 'right' ? 'right' : 'left'
+  const shellRef = useRef(null)
+  useSideSwapFlip(shellRef, explorerSide)
+
+  // Re-theme whenever the color-theme choice or (for the 'croco' variant
+  // only) the app's own theme/accent changes.
   useEffect(() => {
-    applyCrocoMonacoTheme()
-  }, [settings?.appearance?.theme, settings?.appearance?.accentColor, settings?.appearance?.glass])
+    setMonacoColorTheme(prefs.colorTheme)
+  }, [prefs.colorTheme, settings?.appearance?.theme, settings?.appearance?.accentColor, settings?.appearance?.glass])
 
   const loadTree = useCallback((showSpinner) => {
     if (!projectId || !window.api) return
     if (showSpinner) setLoadingTree(true)
+    setTreeError(null)
     window.api.projects.getFileTree(projectId)
       .then(setTree)
-      .catch(() => setTree([]))
+      .catch(e => { setTree([]); setTreeError(e?.message || 'Could not load this project’s files.') })
       .finally(() => setLoadingTree(false))
   }, [projectId])
 
@@ -132,12 +228,18 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
     setExpanded(prev => ({ ...prev, [rel]: !prev[rel] }))
   }, [])
 
+  // Only moves the selection once the file has actually loaded (or was
+  // already open) — previously activeRel was set optimistically before the
+  // read resolved, so a failed open (permission error, deleted file,
+  // rejected binary) left activeRel pointing at a tab that never existed,
+  // silently falling back to the "select a file" empty state with only an
+  // easy-to-miss toast as any indication something went wrong.
   const openFile = useCallback(async (node) => {
-    setActiveRel(node.rel)
-    if (tabsRef.current.some(t => t.rel === node.rel)) return
+    if (tabsRef.current.some(t => t.rel === node.rel)) { setActiveRel(node.rel); return }
     try {
       const content = await window.api.ide.readFile(projectId, node.rel)
       setTabs(prev => [...prev, { rel: node.rel, name: node.name, ext: node.ext, content, savedContent: content, dirty: false }])
+      setActiveRel(node.rel)
     } catch (e) {
       toast.error('Could not open file', e.message)
     }
@@ -145,10 +247,6 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
 
   const activeTab = tabs.find(t => t.rel === activeRel) || null
 
-  // Discord Rich Presence — overrides whatever the parent page (IDE.jsx or
-  // ProjectDetail) set, since this fires after them on mount/update. Only
-  // takes over once a file is actually open; otherwise the parent's more
-  // generic "Using the IDE" / "Editing <project>" context stands.
   useDiscordPresence(
     activeTab ? `Editing ${activeTab.name}` : null,
     projectName ? `in ${projectName}` : null,
@@ -180,11 +278,17 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
     }
   }, [projectId, toast, prefs.formatOnSave, activeRel])
 
+  const allFiles = useMemo(() => flattenFiles(tree), [tree])
+
   useEffect(() => {
     const onKey = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's' && activeRel) {
         e.preventDefault()
         saveTab(activeRel)
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p' && !e.shiftKey) {
+        e.preventDefault()
+        setQuickOpen(o => !o)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -200,17 +304,12 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
     }
   }
 
-  // The open file's live contents, read at send time (not captured at
-  // render) so the AI always sees what's actually in the buffer.
   const fileContextFor = useCallback(() => {
     const tab = tabsRef.current.find(t => t.rel === activeRel)
     if (!tab) return null
     return `File: ${tab.rel}\n\n\`\`\`${langForExt(tab.ext)}\n${tab.content}\n\`\`\``
   }, [activeRel])
 
-  // Applies a fenced block from the AI reply through Monaco's edit API so
-  // it lands in the undo stack like any typed change. Nothing is written
-  // to disk until the user saves.
   const applyCode = useCallback((code, how) => {
     const editor = editorRef.current
     if (!editor || !activeRel) { toast.error('No file open', 'Open a file in the editor first.'); return }
@@ -227,12 +326,18 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
     toast.success(how === 'replace' ? 'File replaced' : 'Code inserted', 'Ctrl+Z to undo, Ctrl+S to save.')
   }, [activeRel, toast])
 
+  const motionOn = settings?.appearance?.smoothAnimations !== false
+  const rowReverse = explorerSide === 'right'
+  const explorerBorderSide = rowReverse ? 'borderLeft' : 'borderRight'
+  const panelBorderSide = rowReverse ? 'borderRight' : 'borderLeft'
+  const panelVisible = panelOpen && activeTab && ((panelTab === 'ai' && aiEnabled) || (panelTab === 'claude' && claudeCodeEnabled))
+
   return (
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+    <div ref={shellRef} style={{ display: 'flex', flexDirection: rowReverse ? 'row-reverse' : 'row', height: '100%', overflow: 'hidden', position: 'relative' }}>
       {/* File tree */}
       <div style={{
         width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column',
-        borderRight: '1px solid var(--border)', background: 'var(--sidebar-bg)',
+        [explorerBorderSide]: '1px solid var(--border)', background: 'var(--sidebar-bg)',
         backdropFilter: 'var(--panel-blur)', WebkitBackdropFilter: 'var(--panel-blur)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 6px', flexShrink: 0 }}>
@@ -248,6 +353,8 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
         <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 8 }}>
           {loadingTree ? (
             <div style={{ padding: '4px 12px', fontSize: 12, color: 'var(--dimmer)' }}>Loading…</div>
+          ) : treeError ? (
+            <div style={{ padding: '4px 12px', fontSize: 12, color: '#ff6b6b', lineHeight: 1.5 }}>{treeError}</div>
           ) : !tree?.length ? (
             <div style={{ padding: '4px 12px', fontSize: 12, color: 'var(--dimmer)' }}>No files</div>
           ) : tree.map(node => (
@@ -257,7 +364,7 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
       </div>
 
       {/* Editor + tabs */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative' }}>
         {tabs.length > 0 && (
           <div style={{ display: 'flex', overflowX: 'auto', borderBottom: '1px solid var(--border)', flexShrink: 0, gap: 2, padding: '4px 4px 0' }}>
             {tabs.map(t => {
@@ -277,7 +384,7 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
                     transition: 'background var(--transition-fast), color var(--transition-fast)',
                   }}
                 >
-                  <span style={{ display: 'flex', color: iconColorForExt(t.ext) }}><FileIcon size={12} /></span>
+                  <FileTypeIcon name={t.name} ext={t.ext} size={12} />
                   <span>{t.name}</span>
                   {t.dirty && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />}
                   <span
@@ -298,31 +405,41 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
         )}
 
         {activeTab ? (
-          <Editor
-            key={activeTab.rel}
-            height="100%"
-            language={langForExt(activeTab.ext)}
-            value={activeTab.content}
-            theme="croco"
-            onChange={handleChange}
-            onMount={(editor) => { editorRef.current = editor; applyCrocoMonacoTheme() }}
-            options={{
-              fontSize: prefs.fontSize,
-              tabSize: prefs.tabSize,
-              insertSpaces: prefs.insertSpaces,
-              wordWrap: prefs.wordWrap,
-              minimap: { enabled: prefs.minimap },
-              lineNumbers: prefs.lineNumbers,
-              renderWhitespace: prefs.renderWhitespace,
-              cursorBlinking: prefs.cursorBlinking,
-              automaticLayout: true,
-              fontFamily: 'Geist Mono, monospace',
-            }}
-          />
+          <div key={activeTab.rel} className="pm-tab-content" style={{ flex: 1, minHeight: 0 }}>
+            <Editor
+              height="100%"
+              language={langForExt(activeTab.ext)}
+              value={activeTab.content}
+              theme={prefs.colorTheme === 'croco' ? 'croco' : 'catppuccin-mocha'}
+              onChange={handleChange}
+              onMount={(editor) => { editorRef.current = editor; setMonacoColorTheme(prefs.colorTheme) }}
+              options={{
+                fontSize: prefs.fontSize,
+                tabSize: prefs.tabSize,
+                insertSpaces: prefs.insertSpaces,
+                wordWrap: prefs.wordWrap,
+                minimap: { enabled: prefs.minimap },
+                lineNumbers: prefs.lineNumbers,
+                renderWhitespace: prefs.renderWhitespace,
+                cursorBlinking: prefs.cursorBlinking,
+                automaticLayout: true,
+                fontFamily: 'Geist Mono, monospace',
+                smoothScrolling: motionOn,
+                cursorSmoothCaretAnimation: motionOn ? 'on' : 'off',
+                stickyScroll: { enabled: true },
+                bracketPairColorization: { enabled: true },
+                guides: { bracketPairs: true, indentation: true },
+                folding: true,
+                matchBrackets: 'always',
+                padding: { top: 10 },
+              }}
+            />
+          </div>
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--dimmer)' }}>
             <FileIcon size={28} />
             <span style={{ fontSize: 13 }}>Select a file to start editing</span>
+            <span style={{ fontSize: 11, fontFamily: 'Geist Mono, monospace' }}>Ctrl+P to quick-open a file</span>
           </div>
         )}
 
@@ -331,11 +448,20 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
             <span style={{ fontFamily: 'Geist Mono, monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTab.rel}</span>
             {aiEnabled && (
               <span
-                onClick={() => setAiOpen(o => !o)}
-                title={aiOpen ? 'Hide the AI panel' : 'Ask the AI about this file'}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', color: aiOpen ? 'var(--accent)' : 'var(--dimmer)', transition: 'color var(--transition-fast)' }}
+                onClick={() => { setPanelTab('ai'); setPanelOpen(o => panelTab === 'ai' ? !o : true) }}
+                title="Ask the AI about this file"
+                style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', color: (panelOpen && panelTab === 'ai') ? 'var(--accent)' : 'var(--dimmer)', transition: 'color var(--transition-fast)' }}
               >
-                <SparkleIcon size={11} /> {aiOpen ? 'AI' : 'Ask AI'}
+                <SparkleIcon size={11} /> Ask AI
+              </span>
+            )}
+            {claudeCodeEnabled && (
+              <span
+                onClick={() => { setPanelTab('claude'); setPanelOpen(o => panelTab === 'claude' ? !o : true) }}
+                title="Ask Claude Code about this project"
+                style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', color: (panelOpen && panelTab === 'claude') ? 'var(--accent)' : 'var(--dimmer)', transition: 'color var(--transition-fast)' }}
+              >
+                <ClaudeGlyph size={11} /> Claude Code
               </span>
             )}
             <span
@@ -346,39 +472,57 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
             </span>
           </div>
         )}
+
+        {quickOpen && (
+          <QuickOpen
+            files={allFiles}
+            onClose={() => setQuickOpen(false)}
+            onPick={(f) => { setQuickOpen(false); openFile(f) }}
+          />
+        )}
       </div>
 
-      {/* Ask AI side panel — one conversation per project+file so switching
-          files switches threads. The open file is sent as context on every
-          message; fenced code in replies gets Insert / Replace buttons. */}
-      {aiEnabled && aiOpen && activeTab && (
+      {/* Ask AI / Claude Code side panel — one conversation per project+file
+          for Ask AI (ChatPanel), one per-project CLI session for Claude Code. */}
+      {panelVisible && (
         <div style={{
           width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', minWidth: 0,
-          borderLeft: '1px solid var(--border)', background: 'var(--sidebar-bg)',
+          [panelBorderSide]: '1px solid var(--border)', background: 'var(--sidebar-bg)',
           backdropFilter: 'var(--panel-blur)', WebkitBackdropFilter: 'var(--panel-blur)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 6px', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--dimmer)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <SparkleIcon size={11} /> Ask AI · {activeTab.name}
-            </span>
-            <button
-              onClick={() => setAiOpen(false)}
-              title="Close"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', fontSize: 14, lineHeight: 1, padding: 2 }}
-            >×</button>
-          </div>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <ChatPanel
-              key={`${projectId}:${activeTab.rel}`}
-              mode="code"
-              provider={aiProvider}
+          {panelTab === 'claude' ? (
+            <ClaudeCodePanel
               projectId={projectId}
-              conversationKey={`ide:${projectId}:${activeTab.rel}`}
-              fileContext={fileContextFor}
-              onApplyCode={applyCode}
-              compact
+              permissionMode={claudePermissionMode}
+              onPermissionModeChange={onPermissionModeChange}
+              onClose={() => setPanelOpen(false)}
             />
-          </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 6px', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--dimmer)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <SparkleIcon size={11} /> Ask AI · {activeTab?.name}
+                </span>
+                <button
+                  onClick={() => setPanelOpen(false)}
+                  title="Close"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', fontSize: 14, lineHeight: 1, padding: 2 }}
+                >×</button>
+              </div>
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <ChatPanel
+                  key={`${projectId}:${activeTab?.rel}`}
+                  mode="code"
+                  provider={aiProvider}
+                  projectId={projectId}
+                  conversationKey={`ide:${projectId}:${activeTab?.rel}`}
+                  fileContext={fileContextFor}
+                  onApplyCode={applyCode}
+                  compact
+                />
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -390,6 +534,15 @@ function SparkleIcon({ size = 12 }) {
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
       <path d="M8 1.5l1.6 4.1L13.7 7l-4.1 1.4L8 12.5 6.4 8.4 2.3 7l4.1-1.4z" />
       <path d="M13 11.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" />
+    </svg>
+  )
+}
+
+function ClaudeGlyph({ size = 12 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="6" />
+      <path d="M8 5v3l2 2" />
     </svg>
   )
 }
