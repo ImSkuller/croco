@@ -1,4 +1,4 @@
-import { useData } from '../../../lib/store'
+import { useData, patchData } from '../../../lib/store'
 import { IDEIcon } from '../../../constants/SimpleSvgExports'
 import { SettingsCard, FieldLabel, FieldDesc, TextInput, Toggle, ToggleChip, InfoBox } from '../Exports'
 import ModuleHeader from './ModuleHeader'
@@ -31,6 +31,12 @@ export default function IdeModuleCard() {
   // control rather than needing to be set independently.
   const setExplorerSide = (side) => {
     updateLayout({ explorerSide: side })
+    // patchModule already patches the local store optimistically for the
+    // `modules.ide` half of this — do the same for `appearance` here so
+    // Sidebar/AppShell (which read settings straight from the store) swap
+    // sides immediately instead of waiting on the store's normal 30s TTL
+    // revalidation.
+    patchData('settings', prev => prev ? { ...prev, appearance: { ...prev.appearance, sidebarPosition: side } } : prev)
     window.api?.settings.update({ appearance: { sidebarPosition: side } }).catch(() => {})
   }
 
