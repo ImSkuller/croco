@@ -4,7 +4,7 @@ import RowBtn from './RowBtn.jsx'
 import { DEFAULT_PRIORITIES, findPriority, hexToRgba, isTodoLocked } from '../../lib/todoPriorities.js'
 
 // Actual component
-export default function TodoRow({ todo, last, onToggle, onDelete, onEdit, editingId, editText, setEditText, onSaveEdit, editInputRef, priorities = DEFAULT_PRIORITIES }) {
+export default function TodoRow({ todo, last, onToggle, onDelete, onEdit, editingId, editText, setEditText, onSaveEdit, onCancelEdit, editInputRef, priorities = DEFAULT_PRIORITIES }) {
   const [hovered,  setHovered]  = useState(false)
   const [expanded, setExpanded] = useState(false)
   const isEditing = editingId === todo.id
@@ -56,7 +56,7 @@ export default function TodoRow({ todo, last, onToggle, onDelete, onEdit, editin
             ref={editInputRef}
             value={editText}
             onChange={e => setEditText(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') onSaveEdit(todo.id); if (e.key === 'Escape') { onSaveEdit(todo.id) } }}
+            onKeyDown={e => { if (e.key === 'Enter') onSaveEdit(todo.id); if (e.key === 'Escape') { (onCancelEdit || (() => onSaveEdit(todo.id)))() } }}
             onBlur={() => onSaveEdit(todo.id)}
             style={{ width: '100%', background: 'var(--border)', border: '1px solid var(--orange)', borderRadius: 'var(--r-sm)', padding: '3px 8px', color: 'var(--text)', fontSize: 13, fontFamily: 'Geist, sans-serif', outline: 'none' }}
           />

@@ -102,6 +102,8 @@ export default function Todo() {
 
   const startEdit = (todo) => { setEditingId(todo.id); setEditText(todo.title) }
 
+  const cancelEdit = () => { setEditingId(null); setEditText('') }
+
   const saveEdit = async (id) => {
     if (editText.trim() && window.api) {
       const title = editText.trim()
@@ -497,10 +499,10 @@ export default function Todo() {
           {!loading && showGrouped && filtered.length > 0 && (
             <>
               {groupedByPriority.map(({ priority: p, todos: pTodos }) => pTodos.length > 0 && (
-                <TodoGroup key={p.id} label={`${p.label} Priority`} color={p.color} todos={pTodos} priorities={priorities} onToggle={toggle} onDelete={remove} onEdit={startEdit} editingId={editingId} editText={editText} setEditText={setEditText} onSaveEdit={saveEdit} editInputRef={editInputRef} />
+                <TodoGroup key={p.id} label={`${p.label} Priority`} color={p.color} todos={pTodos} priorities={priorities} onToggle={toggle} onDelete={remove} onEdit={startEdit} editingId={editingId} editText={editText} setEditText={setEditText} onSaveEdit={saveEdit} onCancelEdit={cancelEdit} editInputRef={editInputRef} />
               ))}
               {completedGroups.map(([dateLabel, dateTodos]) => (
-                <TodoGroup key={dateLabel} label={`Completed · ${dateLabel}`} color="#444" todos={dateTodos} priorities={priorities} onToggle={toggle} onDelete={remove} onEdit={startEdit} editingId={editingId} editText={editText} setEditText={setEditText} onSaveEdit={saveEdit} editInputRef={editInputRef} done />
+                <TodoGroup key={dateLabel} label={`Completed · ${dateLabel}`} color="#444" todos={dateTodos} priorities={priorities} onToggle={toggle} onDelete={remove} onEdit={startEdit} editingId={editingId} editText={editText} setEditText={setEditText} onSaveEdit={saveEdit} onCancelEdit={cancelEdit} editInputRef={editInputRef} done />
               ))}
             </>
           )}
@@ -521,6 +523,7 @@ export default function Todo() {
                   editText={editText}
                   setEditText={setEditText}
                   onSaveEdit={saveEdit}
+                  onCancelEdit={cancelEdit}
                   editInputRef={editInputRef}
                 />
               ))}
