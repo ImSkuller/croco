@@ -186,30 +186,37 @@ pub async fn run_start(app: AppHandle, project_id: String, command_type: String,
 pub async fn run_stop(project_id: String) -> Result<Value, String> {
     let pid = running_pids().remove(&project_id);
     if let Some(pid) = pid {
-        #[cfg(windows)]
-        {
-            // Send Ctrl+C to the process group first, then force-kill the tree
-            let pid_str = pid.to_string();
-            let mut c = Command::new("taskkill");
-            c.args(["/PID", &pid_str, "/T"]);
-            crate::no_window(&mut c);
-            c.output().ok();
-            std::thread::sleep(std::time::Duration::from_millis(500));
-            let mut c2 = Command::new("taskkill");
-            c2.args(["/PID", &pid_str, "/F", "/T"]);
-            crate::no_window(&mut c2);
-            c2.output().ok();
-        }
-        #[cfg(not(windows))]
-        {
-            // Signal the whole process group (negative pid, `--` guards
-            // against it being parsed as an option) so children spawned by
-            // the shell are killed too — SIGINT first, then SIGTERM.
-            let pgid = format!("-{}", pid);
-            Command::new("kill").args(["-INT",  "--", &pgid]).output().ok();
-            std::thread::sleep(std::time::Duration::from_millis(500));
-            Command::new("kill").args(["-TERM", "--", &pgid]).output().ok();
-        }
+        // The kill sequence below is a blocking sleep sandwiched between two
+        // synchronous subprocess calls — run it on a blocking-pool thread so
+        // it doesn't tie up the async runtime thread this command landed on.
+        tauri::async_runtime::spawn_blocking(move || {
+            #[cfg(windows)]
+            {
+                // Send Ctrl+C to the process group first, then force-kill the tree
+                let pid_str = pid.to_string();
+                let mut c = Command::new("taskkill");
+                c.args(["/PID", &pid_str, "/T"]);
+                crate::no_window(&mut c);
+                c.output().ok();
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                let mut c2 = Command::new("taskkill");
+                c2.args(["/PID", &pid_str, "/F", "/T"]);
+                crate::no_window(&mut c2);
+                c2.output().ok();
+            }
+            #[cfg(not(windows))]
+            {
+                // Signal the whole process group (negative pid, `--` guards
+                // against it being parsed as an option) so children spawned by
+                // the shell are killed too — SIGINT first, then SIGTERM.
+                let pgid = format!("-{}", pid);
+                Command::new("kill").args(["-INT",  "--", &pgid]).output().ok();
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                Command::new("kill").args(["-TERM", "--", &pgid]).output().ok();
+            }
+        })
+        .await
+        .map_err(|e| e.to_string())?;
         Ok(json!({ "ok": true }))
     } else {
         Ok(json!({ "ok": false, "message": "Not running" }))

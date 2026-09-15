@@ -120,7 +120,7 @@ pub fn start_backup_scheduler(app: AppHandle) {
 }
 
 #[tauri::command]
-pub fn backup_run_now(app: AppHandle) -> Result<Value, String> {
+pub async fn backup_run_now(app: AppHandle) -> Result<Value, String> {
     let path = write_backup_now(&app)?;
     let settings = crate::read_settings(&app);
     let retention = settings["app"]["autoBackup"]["retentionCount"].as_u64().unwrap_or(7) as usize;
