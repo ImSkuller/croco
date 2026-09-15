@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import { SaveIcon, CheckIcon } from '../../constants/SimpleSvgExports'
 
-export function SmallBtn({ children, onClick }) {
+export function SmallBtn({ children, onClick, disabled }) {
   const [hovered, setHovered] = useState(false)
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: '6px 12px', borderRadius: 'var(--r-md)', cursor: 'pointer',
+        padding: '6px 12px', borderRadius: 'var(--r-md)', cursor: disabled ? 'default' : 'pointer',
         border: '1px solid var(--border)',
-        background: hovered ? 'var(--card-hover)' : 'var(--card)',
-        color: hovered ? 'var(--text)' : 'var(--dim)',
+        background: disabled ? 'var(--card)' : (hovered ? 'var(--card-hover)' : 'var(--card)'),
+        color: disabled ? 'var(--dimmer)' : (hovered ? 'var(--text)' : 'var(--dim)'),
+        opacity: disabled ? 0.5 : 1,
         fontSize: 12, fontFamily: 'Geist, sans-serif',
         transition: 'all var(--transition-fast)', flexShrink: 0,
       }}

@@ -83,10 +83,46 @@ async function main() {
       { timeoutMs: 20000, label: 'window.api to be ready' })
     assert(true, 'app launched and window.api is available')
 
-    // ── Settings persistence: smoothAnimations / sidebarPosition ──────────
+    // ── Settings page: toggle/select controls and text fields must persist
+    // with NO "Save Changes" button anywhere on the page (it was removed —
+    // this is what actually broke before: several controls only updated
+    // local React state and relied on a global save button that most
+    // toggles never needed in the first place) ────────────────────────────
+    await driver.executeScript(`location.hash = '#/settings'`)
+    await waitFor(async () => driver.executeScript(`return !!document.querySelector('button')`), { label: 'Settings page renders' })
+    assert(
+      await driver.executeScript(`return !Array.from(document.querySelectorAll('button')).some(b => b.textContent.includes('Save Changes'))`),
+      'no "Save Changes" button exists anywhere on the Settings page'
+    )
+    // Click a preset Tag chip (User section, the default active section) —
+    // a pure click/select control with no text input at all.
+    await driver.executeScript(`
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'Designer')
+      btn.click()
+    `)
+    await waitFor(async () => (await callApi(driver, 'settings.get')).user.tag === 'Designer',
+      { timeoutMs: 3000, label: 'clicking a Tag chip persists user.tag with no save button' })
+    assert(true, 'Tag chip click persisted immediately')
+    // Type into the free-text Display Name field and blur it (no button) —
+    // should persist on blur, not require any explicit save action.
+    await driver.executeScript(`
+      const input = document.querySelector('input[placeholder="Your name"]')
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      setter.call(input, 'E2E Tester')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      // React's synthetic onBlur is wired to the native 'focusout' event
+      // (which bubbles), not 'blur' (which doesn't) — dispatching 'blur'
+      // directly is invisible to React's delegated listener.
+      input.dispatchEvent(new Event('focusout', { bubbles: true }))
+    `)
+    await waitFor(async () => (await callApi(driver, 'settings.get')).user.name === 'E2E Tester',
+      { timeoutMs: 3000, label: 'blurring the Display Name field persists it with no save button' })
+    assert(true, 'Display Name field persisted on blur')
+
+    // ── Settings persistence: smoothAnimations ─────────────────────────────
     const s0 = await callApi(driver, 'settings.get')
     assert(s0.appearance.smoothAnimations === true, `smoothAnimations defaults true (got ${s0.appearance.smoothAnimations})`)
-    assert(s0.appearance.sidebarPosition === 'left', `sidebarPosition defaults 'left' (got ${s0.appearance.sidebarPosition})`)
+    assert((s0.modules?.ide?.layout?.explorerSide || 'left') === 'left', `modules.ide.layout.explorerSide defaults 'left' (got ${s0.modules?.ide?.layout?.explorerSide})`)
 
     await callApi(driver, 'settings.update', { appearance: { smoothAnimations: false } })
     const s1 = await callApi(driver, 'settings.get')
@@ -103,26 +139,17 @@ async function main() {
     assert(/^0(\.\d+)?(ms|s)$|0\.001ms/.test(dur) || parseFloat(dur) < 0.01, `html.motion-reduced collapses transition-duration (got "${dur}")`)
     await driver.executeScript(`document.documentElement.classList.remove('motion-reduced')`)
 
-    // ── Sidebar Position swap (reactive: AppShell reads settings live) ────
-    await callApi(driver, 'settings.update', { appearance: { sidebarPosition: 'right' } })
+    // ── The app sidebar must NOT move outside the IDE, even if the IDE's
+    // own explorerSide is set to 'right' — it's a page-scoped follow, not a
+    // general app-wide preference. We're on the default route (Dashboard)
+    // here, before ever visiting /ide.
+    await callApi(driver, 'settings.update', { modules: { ide: { layout: { explorerSide: 'right' } } } })
     await driver.executeScript(`window.dispatchEvent(new CustomEvent('croco:data-changed'))`)
-    await waitFor(async () => {
-      const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
-      if (!rect) return false
-      const r = JSON.parse(rect)
-      const winWidth = await driver.executeScript('return window.innerWidth')
-      return r.right >= winWidth - 8
-    }, { label: 'sidebar visually moves to the right edge after sidebarPosition=right' })
-    assert(true, 'sidebar moved to the right edge')
-
-    await callApi(driver, 'settings.update', { appearance: { sidebarPosition: 'left' } })
+    await new Promise(r => setTimeout(r, 400)) // give a reactive (but wrongly-firing) move a moment to happen if the bug regressed
+    const asideRectOutsideIde = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
+    assert(JSON.parse(asideRectOutsideIde).left <= 8, 'sidebar stays on the left outside the IDE even with explorerSide=right')
+    await callApi(driver, 'settings.update', { modules: { ide: { layout: { explorerSide: 'left' } } } })
     await driver.executeScript(`window.dispatchEvent(new CustomEvent('croco:data-changed'))`)
-    await waitFor(async () => {
-      const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
-      if (!rect) return false
-      return JSON.parse(rect).left <= 8
-    }, { label: 'sidebar returns to the left edge after sidebarPosition=left' })
-    assert(true, 'sidebar returned to the left edge')
 
     // ── IDE: import a real project, open it, verify file tree + Monaco ────
     const project = await callApi(driver, 'projects.import', tmpProjectDir, {})
@@ -180,30 +207,89 @@ async function main() {
     await driver.actions().sendKeys(Key.ESCAPE).perform()
 
     // ── IDE explorer side follows the layout setting ───────────────────
+    // Note: this checks the explorer panel's right edge against its OWN
+    // immediate flex-row container (CodeEditor's shellRef), not the full
+    // window — the app sidebar also moves to the right while on /ide (see
+    // below), which shifts that whole content area leftward within the
+    // window, so window.innerWidth is the wrong reference frame here.
     await callApi(driver, 'settings.update', { modules: { ide: { layout: { explorerSide: 'right' } } } })
     await driver.executeScript(`window.dispatchEvent(new CustomEvent('croco:data-changed'))`)
     await waitFor(async () => {
       const v = await driver.executeScript(`
-        const el = document.evaluate("//span[text()='Explorer']", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
-        if (!el) return null
-        let node = el
-        for (let i = 0; i < 6 && node; i++) { if (node.getBoundingClientRect().width > 150) break; node = node.parentElement }
-        return node ? JSON.stringify(node.getBoundingClientRect()) : null
+        const span = document.evaluate("//span[text()='Explorer']", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+        if (!span) return null
+        let panel = span
+        for (let i = 0; i < 6 && panel; i++) { if (panel.getBoundingClientRect().width > 150) break; panel = panel.parentElement }
+        const flexRow = panel?.parentElement
+        if (!panel || !flexRow) return null
+        return JSON.stringify({ panelRight: panel.getBoundingClientRect().right, containerRight: flexRow.getBoundingClientRect().right })
       `)
       if (!v) return false
-      const r = JSON.parse(v)
+      const { panelRight, containerRight } = JSON.parse(v)
+      return Math.abs(panelRight - containerRight) <= 4
+    }, { timeoutMs: 5000, label: 'IDE explorer panel moves flush against the right edge of its own content area' })
+    assert(true, 'IDE explorer moved to the right side')
+
+    // ── The app sidebar DOES follow while actually on /ide with
+    // explorerSide=right (set two blocks up and still in effect) ──────────
+    await waitFor(async () => {
+      const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
+      if (!rect) return false
+      const r = JSON.parse(rect)
       const winWidth = await driver.executeScript('return window.innerWidth')
       return r.right >= winWidth - 8
-    }, { timeoutMs: 5000, label: 'IDE explorer panel moves to the right edge' })
-    assert(true, 'IDE explorer moved to the right side')
+    }, { timeoutMs: 5000, label: 'sidebar follows the IDE explorer to the right edge while on /ide' })
+    assert(true, 'sidebar followed the IDE explorer to the right edge')
+
+    // ── The quick-flip button inside the explorer panel itself (not the
+    // Settings page) flips explorerSide back to 'left' and both panels
+    // move immediately ──────────────────────────────────────────────────
+    await driver.executeScript(`
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.title === 'Move explorer to the left')
+      btn.click()
+    `)
+    await waitFor(async () => {
+      const s = await callApi(driver, 'settings.get')
+      return s.modules?.ide?.layout?.explorerSide === 'left'
+    }, { timeoutMs: 3000, label: 'in-panel flip button persists explorerSide=left' })
+    await waitFor(async () => {
+      const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
+      if (!rect) return false
+      return JSON.parse(rect).left <= 8
+    }, { timeoutMs: 5000, label: 'sidebar follows the in-panel flip back to the left edge' })
+    assert(true, 'in-panel quick-flip button works and sidebar follows it')
+    // Leave explorerSide=right again for the next check (leaving-the-IDE)
+    await callApi(driver, 'settings.update', { modules: { ide: { layout: { explorerSide: 'right' } } } })
+    await driver.executeScript(`window.dispatchEvent(new CustomEvent('croco:data-changed'))`)
+    await waitFor(async () => {
+      const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
+      if (!rect) return false
+      const r = JSON.parse(rect)
+      const winWidth = await driver.executeScript('return window.innerWidth')
+      return r.right >= winWidth - 8
+    }, { timeoutMs: 5000, label: 're-set explorerSide=right before the leave-IDE check' })
+
+    // ── ...and returns to the left the moment you leave /ide, even though
+    // explorerSide is still 'right' in settings ─────────────────────────
+    await driver.executeScript(`location.hash = '#/'`)
+    await waitFor(async () => {
+      const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
+      if (!rect) return false
+      return JSON.parse(rect).left <= 8
+    }, { timeoutMs: 5000, label: 'sidebar returns to the left edge after leaving /ide' })
+    assert(true, 'sidebar returned to the left edge after leaving the IDE')
 
     log('ALL CHECKS PASSED')
   } finally {
     log('shutting down...')
     try { if (driver) await driver.quit() } catch (e) { log(`driver.quit() error (non-fatal): ${e.message}`) }
     driverProc.kill()
-    fs.rmSync(tmpDataDir, { recursive: true, force: true })
-    fs.rmSync(tmpProjectDir, { recursive: true, force: true })
+    // The app process (and Windows' own handle to the folder it just had
+    // open/watched) needs a moment to actually let go after being killed —
+    // retries alone weren't enough; give it a beat before even trying.
+    await new Promise(r => setTimeout(r, 1500))
+    fs.rmSync(tmpDataDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 400 })
+    fs.rmSync(tmpProjectDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 400 })
   }
 }
 
