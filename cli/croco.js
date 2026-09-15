@@ -232,7 +232,8 @@ note.command('list').alias('ls').description('List all notes').option('--project
 note.command('show <id>').description('Show a note, including its content').action((id) => {
   const meta = readNotes().find(n => n.id === id)
   if (!meta) die(`Note not found: "${id}"`)
-  const content = readJsonOr(join(NOTES_DIR, `${id}.md`), null) ?? (existsSync(join(NOTES_DIR, `${id}.md`)) ? readFileSync(join(NOTES_DIR, `${id}.md`), 'utf-8') : '')
+  const mdPath = join(NOTES_DIR, `${id}.md`)
+  const content = existsSync(mdPath) ? readFileSync(mdPath, 'utf-8') : ''
   console.log(JSON.stringify({ ...meta, content }, null, 2))
 })
 
