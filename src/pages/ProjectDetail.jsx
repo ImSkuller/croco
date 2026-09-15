@@ -21,6 +21,10 @@ import DangerRow from '../components/ProjectDetail/DangerRow'
 import DepsBtn from '../components/ProjectDetail/DepsBtn'
 import FileTreeNodes from '../components/ProjectDetail/FileTreeNodes'
 import TerminalPanel from '../components/ProjectDetail/TerminalPanel'
+// Lazy — xterm.js is a real chunk of weight (~340KB) that shouldn't sit in
+// the main bundle for every ProjectDetail visit when most opens never touch
+// the Shell mode; same reasoning as CodeEditor.jsx being lazy for Monaco.
+const InteractiveTerminal = lazy(() => import('../components/ProjectDetail/InteractiveTerminal'))
 import GitPanel from '../components/ProjectDetail/GitPanel'
 import ConfirmModal from '../components/ProjectDetail/ConfirmModal'
 import DockerPanel from '../components/ProjectDetail/DockerPanel'
@@ -75,6 +79,8 @@ export default function ProjectDetail() {
   const [committing,   setCommitting]   = useState(false)
 
   const [tab,          setTab]          = useState('overview')
+  const [terminalMode, setTerminalMode] = useState('scripts') // 'scripts' | 'shell'
+  const [shellEverOpened, setShellEverOpened] = useState(false)
   const [showCommit,   setShowCommit]   = useState(false)
   const [commitMsg,    setCommitMsg]    = useState('')
   const [commitResult, setCommitResult] = useState(null)
@@ -899,21 +905,50 @@ export default function ProjectDetail() {
           )}
 
           {/* ─ TERMINAL ──────────────────────────────────── */}
-          {/* Always mounted so scroll pos / custom cmd survive tab switches */}
+          {/* Always mounted (both modes) so scroll pos / custom cmd / the
+              live shell session all survive tab switches — InteractiveTerminal
+              only actually tears down its PTY session on unmount, i.e. when
+              this whole page navigates away, not on a mode/tab switch. */}
           <div style={{ display: tab === 'terminal' ? 'block' : 'none' }}>
             {project && (
-              <TerminalPanel
-                output={termOutput}
-                command={termCmd}
-                isRunning={isRunning}
-                project={project}
-                allScripts={allScripts}
-                runEnv={runEnv}
-                onEnvChange={setRunEnv}
-                onClear={() => setTermOutput([])}
-                onRun={handleRun}
-                onRefreshScripts={() => window.api?.projects.getScripts(project.id).then(s => setAllScripts(s || [])).catch(() => {})}
-              />
+              <>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                  {[{ v: 'scripts', label: 'Scripts' }, { v: 'shell', label: 'Shell' }].map(({ v, label }) => (
+                    <button
+                      key={v}
+                      onClick={() => { setTerminalMode(v); if (v === 'shell') setShellEverOpened(true) }}
+                      style={{
+                        padding: '4px 11px', borderRadius: 'var(--r-xl)', cursor: 'pointer',
+                        border: `1px solid ${terminalMode === v ? 'var(--accent)' : 'var(--border)'}`,
+                        background: terminalMode === v ? 'var(--accent-dim)' : 'transparent',
+                        color: terminalMode === v ? 'var(--accent)' : 'var(--dimmer)',
+                        fontSize: 11, fontFamily: 'Geist, sans-serif', transition: 'all var(--transition-fast)',
+                      }}
+                    >{label}</button>
+                  ))}
+                </div>
+                <div style={{ display: terminalMode === 'scripts' ? 'block' : 'none' }}>
+                  <TerminalPanel
+                    output={termOutput}
+                    command={termCmd}
+                    isRunning={isRunning}
+                    project={project}
+                    allScripts={allScripts}
+                    runEnv={runEnv}
+                    onEnvChange={setRunEnv}
+                    onClear={() => setTermOutput([])}
+                    onRun={handleRun}
+                    onRefreshScripts={() => window.api?.projects.getScripts(project.id).then(s => setAllScripts(s || [])).catch(() => {})}
+                  />
+                </div>
+                {shellEverOpened && (
+                  <div style={{ display: terminalMode === 'shell' ? 'block' : 'none', height: 480 }}>
+                    <Suspense fallback={<div style={{ padding: 20, fontSize: 12, color: 'var(--dimmer)' }}>Loading terminal…</div>}>
+                      <InteractiveTerminal projectId={project.id} />
+                    </Suspense>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

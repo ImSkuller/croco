@@ -195,6 +195,23 @@ export const api = {
     onFinished: (cb) => sub('run:finished', cb),
   },
 
+  // ── PTY (real interactive terminal) ─────────────────────────────────────────
+  pty: {
+    /** @param {string} projectId @param {number} cols @param {number} rows @returns {Promise<string>} sessionId */
+    spawn:  (projectId, cols, rows) => invoke('pty_spawn',  { projectId, cols, rows }),
+    /** @param {string} sessionId @param {string} data @returns {Promise<void>} */
+    write:  (sessionId, data)       => invoke('pty_write',  { sessionId, data }),
+    /** @param {string} sessionId @param {number} cols @param {number} rows @returns {Promise<void>} */
+    resize: (sessionId, cols, rows) => invoke('pty_resize', { sessionId, cols, rows }),
+    /** @param {string} sessionId @returns {Promise<void>} */
+    kill:   (sessionId)             => invoke('pty_kill',   { sessionId }),
+
+    /** @param {(payload: any) => void} cb @returns {() => void} */
+    onOutput: (cb) => sub('pty:output', cb),
+    /** @param {(payload: any) => void} cb @returns {() => void} */
+    onExit:   (cb) => sub('pty:exit',   cb),
+  },
+
   // ── Git ──────────────────────────────────────────────────────────────────────
   git: {
     /** @param {number} [limit] @returns {Promise<any[]>} */
