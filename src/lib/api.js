@@ -474,6 +474,33 @@ export const api = {
     readFile:  (projectId, relPath)          => invoke('ide_read_file',  { projectId, relPath }),
     /** @param {string} projectId @param {string} relPath @param {string} content @returns {Promise<void>} */
     writeFile: (projectId, relPath, content) => invoke('ide_write_file', { projectId, relPath, content }),
+
+    // Embedded Claude Code CLI panel — shells out to the user's own
+    // locally-installed `claude` CLI (non-interactive print mode). One
+    // in-flight message per project at a time; events stream over
+    // claudecode:event (parsed JSON line from the CLI), claudecode:raw
+    // (unparseable stdout line), claudecode:stderr, claudecode:started,
+    // claudecode:done.
+    claudeCode: {
+      /** @returns {Promise<{available: boolean, version: string|null}>} */
+      check:     ()                                                    => invoke('claude_cli_check'),
+      /** @param {string} projectId @param {string} message @param {string|null} [sessionId] @param {string} [permissionMode] @returns {Promise<any>} */
+      send:      (projectId, message, sessionId, permissionMode)       => invoke('claude_cli_send', { projectId, message, sessionId: sessionId || null, permissionMode: permissionMode || 'plan' }),
+      /** @param {string} projectId @returns {Promise<any>} */
+      stop:      (projectId)                                           => invoke('claude_cli_stop', { projectId }),
+      /** @param {string} projectId @returns {Promise<boolean>} */
+      isRunning: (projectId)                                           => invoke('claude_cli_is_running', { projectId }),
+      /** @param {(payload: any) => void} cb @returns {() => void} */
+      onEvent:   (cb) => sub('claudecode:event',   cb),
+      /** @param {(payload: any) => void} cb @returns {() => void} */
+      onRaw:     (cb) => sub('claudecode:raw',     cb),
+      /** @param {(payload: any) => void} cb @returns {() => void} */
+      onStderr:  (cb) => sub('claudecode:stderr',  cb),
+      /** @param {(payload: any) => void} cb @returns {() => void} */
+      onStarted: (cb) => sub('claudecode:started', cb),
+      /** @param {(payload: any) => void} cb @returns {() => void} */
+      onDone:    (cb) => sub('claudecode:done',    cb),
+    },
   },
 
   // ── Discord module (beta) ────────────────────────────────────────────────────
