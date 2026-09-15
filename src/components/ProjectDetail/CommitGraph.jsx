@@ -68,7 +68,7 @@ export default function CommitGraph({ projectId }) {
   return (
     <div>
       <div style={{ display: 'flex', overflowX: 'auto', maxHeight: 420, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--r-md)' }}>
-        <svg width={graphWidth} height={totalHeight} style={{ flexShrink: 0, display: 'block' }}>
+        <svg data-commit-graph="true" width={graphWidth} height={totalHeight} style={{ flexShrink: 0, display: 'block' }}>
           {edges.map((e, i) => {
             const x1 = e.fromLane * LANE_W + LANE_W / 2
             const y1 = e.fromRow * ROW_H + ROW_H / 2

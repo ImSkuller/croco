@@ -129,11 +129,14 @@ async function main() {
       { label: 'Commit History List/Graph toggle renders' })
     await driver.executeScript(`Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'Graph').click()`)
 
-    await waitFor(async () => driver.executeScript(`return document.querySelectorAll('svg circle').length`),
+    // Scoped to the graph's own SVG (data-commit-graph) — a bare 'svg
+    // circle'/'svg path' selector also matches unrelated icon SVGs
+    // elsewhere on the page (avatars, status dots, etc.).
+    await waitFor(async () => driver.executeScript(`return document.querySelectorAll('svg[data-commit-graph] circle').length`),
       { timeoutMs: 5000, label: 'graph SVG renders commit nodes' })
-    const circleCount = await driver.executeScript(`return document.querySelectorAll('svg circle').length`)
+    const circleCount = await driver.executeScript(`return document.querySelectorAll('svg[data-commit-graph] circle').length`)
     assert(circleCount === 4, `graph renders one circle per commit (got ${circleCount})`)
-    const pathCount = await driver.executeScript(`return document.querySelectorAll('svg path').length`)
+    const pathCount = await driver.executeScript(`return document.querySelectorAll('svg[data-commit-graph] path').length`)
     assert(pathCount >= 1, `graph renders at least one curved (cross-lane) edge for the merge (got ${pathCount} path elements)`)
 
     // Clicking a commit row shows its diff.
