@@ -49,3 +49,15 @@ export function applyStyle(styleId) {
 
   cacheAppearance()
 }
+
+// "Smooth Animations" (Settings → Appearance, on by default) — an app-level
+// opt-out for the page-transition/panel-swap/hover-motion polish added in
+// v2.0, independent of the OS's own prefers-reduced-motion (which always
+// still wins — see index.css's html.motion-reduced block). enabled=false
+// collapses every animation/transition to ~0ms, same mechanism the OS query
+// uses, just toggleable from inside the app.
+export function applySmoothAnimations(enabled) {
+  const html = document.documentElement
+  html.classList.toggle('motion-reduced', enabled === false)
+  cacheAppearance()
+}

@@ -1,7 +1,7 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { useEffect } from 'react'
 import { applyTheme } from './lib/theme.js'
-import { applyStyle } from './lib/appearanceStyle.js'
+import { applyStyle, applySmoothAnimations } from './lib/appearanceStyle.js'
 import AppShell from './components/layout/AppShell'
 import Dashboard from './pages/Dashboard'
 import Projects from './pages/Projects'
@@ -39,6 +39,7 @@ export default function App() {
         }
       )
       applyStyle(s?.appearance?.style || 'apple')
+      applySmoothAnimations(s?.appearance?.smoothAnimations ?? true)
     }).catch(() => {})
     // Once per launch, for the Patterns page's login streak.
     window.api.personality?.trackAppOpen?.().catch(() => {})

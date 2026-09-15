@@ -3,7 +3,7 @@ import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIc
 import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, PathInput, IDEOption, ToggleChip, Toggle, InfoBox, SmallBtn, SaveBtn } from '../components/Settings/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { THEMES, applyTheme, getThemeAccentSwatch, normalizeThemeId } from '../lib/theme.js'
-import { STYLES, applyStyle, normalizeStyleId } from '../lib/appearanceStyle.js'
+import { STYLES, applyStyle, normalizeStyleId, applySmoothAnimations } from '../lib/appearanceStyle.js'
 import { lazyLoadAllPickerFonts } from '../lib/lazyGoogleFont.js'
 import { SHORTCUT_DEFS } from '../lib/shortcuts'
 import StorageSection from '../components/Settings/StorageSection'
@@ -134,6 +134,8 @@ export default function Settings() {
   const [selectedTheme,    setSelectedTheme]    = useState('default')
   const [selectedStyle,    setSelectedStyle]    = useState('default')
   const [glassEnabled,     setGlassEnabled]     = useState(false)
+  const [smoothAnimations, setSmoothAnimations] = useState(true)
+  const [sidebarPosition,  setSidebarPosition]  = useState('left')
   const [fontBody,         setFontBody]         = useState('Geist')
   const [fontDisplay,      setFontDisplay]      = useState('Lora')
   const [logoBg,           setLogoBg]           = useState('#ffffff')
@@ -271,6 +273,8 @@ export default function Settings() {
     const glass = s.appearance?.glass || false
     setSelectedTheme(theme)
     setGlassEnabled(glass)
+    setSmoothAnimations(s.appearance?.smoothAnimations ?? true)
+    setSidebarPosition(s.appearance?.sidebarPosition === 'right' ? 'right' : 'left')
     setSelectedStyle(normalizeStyleId(s.appearance?.style || 'apple'))
     setFontBody(s.appearance?.fontBody || 'Geist')
     setFontDisplay(s.appearance?.fontDisplay || 'Lora')
@@ -1239,6 +1243,47 @@ export default function Settings() {
                           applyTheme(selectedTheme, v, { accentColor, fontBody, fontDisplay, logoBg })
                           window.api?.settings.update({ appearance: { glass: v } }).catch(console.error)
                           window.api?.system.setWindowGlass(v).catch(console.error)
+                        }}
+                      />
+                    ))}
+                  </div>
+                </SettingsCard>
+
+                <SettingsCard>
+                  <FieldLabel>Smooth Animations</FieldLabel>
+                  <FieldDesc>Fluid, Apple-like motion for page transitions, panel swaps, and hover/press feedback throughout the app. Turning this off snaps everything instantly — same effect as your OS's "reduce motion" setting, but toggleable in-app.</FieldDesc>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    {[{ v: true, label: 'on' }, { v: false, label: 'off' }].map(({ v, label }) => (
+                      <ToggleChip
+                        key={label}
+                        label={label}
+                        active={smoothAnimations === v}
+                        color="var(--accent)"
+                        bg="var(--accent-dim)"
+                        onClick={() => {
+                          setSmoothAnimations(v)
+                          applySmoothAnimations(v)
+                          window.api?.settings.update({ appearance: { smoothAnimations: v } }).catch(console.error)
+                        }}
+                      />
+                    ))}
+                  </div>
+                </SettingsCard>
+
+                <SettingsCard>
+                  <FieldLabel>Sidebar Position</FieldLabel>
+                  <FieldDesc>Which edge of the window Croco's own navigation sidebar docks to. Switching animates the sidebar sliding to the other side — the IDE module's file explorer follows this same setting (customizable separately in Settings → Modules → IDE).</FieldDesc>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    {[{ v: 'left', label: 'left' }, { v: 'right', label: 'right' }].map(({ v, label }) => (
+                      <ToggleChip
+                        key={label}
+                        label={label}
+                        active={sidebarPosition === v}
+                        color="var(--accent)"
+                        bg="var(--accent-dim)"
+                        onClick={() => {
+                          setSidebarPosition(v)
+                          window.api?.settings.update({ appearance: { sidebarPosition: v } }).catch(console.error)
                         }}
                       />
                     ))}
