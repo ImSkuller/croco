@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import BetaBadge from './BetaBadge'
 
 export default function SettingsNavItem({ section, active, danger, onClick }) {
   const [hovered, setHovered] = useState(false)
@@ -25,7 +26,8 @@ export default function SettingsNavItem({ section, active, danger, onClick }) {
       <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         {section.icon}
       </span>
-      {section.label}
+      <span style={{ flex: 1 }}>{section.label}</span>
+      {section.badge && <BetaBadge style={{ fontSize: 8, padding: '0px 5px' }} />}
     </button>
   )
 }

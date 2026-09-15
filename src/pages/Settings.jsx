@@ -53,7 +53,7 @@ const NAV_SECTIONS = [
   { id: 'github',     label: 'GitHub',       icon: <GitIcon />     },
   { id: 'ai',         label: 'AI',           icon: <AIIcon />      },
   { id: 'localApi',   label: 'Local API',    icon: <APIIcon />     },
-  { id: 'modules',    label: 'Modules',      icon: <PuzzleIcon />  },
+  { id: 'modules',    label: 'Modules',      icon: <PuzzleIcon />, badge: true },
   { id: 'appearance', label: 'Appearance',   icon: <PaletteIcon /> },
   { id: 'behaviour',  label: 'Behaviour',    icon: <TagIcon />     },
   { id: 'storage',    label: 'Storage',      icon: <DatabaseIcon /> },
