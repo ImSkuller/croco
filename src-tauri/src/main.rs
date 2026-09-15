@@ -68,6 +68,9 @@ pub(crate) use discord::*;
 mod ide;
 pub(crate) use ide::*;
 
+mod claude_cli;
+pub(crate) use claude_cli::*;
+
 mod ai_brain;
 pub(crate) use ai_brain::*;
 
@@ -420,6 +423,8 @@ fn main() {
             discord_set_presence, discord_clear_activity, settings_set_discord_webhook, discord_webhook_test,
             // ide module (beta)
             ide_read_file, ide_write_file,
+            // embedded Claude Code CLI panel (beta, part of the ide module)
+            claude_cli_check, claude_cli_send, claude_cli_stop, claude_cli_is_running,
             // ai module (beta) — storage brain
             brain_rebuild_index, brain_search,
             brain_memory_create, brain_memory_update, brain_memory_delete, brain_memory_get, brain_memory_list,

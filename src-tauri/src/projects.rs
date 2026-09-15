@@ -360,6 +360,12 @@ pub fn auto_detect_commands(root: &Path) -> Value {
 }
 
 fn open_in_ide(ide: &str, path: &str) -> Result<(), String> {
+    // Claude Code is a terminal TUI, not a GUI editor — it needs a real
+    // visible console attached, so it gets its own launcher instead of
+    // falling into the generic no-window GUI-editor spawn below.
+    if ide == "claude-code" {
+        return crate::open_claude_code_terminal(path);
+    }
     let cmd = match ide {
         "cursor"    => "cursor",
         "webstorm"  => "webstorm",
