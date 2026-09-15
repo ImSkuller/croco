@@ -30,6 +30,7 @@ const IDE_OPTIONS = [
   { value: 'sublime',   label: 'Sublime'   },
   { value: 'neovim',    label: 'Neovim'    },
   { value: 'vim',       label: 'Vim'       },
+  { value: 'claude-code', label: 'Claude Code' },
 ]
 
 const CATEGORY_ORDER = ['Blank', 'Frontend', 'Fullstack', 'Backend', 'CLI', 'Desktop', 'Minecraft', 'Discord', 'Other']

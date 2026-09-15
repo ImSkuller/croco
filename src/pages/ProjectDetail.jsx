@@ -1350,14 +1350,15 @@ export default function ProjectDetail() {
           {/* ─ SETTINGS ──────────────────────────────────── */}
           {tab === 'settings' && editDraft && (() => {
             const IDE_OPTIONS = [
-              { value: 'code',      label: 'VS Code' },
-              { value: 'cursor',    label: 'Cursor' },
-              { value: 'webstorm',  label: 'WebStorm' },
-              { value: 'idea',      label: 'IntelliJ IDEA' },
-              { value: 'zed',       label: 'Zed' },
-              { value: 'sublime',   label: 'Sublime Text' },
-              { value: 'vim',       label: 'Vim' },
-              { value: 'nvim',      label: 'Neovim' },
+              { value: 'vscode',      label: 'VS Code' },
+              { value: 'cursor',      label: 'Cursor' },
+              { value: 'webstorm',    label: 'WebStorm' },
+              { value: 'idea',        label: 'IntelliJ IDEA' },
+              { value: 'zed',         label: 'Zed' },
+              { value: 'sublime',     label: 'Sublime Text' },
+              { value: 'vim',         label: 'Vim' },
+              { value: 'neovim',      label: 'Neovim' },
+              { value: 'claude-code', label: 'Claude Code' },
             ]
             const labelStyle = { fontSize: 10, fontFamily: 'Geist Mono, monospace', color: 'var(--dimmer)', textTransform: 'uppercase', letterSpacing: '0.06em' }
             const inputStyle = { width: '100%', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '8px 11px', color: 'var(--text)', fontSize: 13, fontFamily: 'Geist, sans-serif', outline: 'none', transition: 'border-color var(--transition-base)' }

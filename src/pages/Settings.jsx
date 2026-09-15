@@ -36,6 +36,7 @@ const IDE_OPTIONS = [
   { value: 'sublime',   label: 'Sublime Text'       },
   { value: 'neovim',    label: 'Neovim'             },
   { value: 'vim',       label: 'Vim'                },
+  { value: 'claude-code', label: 'Claude Code'       },
 ]
 
 const PRESET_TAGS = [

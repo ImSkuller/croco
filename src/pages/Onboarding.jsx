@@ -13,6 +13,7 @@ const IDE_OPTIONS = [
   { value: 'neovim',   label: 'Neovim'             },
   { value: 'idea',     label: 'IntelliJ IDEA'      },
   { value: 'webstorm', label: 'WebStorm'            },
+  { value: 'claude-code', label: 'Claude Code'      },
 ]
 
 const PRESET_TAGS = [
