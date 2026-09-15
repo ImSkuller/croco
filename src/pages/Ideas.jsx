@@ -4,6 +4,7 @@ import { useToast } from '../components/Toast/useToast.js'
 import useDiscordPresence from '../hooks/useDiscordPresence'
 import { EmptyState } from '../components/ui/EmptyState'
 import { isIconValue } from '../lib/projectIcons'
+import { useData, EMPTY_LIST } from '../lib/store'
 import {
   EditIcon, RefreshIcon, CheckCircleIcon, DownloadIcon, BulbIcon,
   NoteIcon2, EraserIcon, UndoIcon, SaveIcon,
@@ -174,7 +175,7 @@ export default function Ideas() {
   const [drawSize,   setDrawSize]   = useState(3)
   const [drawTool,   setDrawTool]   = useState('pen') // 'pen' | 'eraser'
   const [canUndo,    setCanUndo]    = useState(false)
-  const [projects,   setProjects]   = useState([])
+  const projects = useData('projects') || EMPTY_LIST
   const [saveModal,  setSaveModal]  = useState(false)
   const [saveProject, setSaveProject] = useState('')
   const [saving,     setSaving]     = useState(false)
@@ -235,10 +236,6 @@ export default function Ideas() {
       setLoading(false)
     }
   }, [fetched])
-
-  useEffect(() => {
-    window.api?.projects.getAll().then(p => setProjects(p || [])).catch(() => {})
-  }, [])
 
   // Sync canvas intrinsic size to its CSS display size; preserve content on resize
   useEffect(() => {

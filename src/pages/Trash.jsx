@@ -35,7 +35,7 @@ export default function Trash() {
   const rawProjects = useData('projects')
   const rawNotes    = useData('notes')
   const rawTodos     = useData('todos')
-  const loading = rawProjects === null && rawNotes === null && rawTodos === null
+  const loading = rawProjects === null || rawNotes === null || rawTodos === null
 
   const items = useMemo(() => {
     const projects = (rawProjects || EMPTY_LIST).filter(p => p.trashedAt).map(p => ({ id: p.id, type: 'project', title: p.name, trashedAt: p.trashedAt }))
