@@ -1,4 +1,4 @@
-import { useData } from '../../../lib/store'
+import { useData, refreshData } from '../../../lib/store'
 import { SlackIcon } from '../../../constants/SimpleSvgExports'
 import { SettingsCard } from '../Exports'
 import ModuleHeader from './ModuleHeader'
@@ -25,7 +25,7 @@ export default function SlackModuleCard() {
             enabled={!!s.webhook?.enabled}
             urlStored={!!s.webhook?.urlStored}
             onToggle={() => update({ webhook: { enabled: !s.webhook?.enabled } })}
-            onSaveUrl={(url) => window.api.settings.setSlackWebhook(url)}
+            onSaveUrl={(url) => window.api.settings.setSlackWebhook(url).then(() => refreshData('settings'))}
             onTest={() => window.api.slack.webhookTest()}
           />
         </div>
