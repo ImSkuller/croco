@@ -354,7 +354,7 @@ fn main() {
             projects_get_scripts, projects_rename, projects_set_archived,
             projects_export_as_template,
             // git
-            git_status, git_commit, git_get_log, git_is_repo, git_get_branches,
+            git_status, git_commit, git_get_log, git_get_graph_log, git_is_repo, git_get_branches,
             git_switch_branch, git_create_branch, git_push, git_get_readme, git_pull,
             git_stage_files, git_unstage_files, git_diff_file,
             git_get_ahead_behind,

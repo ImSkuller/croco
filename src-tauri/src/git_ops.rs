@@ -443,6 +443,41 @@ pub async fn git_get_log(app: AppHandle, id: String, limit: Option<u32>) -> Resu
     }).collect())
 }
 
+// Same idea as git_get_log but across every ref (--all, not just the
+// current branch) and with the two extra fields a visual commit/branch
+// graph needs that plain log has no use for: %P (parent hashes, so the
+// frontend can draw parent->child edges) and %d (ref decorations — which
+// branches/tags point at this commit). All hashes are truncated to the
+// same 7 chars git_get_log already uses, consistently within one call, so
+// parent references always match a "hash" field returned in the same
+// response.
+#[tauri::command]
+pub async fn git_get_graph_log(app: AppHandle, id: String, limit: Option<u32>) -> Result<Vec<Value>, String> {
+    let cwd   = project_root(&app, &id)?;
+    let limit = limit.unwrap_or(200);
+    let out   = run_git(&["log", "--all", "--topo-order", &format!("-{}", limit), "--format=%H|%P|%d|%s|%ar|%an"], &cwd)?;
+    let short = |h: &str| h.chars().take(7).collect::<String>();
+    Ok(out.lines().filter(|l| !l.is_empty()).map(|line| {
+        let parts: Vec<&str> = line.splitn(6, '|').collect();
+        let hash = parts.first().copied().unwrap_or("");
+        let parents: Vec<String> = parts.get(1)
+            .map(|p| p.split_whitespace().map(short).collect())
+            .unwrap_or_default();
+        // %d looks like " (HEAD -> main, origin/main, tag: v1.0.0)" or "" for
+        // a commit with no ref pointing at it directly.
+        let refs: Vec<String> = parts.get(2).copied().unwrap_or("").trim()
+            .trim_start_matches('(').trim_end_matches(')')
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        let message = parts.get(3).unwrap_or(&"").trim().to_string();
+        let date    = parts.get(4).unwrap_or(&"").to_string();
+        let author  = parts.get(5).unwrap_or(&"").to_string();
+        json!({ "hash": short(hash), "parents": parents, "refs": refs, "message": message, "date": date, "author": author })
+    }).collect())
+}
+
 #[tauri::command]
 pub fn git_is_repo(root: String) -> bool {
     Path::new(&root).join(".git").exists()

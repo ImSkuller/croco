@@ -207,6 +207,8 @@ export const api = {
     commit:         (id, msg, push, amend) => invoke('git_commit', { id, msg, push, amend }),
     /** @param {string} id @param {number} [limit] @returns {Promise<any[]>} */
     getLog:         (id, limit)  => invoke('git_get_log',          { id, limit }),
+    /** @param {string} id @param {number} [limit] @returns {Promise<any[]>} graph log across all refs, with parent hashes + ref decorations */
+    getGraphLog:    (id, limit)  => invoke('git_get_graph_log',    { id, limit }),
     /** @param {string} root @returns {Promise<boolean>} */
     isRepo:         (root)       => invoke('git_is_repo',          { root }),
     /** @param {string} id @returns {Promise<any[]>} */
