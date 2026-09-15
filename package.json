@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:e2e": "node e2e/verify-obsidian-sync.mjs && node e2e/verify-personality-tracking.mjs && node e2e/verify-priorities-patterns-style.mjs && node e2e/verify-v2-milestones.mjs && node e2e/verify-startup-lastcommit-todolock.mjs && node e2e/verify-github-page.mjs && node e2e/verify-schedules.mjs && node e2e/verify-suggestions.mjs",
+    "test:e2e": "node e2e/verify-obsidian-sync.mjs && node e2e/verify-personality-tracking.mjs && node e2e/verify-priorities-patterns-style.mjs && node e2e/verify-v2-milestones.mjs && node e2e/verify-startup-lastcommit-todolock.mjs && node e2e/verify-github-page.mjs && node e2e/verify-schedules.mjs && node e2e/verify-suggestions.mjs && node e2e/verify-ide-appearance.mjs",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
