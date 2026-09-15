@@ -28,7 +28,9 @@ pub fn activity_log(app: &AppHandle, event_type: &str, data: Value) {
     entries.insert(0, entry);
     if entries.len() > 500 { entries.truncate(500); }
     if let Some(parent) = path.parent() { fs::create_dir_all(parent).ok(); }
-    fs::write(&path, serde_json::to_string_pretty(&entries).unwrap()).ok();
+    if let Ok(pretty) = serde_json::to_string_pretty(&entries) {
+        fs::write(&path, pretty).ok();
+    }
 }
 
 #[tauri::command]

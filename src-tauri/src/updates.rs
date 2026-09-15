@@ -15,7 +15,7 @@
 use once_cell::sync::Lazy;
 use semver::Version;
 use serde_json::{json, Value};
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 use tauri::AppHandle;
 use tauri_plugin_updater::{Update, UpdaterExt};
 
@@ -89,14 +89,14 @@ pub async fn updates_check(app: AppHandle) -> Result<Value, String> {
         None => json!({ "current": current, "latest": current, "hasUpdate": false }),
     };
 
-    *PENDING_UPDATE.lock().unwrap() = found;
+    *PENDING_UPDATE.lock().unwrap_or_else(PoisonError::into_inner) = found;
 
     Ok(result)
 }
 
 #[tauri::command]
 pub async fn updates_install(app: AppHandle) -> Result<(), String> {
-    let update = PENDING_UPDATE.lock().unwrap().take();
+    let update = PENDING_UPDATE.lock().unwrap_or_else(PoisonError::into_inner).take();
     let Some(update) = update else {
         return Err("No update was found — run a check first.".into());
     };
