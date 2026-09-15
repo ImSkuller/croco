@@ -174,6 +174,18 @@ async function main() {
       sel.dispatchEvent(new Event('change', { bubbles: true }))
     }, project.id)
 
+    // The sidebar sits opposite the explorer, so simply opening the IDE
+    // with the default explorerSide ('left') should immediately put the
+    // sidebar on the right — no setting change needed for this first move.
+    await waitFor(async () => {
+      const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
+      if (!rect) return false
+      const r = JSON.parse(rect)
+      const winWidth = await driver.executeScript('return window.innerWidth')
+      return r.right >= winWidth - 8
+    }, { timeoutMs: 5000, label: 'opening the IDE with the default (left) explorer puts the sidebar on the right, opposite it' })
+    assert(true, 'sidebar defaulted to the opposite (right) edge on opening the IDE')
+
     await waitFor(async () => driver.executeScript(`return !!document.querySelector('.monaco-editor')`) , { timeoutMs: 4000, label: 'explorer renders (file tree row for index.js)' }).catch(() => {})
     // Click the index.js row in the explorer (first file row containing the text)
     await waitFor(async () => {
@@ -230,20 +242,19 @@ async function main() {
     }, { timeoutMs: 5000, label: 'IDE explorer panel moves flush against the right edge of its own content area' })
     assert(true, 'IDE explorer moved to the right side')
 
-    // ── The app sidebar DOES follow while actually on /ide with
-    // explorerSide=right (set two blocks up and still in effect) ──────────
+    // ── The app sidebar sits OPPOSITE the explorer while actually on /ide:
+    // explorerSide is now 'right' (set just above), so the sidebar should
+    // have moved back to the left. ─────────────────────────────────────
     await waitFor(async () => {
       const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
       if (!rect) return false
-      const r = JSON.parse(rect)
-      const winWidth = await driver.executeScript('return window.innerWidth')
-      return r.right >= winWidth - 8
-    }, { timeoutMs: 5000, label: 'sidebar follows the IDE explorer to the right edge while on /ide' })
-    assert(true, 'sidebar followed the IDE explorer to the right edge')
+      return JSON.parse(rect).left <= 8
+    }, { timeoutMs: 5000, label: 'sidebar moves to the opposite (left) edge once the explorer is on the right' })
+    assert(true, 'sidebar moved to the opposite edge from the explorer')
 
     // ── The quick-flip button inside the explorer panel itself (not the
-    // Settings page) flips explorerSide back to 'left' and both panels
-    // move immediately ──────────────────────────────────────────────────
+    // Settings page) flips explorerSide back to 'left' — the sidebar
+    // should immediately move to the opposite (right) edge in response ──
     await driver.executeScript(`
       const btn = Array.from(document.querySelectorAll('button')).find(b => b.title === 'Move explorer to the left')
       btn.click()
@@ -255,22 +266,14 @@ async function main() {
     await waitFor(async () => {
       const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
       if (!rect) return false
-      return JSON.parse(rect).left <= 8
-    }, { timeoutMs: 5000, label: 'sidebar follows the in-panel flip back to the left edge' })
-    assert(true, 'in-panel quick-flip button works and sidebar follows it')
-    // Leave explorerSide=right again for the next check (leaving-the-IDE)
-    await callApi(driver, 'settings.update', { modules: { ide: { layout: { explorerSide: 'right' } } } })
-    await driver.executeScript(`window.dispatchEvent(new CustomEvent('croco:data-changed'))`)
-    await waitFor(async () => {
-      const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
-      if (!rect) return false
       const r = JSON.parse(rect)
       const winWidth = await driver.executeScript('return window.innerWidth')
       return r.right >= winWidth - 8
-    }, { timeoutMs: 5000, label: 're-set explorerSide=right before the leave-IDE check' })
+    }, { timeoutMs: 5000, label: 'in-panel flip to explorerSide=left moves the sidebar to the opposite (right) edge' })
+    assert(true, 'in-panel quick-flip button works and sidebar moves to the opposite side')
 
-    // ── ...and returns to the left the moment you leave /ide, even though
-    // explorerSide is still 'right' in settings ─────────────────────────
+    // ── ...and returns to its normal left position the moment you leave
+    // /ide, even though the sidebar was on the right a moment ago ───────
     await driver.executeScript(`location.hash = '#/'`)
     await waitFor(async () => {
       const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
@@ -279,13 +282,14 @@ async function main() {
     }, { timeoutMs: 5000, label: 'sidebar returns to the left edge after leaving /ide' })
     assert(true, 'sidebar returned to the left edge after leaving the IDE')
 
-    // ── The same follow behavior must also work from a project's own
-    // "Code" tab (ProjectDetail.jsx) — a second, separate place CodeEditor
-    // mounts that isn't reflected in the URL at all (the tab is local
-    // component state), which the original route-based check
-    // (location.pathname.startsWith('/ide')) completely missed: the explorer
-    // would flip sides in there but the app sidebar wouldn't follow.
-    // explorerSide is still 'right' in settings from the block above.
+    // ── The same opposite-side behavior must also work from a project's
+    // own "Code" tab (ProjectDetail.jsx) — a second, separate place
+    // CodeEditor mounts that isn't reflected in the URL at all (the tab is
+    // local component state), which the original route-based check
+    // (location.pathname.startsWith('/ide')) completely missed: the
+    // explorer would flip sides in there but the app sidebar wouldn't
+    // follow. explorerSide is still 'left' in settings from the block
+    // above, so the sidebar should end up on the right.
     await driver.executeScript((id) => { location.hash = '#/projects/' + id }, project.id)
     await waitFor(async () => driver.executeScript(`return Array.from(document.querySelectorAll('button')).some(b => b.textContent.includes('Code'))`),
       { label: 'project page tab bar renders with a Code tab' })
@@ -299,8 +303,8 @@ async function main() {
       const r = JSON.parse(rect)
       const winWidth = await driver.executeScript('return window.innerWidth')
       return r.right >= winWidth - 8
-    }, { timeoutMs: 5000, label: "sidebar follows the explorer to the right from a project's Code tab too" })
-    assert(true, "sidebar followed the explorer from ProjectDetail's Code tab")
+    }, { timeoutMs: 5000, label: "sidebar moves to the opposite (right) edge from a project's Code tab too" })
+    assert(true, "sidebar moved to the opposite edge from ProjectDetail's Code tab")
 
     // Switching to a different tab unmounts CodeEditor — sidebar must move
     // back to the left even though explorerSide is still 'right'.

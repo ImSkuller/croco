@@ -15,17 +15,20 @@ export default function AppShell() {
   const [overrides, setOverrides] = useState({})
   const settings = useData('settings')
 
-  // The sidebar only ever moves to match the IDE explorer's side while an
-  // explorer is actually visible on screen — never as a general "flip my
-  // whole app" preference. That's true both on the dedicated /ide page AND
-  // a project's own "Code" tab (ProjectDetail.jsx), which is a second,
-  // separate place CodeEditor.jsx mounts and isn't reflected in the URL at
-  // all (the tab is local component state) — so route-matching alone
-  // (location.pathname.startsWith('/ide')) missed that second case: the
-  // in-page explorer would flip sides but the app sidebar wouldn't follow,
-  // leaving them on different sides. CodeEditor.jsx instead broadcasts its
-  // own mount/unmount, which is accurate regardless of which page it's
-  // rendered from.
+  // The sidebar sits on the OPPOSITE edge from the IDE explorer whenever an
+  // explorer is actually visible on screen — explorer right -> sidebar
+  // left, explorer left -> sidebar right — so the two navigational panels
+  // (app nav, file nav) always frame the content from either side instead
+  // of ever stacking together on one edge. Never a general "flip my whole
+  // app" preference: with no explorer visible, the sidebar just stays left.
+  //
+  // "Visible" is true both on the dedicated /ide page AND a project's own
+  // "Code" tab (ProjectDetail.jsx), which is a second, separate place
+  // CodeEditor.jsx mounts and isn't reflected in the URL at all (the tab is
+  // local component state) — so route-matching alone
+  // (location.pathname.startsWith('/ide')) missed that second case.
+  // CodeEditor.jsx instead broadcasts its own mount/unmount, which is
+  // accurate regardless of which page it's rendered from.
   const [ideExplorerVisible, setIdeExplorerVisible] = useState(false)
   useEffect(() => {
     const handler = (e) => setIdeExplorerVisible(!!e.detail?.visible)
@@ -33,7 +36,7 @@ export default function AppShell() {
     return () => window.removeEventListener('croco:ide-explorer-visible', handler)
   }, [])
   const ideExplorerSide = settings?.modules?.ide?.layout?.explorerSide === 'right' ? 'right' : 'left'
-  const sidebarPosition = ideExplorerVisible && ideExplorerSide === 'right' ? 'right' : 'left'
+  const sidebarPosition = ideExplorerVisible ? (ideExplorerSide === 'right' ? 'left' : 'right') : 'left'
   const shellRef = useRef(null)
   useSideSwapFlip(shellRef, sidebarPosition)
 
