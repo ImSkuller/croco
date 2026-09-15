@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from 'react'
+import { springFrames, prefersReducedMotion } from '../lib/spring'
 
 // Animates a parent's direct children smoothly sliding to their new
 // positions whenever `side` changes (e.g. flipping a container between
@@ -7,7 +8,11 @@ import { useLayoutEffect, useRef } from 'react'
 // property — the browser can't tween a discrete reflow like that — so this
 // uses the classic FLIP technique instead: measure each child's position
 // before the change, let React/CSS apply the new layout instantly, then
-// measure again and animate away the resulting delta with a transform.
+// animate away the resulting delta with a real spring (see lib/spring.js)
+// via the Web Animations API rather than a single CSS transition curve —
+// a plain cubic-bezier transition reads as "eased", not "springy" (no
+// actual overshoot), which is the generic-not-Apple feeling a single-curve
+// transition always has.
 //
 // `containerRef` must point at the flex container whose *direct children*
 // should be treated as the panels to animate (their DOM order stays fixed —
@@ -24,21 +29,28 @@ export default function useSideSwapFlip(containerRef, side) {
 
     if (prevSideRef.current !== side && prevRectsRef.current) {
       const oldRects = prevRectsRef.current
+      const reduceMotion = prefersReducedMotion()
       kids.forEach((el, i) => {
         const old = oldRects[i]
         if (!old) return
         const now = el.getBoundingClientRect()
         const dx = old.left - now.left
         if (!dx) return
-        el.style.transition = 'none'
-        el.style.transform = `translateX(${dx}px)`
-        // Force a reflow so the browser commits the "start" position above
-        // before the transition below is applied — without this the two
-        // style writes would get batched and the element would just snap
-        // straight to its resting position with no animation at all.
-        void el.offsetWidth
-        el.style.transition = 'transform var(--transition-spring)'
-        el.style.transform = ''
+        // Cancel any in-flight flip on this element (e.g. the user toggled
+        // twice in quick succession) so the new one starts clean instead of
+        // fighting a still-running animation.
+        el.getAnimations?.().forEach(a => a.cancel())
+        if (reduceMotion) return // already at its resting position — no motion to play
+        // The Natural style is explicitly "no bounce/overshoot, ever" (see
+        // index.css) — a critically-damped spring (damping high enough
+        // relative to stiffness) settles smoothly with zero overshoot,
+        // instead of the gentle bounce every other Style gets.
+        const natural = document.documentElement.classList.contains('style-natural')
+        const { frames, durationMs } = springFrames(dx, 0, natural ? { damping: 40 } : undefined)
+        el.animate(
+          frames.map(x => ({ transform: `translateX(${x}px)` })),
+          { duration: durationMs, easing: 'linear', fill: 'forwards' }
+        )
       })
     }
 

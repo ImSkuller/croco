@@ -106,13 +106,6 @@
   --transition-fast: 120ms cubic-bezier(0.16,1,0.3,1);
   --transition-base: 200ms cubic-bezier(0.16,1,0.3,1);
   --transition-slow: 350ms cubic-bezier(0.16,1,0.3,1);
-  /* A slightly overshooting "spring" ease, independent of Style (Apple's
-     own --transition-* already use a stronger version of this) — for
-     layout-level moves that should read as physical/springy even when a
-     flatter Style like Natural is active: the sidebar/IDE-explorer side
-     swap (AppShell.jsx, CodeEditor.jsx via useSideSwapFlip) and anything
-     else that wants an Apple-like settle rather than a linear/ease move. */
-  --transition-spring: 420ms cubic-bezier(0.34,1.56,0.64,1);
 
   /* ── Layout (Phase 4.3) — the tokens a Style needs to restructure, not
      just recolour. --sidebar-width is live (Sidebar.jsx reads it, so the
@@ -283,7 +276,6 @@ html.style-natural {
   --transition-fast: 120ms ease;
   --transition-base: 160ms ease;
   --transition-slow: 220ms ease;
-  --transition-spring: 220ms ease; /* Natural has no bounce/overshoot, even for layout moves */
 }
 html.style-natural .pm-card:hover,
 html.style-natural .glass-card:hover {
