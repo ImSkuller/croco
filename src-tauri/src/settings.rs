@@ -196,11 +196,13 @@ pub fn default_settings() -> Value {
                 // Panel layout — independent of editor prefs above.
                 // explorerSide is user-customizable (Settings → Modules →
                 // IDE, or a quick-flip button in the explorer panel itself).
-                // While the /ide page is actually open, Croco's own nav
-                // sidebar reads this same value and animates to match it
-                // (see AppShell.jsx) — scoped to that page only, since it's
-                // the IDE's own layout preference, not a general app-wide
-                // one.
+                // Whenever the IDE's explorer is actually visible on screen
+                // — the dedicated /ide page, or a project's own "Code" tab
+                // — Croco's own nav sidebar reads this same value and
+                // animates to match it (see AppShell.jsx / CodeEditor.jsx's
+                // mount broadcast); everywhere else the sidebar stays put,
+                // since this is the IDE's own layout preference, not a
+                // general app-wide one.
                 "layout": {
                     "explorerSide": "left"
                 },

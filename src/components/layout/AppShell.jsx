@@ -14,15 +14,26 @@ export default function AppShell() {
   const [showHelp,  setShowHelp]  = useState(false)
   const [overrides, setOverrides] = useState({})
   const settings = useData('settings')
-  // The sidebar only ever moves to the right while the user is actually
-  // looking at the IDE, and only then because the IDE's own explorer-side
-  // setting put it there — it's not a general-purpose "flip my whole app"
-  // preference. Everywhere else, left, always. See CodeEditor.jsx for the
-  // IDE's own explorer panel, which flips independently using the same
-  // explorerSide value and the same animation.
-  const onIdePage = location.pathname.startsWith('/ide')
+
+  // The sidebar only ever moves to match the IDE explorer's side while an
+  // explorer is actually visible on screen — never as a general "flip my
+  // whole app" preference. That's true both on the dedicated /ide page AND
+  // a project's own "Code" tab (ProjectDetail.jsx), which is a second,
+  // separate place CodeEditor.jsx mounts and isn't reflected in the URL at
+  // all (the tab is local component state) — so route-matching alone
+  // (location.pathname.startsWith('/ide')) missed that second case: the
+  // in-page explorer would flip sides but the app sidebar wouldn't follow,
+  // leaving them on different sides. CodeEditor.jsx instead broadcasts its
+  // own mount/unmount, which is accurate regardless of which page it's
+  // rendered from.
+  const [ideExplorerVisible, setIdeExplorerVisible] = useState(false)
+  useEffect(() => {
+    const handler = (e) => setIdeExplorerVisible(!!e.detail?.visible)
+    window.addEventListener('croco:ide-explorer-visible', handler)
+    return () => window.removeEventListener('croco:ide-explorer-visible', handler)
+  }, [])
   const ideExplorerSide = settings?.modules?.ide?.layout?.explorerSide === 'right' ? 'right' : 'left'
-  const sidebarPosition = onIdePage && ideExplorerSide === 'right' ? 'right' : 'left'
+  const sidebarPosition = ideExplorerVisible && ideExplorerSide === 'right' ? 'right' : 'left'
   const shellRef = useRef(null)
   useSideSwapFlip(shellRef, sidebarPosition)
 

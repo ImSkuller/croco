@@ -203,6 +203,17 @@ export default function CodeEditor({ projectId, projectName, projectGithubUrl })
   const shellRef = useRef(null)
   useSideSwapFlip(shellRef, explorerSide)
 
+  // Tells AppShell.jsx an explorer is actually on screen right now, so the
+  // app sidebar can follow its side — this component mounts from two
+  // different places (the dedicated /ide page, and a project's own "Code"
+  // tab in ProjectDetail.jsx, whose tab selection is local state and not
+  // visible in the URL), so a plain mount/unmount broadcast is the only
+  // reliable signal regardless of which one rendered it.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('croco:ide-explorer-visible', { detail: { visible: true } }))
+    return () => window.dispatchEvent(new CustomEvent('croco:ide-explorer-visible', { detail: { visible: false } }))
+  }, [])
+
   // Quick in-panel flip — same setting as Settings → Modules → IDE →
   // Explorer Position, just reachable without leaving the page. Patches the
   // store optimistically so the swap (and the app sidebar following it,

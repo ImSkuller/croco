@@ -279,6 +279,42 @@ async function main() {
     }, { timeoutMs: 5000, label: 'sidebar returns to the left edge after leaving /ide' })
     assert(true, 'sidebar returned to the left edge after leaving the IDE')
 
+    // ── The same follow behavior must also work from a project's own
+    // "Code" tab (ProjectDetail.jsx) — a second, separate place CodeEditor
+    // mounts that isn't reflected in the URL at all (the tab is local
+    // component state), which the original route-based check
+    // (location.pathname.startsWith('/ide')) completely missed: the explorer
+    // would flip sides in there but the app sidebar wouldn't follow.
+    // explorerSide is still 'right' in settings from the block above.
+    await driver.executeScript((id) => { location.hash = '#/projects/' + id }, project.id)
+    await waitFor(async () => driver.executeScript(`return Array.from(document.querySelectorAll('button')).some(b => b.textContent.includes('Code'))`),
+      { label: 'project page tab bar renders with a Code tab' })
+    await driver.executeScript(`
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Code'))
+      btn.click()
+    `)
+    await waitFor(async () => {
+      const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
+      if (!rect) return false
+      const r = JSON.parse(rect)
+      const winWidth = await driver.executeScript('return window.innerWidth')
+      return r.right >= winWidth - 8
+    }, { timeoutMs: 5000, label: "sidebar follows the explorer to the right from a project's Code tab too" })
+    assert(true, "sidebar followed the explorer from ProjectDetail's Code tab")
+
+    // Switching to a different tab unmounts CodeEditor — sidebar must move
+    // back to the left even though explorerSide is still 'right'.
+    await driver.executeScript(`
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'Overview')
+      btn.click()
+    `)
+    await waitFor(async () => {
+      const rect = await driver.executeScript(`const a = document.querySelector('aside'); return a ? JSON.stringify(a.getBoundingClientRect()) : null`)
+      if (!rect) return false
+      return JSON.parse(rect).left <= 8
+    }, { timeoutMs: 5000, label: 'sidebar returns to the left edge after switching away from the Code tab' })
+    assert(true, 'sidebar returned to the left edge after leaving the Code tab')
+
     log('ALL CHECKS PASSED')
   } finally {
     log('shutting down...')

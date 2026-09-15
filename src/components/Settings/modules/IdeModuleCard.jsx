@@ -42,7 +42,7 @@ export default function IdeModuleCard() {
 
           <div>
             <FieldLabel>Explorer Position</FieldLabel>
-            <FieldDesc>Which side the file explorer sits on. While the IDE page is open, Croco's own sidebar follows this too, animating to the same side — everywhere else in the app, the sidebar stays put. There's also a quick-flip button right in the explorer panel itself.</FieldDesc>
+            <FieldDesc>Which side the file explorer sits on. Whenever it's actually visible — the IDE page, or a project's own Code tab — Croco's own sidebar follows it too, animating to the same side. Everywhere else, the sidebar stays put. There's also a quick-flip button right in the explorer panel itself.</FieldDesc>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <ToggleChip label="Left" active={layout.explorerSide !== 'right'} color="var(--accent)" bg="var(--accent-dim)" onClick={() => setExplorerSide('left')} />
               <ToggleChip label="Right" active={layout.explorerSide === 'right'} color="var(--accent)" bg="var(--accent-dim)" onClick={() => setExplorerSide('right')} />
