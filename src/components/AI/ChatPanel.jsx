@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useToast } from '../Toast/useToast.js'
+import { extractListItems } from '../../lib/listItems.js'
+import AddTodosButton from './AddTodosButton'
 
 function conversationIdFor(key) {
   const storageKey = `croco:ai:conv:${key}`
@@ -130,6 +132,9 @@ export default function ChatPanel({ mode, provider, projectId, conversationKey, 
                   : <CodeBlock key={j} part={p} onApply={onApplyCode} />)
                 : m.text}
             </div>
+            {m.role === 'assistant' && (
+              <AddTodosButton items={extractListItems(m.text)} projectId={projectId} />
+            )}
           </div>
         ))}
         {sending && <div style={{ fontSize: 12, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Thinking…</div>}

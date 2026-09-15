@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useToast } from '../Toast/useToast.js'
+import { extractListItems } from '../../lib/listItems.js'
+import AddTodosButton from '../AI/AddTodosButton'
 
 const PERMISSION_MODES = [
   { value: 'plan',        label: 'Plan',         desc: 'Read-only — can look around and propose, never edits or runs anything.' },
@@ -141,16 +143,20 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
               </div>
             )}
             {messages.map((m, i) => (
-              <div key={i} className="pm-tab-content" style={{
-                alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                maxWidth: '92%', padding: '8px 10px', borderRadius: 'var(--r-md)', fontSize: 12.5, lineHeight: 1.5,
-                whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                background: m.role === 'user' ? 'var(--accent-dim)' : m.role === 'error' ? 'rgba(255,68,68,0.1)' : m.role === 'tool' ? 'var(--card)' : 'var(--card)',
-                border: `1px solid ${m.role === 'error' ? 'rgba(255,68,68,0.3)' : 'var(--border)'}`,
-                color: m.role === 'error' ? '#ff6b6b' : m.role === 'tool' ? 'var(--dim)' : 'var(--text)',
-                fontFamily: m.role === 'tool' ? 'Geist Mono, monospace' : 'inherit',
-              }}>
-                {m.role === 'tool' ? `→ ${m.text}` : m.text}
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '92%', alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                <div className="pm-tab-content" style={{
+                  padding: '8px 10px', borderRadius: 'var(--r-md)', fontSize: 12.5, lineHeight: 1.5,
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-word', minWidth: 0,
+                  background: m.role === 'user' ? 'var(--accent-dim)' : m.role === 'error' ? 'rgba(255,68,68,0.1)' : m.role === 'tool' ? 'var(--card)' : 'var(--card)',
+                  border: `1px solid ${m.role === 'error' ? 'rgba(255,68,68,0.3)' : 'var(--border)'}`,
+                  color: m.role === 'error' ? '#ff6b6b' : m.role === 'tool' ? 'var(--dim)' : 'var(--text)',
+                  fontFamily: m.role === 'tool' ? 'Geist Mono, monospace' : 'inherit',
+                }}>
+                  {m.role === 'tool' ? `→ ${m.text}` : m.text}
+                </div>
+                {m.role === 'assistant' && !m.streaming && (
+                  <AddTodosButton items={extractListItems(m.text)} projectId={projectId} />
+                )}
               </div>
             ))}
             {sending && !(messages[messages.length - 1]?.role === 'assistant' && messages[messages.length - 1]?.streaming) && (
