@@ -70,7 +70,7 @@ function playBabum() {
   } catch { /* AudioContext not available */ }
 }
 
-export default function Sidebar() {
+export default function Sidebar({ position = 'left' }) {
   const location = useLocation()
   const navigate = useNavigate()
   const toast    = useToast()
@@ -259,11 +259,12 @@ export default function Sidebar() {
         minWidth: 'var(--sidebar-width)',
         height: '100vh',
         background: 'var(--sidebar-bg)',
-        borderRight: '1px solid var(--sidebar-border)',
+        borderRight: position === 'left' ? '1px solid var(--sidebar-border)' : 'none',
+        borderLeft:  position === 'right' ? '1px solid var(--sidebar-border)' : 'none',
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
-        animation: 'pmSlideLeft 0.4s cubic-bezier(0.16,1,0.3,1) both',
+        animation: `${position === 'right' ? 'pmSlideRight' : 'pmSlideLeft'} 0.4s cubic-bezier(0.16,1,0.3,1) both`,
       }}>
 
         {/* Logo area */}
@@ -347,7 +348,7 @@ export default function Sidebar() {
           {NAV.map((group, gi) => (
             <div key={group.label} style={{ marginBottom: gi < NAV.length - 1 ? 4 : 0 }}>
               {group.items.map(item => (
-                <SidebarItem key={item.to} item={item} />
+                <SidebarItem key={item.to} item={item} position={position} />
               ))}
               {gi < NAV.length - 1 && (
                 <div style={{ height: 1, background: 'var(--sidebar-border)', margin: '6px 4px' }} />
@@ -628,8 +629,9 @@ function SearchPalette({ items, onClose, onGame, onEasterEggs, onBabum, onLeetco
 }
 
 
-const SidebarItem = memo(function SidebarItem({ item }) {
+const SidebarItem = memo(function SidebarItem({ item, position = 'left' }) {
   const [isHovered, setIsHovered] = useState(false)
+  const edgeProp = position === 'right' ? 'borderRight' : 'borderLeft'
 
   return (
     <NavLink
@@ -647,7 +649,7 @@ const SidebarItem = memo(function SidebarItem({ item }) {
         borderRadius: 'var(--r-md)',
         cursor: 'pointer',
         border: 'none',
-        borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
+        [edgeProp]: isActive ? '2px solid var(--accent)' : '2px solid transparent',
         position: 'relative',
         transition: 'all var(--transition-base)',
         textAlign: 'left',

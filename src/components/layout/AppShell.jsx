@@ -1,16 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import ToastProvider from '../Toast/ToastProvider'
 import DiscordPresenceManager from './DiscordPresenceManager'
 import { formatKeyToken } from '../../lib/platform'
 import { SHORTCUT_DEFS, resolveBindings, chordKey, bindingToDisplay } from '../../lib/shortcuts'
+import { useData } from '../../lib/store'
+import useSideSwapFlip from '../../hooks/useSideSwapFlip'
 
 export default function AppShell() {
   const navigate  = useNavigate()
   const location  = useLocation()
   const [showHelp,  setShowHelp]  = useState(false)
   const [overrides, setOverrides] = useState({})
+  const settings = useData('settings')
+  const sidebarPosition = settings?.appearance?.sidebarPosition === 'right' ? 'right' : 'left'
+  const shellRef = useRef(null)
+  useSideSwapFlip(shellRef, sidebarPosition)
 
   // First-launch redirect — renders the real shell immediately (see the
   // removed `if (!checked) return null` this used to gate) instead of a
@@ -96,9 +102,9 @@ export default function AppShell() {
   return (
     <ToastProvider>
       <DiscordPresenceManager />
-      <div style={{ display: 'flex', height: '100vh', minHeight: 700, background: 'var(--base)', fontFamily: 'var(--font-body)', color: 'var(--text)', fontSize: 13, lineHeight: 1.5 }}>
-        <Sidebar />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--base)' }}>
+      <div ref={shellRef} style={{ display: 'flex', flexDirection: sidebarPosition === 'right' ? 'row-reverse' : 'row', height: '100vh', minHeight: 700, background: 'var(--base)', fontFamily: 'var(--font-body)', color: 'var(--text)', fontSize: 13, lineHeight: 1.5 }}>
+        <Sidebar position={sidebarPosition} />
+        <div key={location.pathname} className="pm-page" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--base)' }}>
           <Outlet />
         </div>
       </div>
