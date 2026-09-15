@@ -23,7 +23,7 @@ export default function InteractiveTerminal({ projectId }) {
   useEffect(() => {
     if (!containerRef.current || !window.api?.pty) return
     let cancelled = false
-    let offOutput, offExit, resizeObserver
+    let offOutput, offExit, resizeObserver, resizeDebounce
 
     const term = new Terminal({
       fontFamily: 'Geist Mono, monospace',
@@ -64,9 +64,25 @@ export default function InteractiveTerminal({ projectId }) {
           if (sessionIdRef.current) window.api.pty.write(sessionIdRef.current, data).catch(() => {})
         })
 
+        // Debounced, and only calls pty.resize when the fit actually
+        // changed cols/rows: calling fit() inside a ResizeObserver
+        // callback can itself alter the observed element (xterm resizes
+        // its internal canvas/rows to match), which re-triggers the same
+        // observer — an undebounced version of this spirals into dozens
+        // of resize events, and each one makes ConPTY force a full
+        // redraw/cursor-position requery on the shell, which in testing
+        // was enough to make the shell never settle at an idle prompt at
+        // all. Coalescing bursts into one trailing call, and skipping the
+        // IPC round-trip entirely when nothing actually changed, fixes both.
         resizeObserver = new ResizeObserver(() => {
-          fit.fit()
-          if (sessionIdRef.current) window.api.pty.resize(sessionIdRef.current, term.cols, term.rows).catch(() => {})
+          clearTimeout(resizeDebounce)
+          resizeDebounce = setTimeout(() => {
+            const prevCols = term.cols, prevRows = term.rows
+            fit.fit()
+            if (!cancelled && (term.cols !== prevCols || term.rows !== prevRows) && sessionIdRef.current) {
+              window.api.pty.resize(sessionIdRef.current, term.cols, term.rows).catch(() => {})
+            }
+          }, 120)
         })
         resizeObserver.observe(containerRef.current)
       } catch {
@@ -79,6 +95,7 @@ export default function InteractiveTerminal({ projectId }) {
       cancelled = true
       offOutput?.()
       offExit?.()
+      clearTimeout(resizeDebounce)
       resizeObserver?.disconnect()
       if (sessionIdRef.current) window.api.pty.kill(sessionIdRef.current).catch(() => {})
       term.dispose()

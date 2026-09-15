@@ -1,14 +1,14 @@
 // Drives the real, compiled Croco app to verify the new interactive PTY
-// terminal end to end: spawns a real shell via window.api.pty.spawn,
-// writes a real command into it, and confirms the real output comes back
-// over pty:output — not a mock. Also checks the Shell mode actually mounts
-// in the UI (xterm.js renders) without crashing.
+// terminal end to end: opens a project's Terminal tab, switches to Shell
+// mode, and types a real command as real keyboard events into the real
+// xterm.js-rendered terminal — confirming the real output comes back from
+// a real spawned shell, not a mock of any part of the stack.
 //
 // Run with: node e2e/verify-pty-terminal.mjs
 // Requires tauri-driver + a matching msedgedriver on PATH, and a fresh
 // `npm run tauri:build` (see .claude/skills/run-croco-e2e/SKILL.md).
 
-import { Builder } from 'selenium-webdriver'
+import { Builder, Key, By } from 'selenium-webdriver'
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -81,32 +81,26 @@ async function main() {
     const project = await callApi(driver, 'projects.import', tmpProjectDir, {})
     assert(!!project?.id, 'project imported')
 
-    // ── Backend round-trip: real shell, real command, real output ────────
-    // Collect pty:output events into a window-level buffer via a listener
-    // registered from inside the webview, since events arrive
-    // asynchronously and executeAsyncScript can only await one round-trip.
+    // ── Real UI round-trip: open Shell mode, type a real command, see real
+    // output — not window.api.pty called in isolation. That was tried
+    // first and doesn't actually work: Windows' cmd.exe queries the
+    // terminal for its cursor position (ESC [ 6 n) before doing anything
+    // else, and blocks until it gets an answer. A real terminal emulator
+    // (xterm.js, wired up exactly as InteractiveTerminal.jsx does via
+    // term.onData -> pty.write) answers that automatically; calling
+    // pty.spawn/pty.write directly with no xterm.js instance attached has
+    // nothing to answer it, so the shell hangs forever — a real bug in
+    // this test's original approach, not in the app. Driving the actual
+    // UI exercises the real, correctly-paired code path instead.
+    //
+    // Collect pty:output events into a window-level buffer (no sessionId
+    // filter — there's exactly one PTY session in this isolated e2e
+    // profile, the one Shell mode itself spawns).
     await driver.executeScript(`
       window.__ptyBuf = ''
-      window.__ptyUnlisten = null
-      window.api.pty.onOutput((p) => { if (p.sessionId === window.__ptySessionId) window.__ptyBuf += p.data })
+      window.api.pty.onOutput((p) => { window.__ptyBuf += p.data })
     `)
-    const sessionId = await callApi(driver, 'pty.spawn', project.id, 80, 24)
-    assert(!!sessionId, `pty session spawned (id: ${sessionId})`)
-    await driver.executeScript((sid) => { window.__ptySessionId = sid }, sessionId)
 
-    // A distinctive marker so this exact echo can't be confused with shell
-    // startup banner/prompt noise.
-    const marker = `CROCO_E2E_${Date.now()}`
-    await callApi(driver, 'pty.write', sessionId, `echo ${marker}\r`)
-
-    await waitFor(async () => driver.executeScript(`return window.__ptyBuf.includes(arguments[0])`, marker),
-      { timeoutMs: 8000, label: 'typed command’s real output arrives over pty:output' })
-    assert(true, 'a real command typed into the PTY produced real output')
-
-    await callApi(driver, 'pty.kill', sessionId)
-    log('killed pty session')
-
-    // ── UI: Shell mode actually mounts xterm.js without crashing ─────────
     await driver.executeScript((id) => { location.hash = '#/projects/' + id }, project.id)
     await waitFor(async () => driver.executeScript(`return Array.from(document.querySelectorAll('button')).some(b => b.textContent.trim() === 'Terminal')`),
       { label: 'project page tab bar renders with a Terminal tab' })
@@ -127,6 +121,29 @@ async function main() {
       return t
     }, { timeoutMs: 8000, label: 'terminal status line reports running or a clear error' })
     assert(statusText.includes('shell running'), `UI-mounted terminal actually started a real shell (status: "${statusText}")`)
+
+    // Interact with xterm's own hidden input element directly, via a real
+    // WebDriver click + sendKeys (not a JS-dispatched .click(), which
+    // doesn't reliably trigger xterm's internal focus-delegation to this
+    // textarea the way a genuine mouse event does) — this is the exact
+    // real DOM element a human typing into the terminal would be typing
+    // into, and includes xterm.js's automatic handling of the shell's
+    // cursor-position query that broke the earlier (bypassed-the-UI)
+    // approach above.
+    const input = await driver.findElement(By.css('.xterm-helper-textarea'))
+    await input.click()
+    const marker = `CROCO_E2E_${Date.now()}`
+    await input.sendKeys(`echo ${marker}`, Key.ENTER)
+
+    await waitFor(async () => driver.executeScript(`return window.__ptyBuf.includes(arguments[0])`, marker),
+      { timeoutMs: 10000, label: 'a real command typed into the real terminal UI produces real output' }
+    ).catch(async (err) => {
+      const buf = await driver.executeScript(`return window.__ptyBuf`)
+      console.error('[e2e] DIAGNOSTIC — full __ptyBuf captured so far:')
+      console.error(JSON.stringify(buf))
+      throw err
+    })
+    assert(true, 'typing a real command into the UI terminal round-tripped through a real shell')
 
     log('ALL CHECKS PASSED')
   } finally {
