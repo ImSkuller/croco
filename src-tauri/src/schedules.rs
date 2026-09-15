@@ -8,20 +8,20 @@
 use once_cell::sync::Lazy;
 use serde_json::{json, Value};
 use std::fs;
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 use std::time::Duration;
 use tauri::AppHandle;
 
 static SCHEDULES_CACHE: Lazy<Mutex<Option<Vec<Value>>>> = Lazy::new(|| Mutex::new(None));
 
-pub fn invalidate_schedules_cache() { *SCHEDULES_CACHE.lock().unwrap() = None; }
+pub fn invalidate_schedules_cache() { *SCHEDULES_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = None; }
 
 pub fn ensure_schedules_dir(app: &AppHandle) { fs::create_dir_all(crate::schedules_dir(app)).ok(); }
 
 // Read all schedules (raw) — served from the in-memory cache when warm.
 pub fn read_all_schedules_raw(app: &AppHandle) -> Vec<Value> {
     {
-        let c = SCHEDULES_CACHE.lock().unwrap();
+        let c = SCHEDULES_CACHE.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(ref s) = *c { return s.clone(); }
     }
     let out: Vec<Value> = if crate::is_sqlite_enabled(app) && crate::open_db(app).is_ok() {
@@ -39,7 +39,7 @@ pub fn read_all_schedules_raw(app: &AppHandle) -> Vec<Value> {
             Err(_) => vec![],
         }
     };
-    *SCHEDULES_CACHE.lock().unwrap() = Some(out.clone());
+    *SCHEDULES_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = Some(out.clone());
     out
 }
 

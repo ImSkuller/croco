@@ -162,6 +162,12 @@ pub fn upsert_project(app: &AppHandle, p: Value) -> Result<(), String> {
 }
 
 pub fn get_project(app: &AppHandle, id: &str) -> Option<Value> {
+    // Guard every caller (project_root/owner_repo/git_ops/github_ops/etc.
+    // all resolve a project through this function) against a path-traversal
+    // id before it ever reaches a filesystem path.
+    if crate::validate_safe_id(id).is_err() {
+        return None;
+    }
     // Check cache first — but on a cache miss fall through to disk/DB
     // (the cache may have been populated before this project existed)
     {
@@ -1095,6 +1101,7 @@ fn collect_template_files(
 
 #[tauri::command]
 pub async fn projects_export_as_template(app: AppHandle, id: String, name: String, description: String) -> Result<Value, String> {
+    crate::validate_safe_id(&id)?;
     let project = get_project(&app, &id).ok_or("Project not found")?;
     let root_str = project_root_str(&project);
     let root = Path::new(&root_str);

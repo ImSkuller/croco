@@ -123,7 +123,7 @@ export default function MemoryBrowser({ kind }) {
         <div style={{ fontSize: 12, color: 'var(--dimmer)' }}>Nothing here yet.</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {entries.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')).map(e => (
+          {[...entries].sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')).map(e => (
             <div key={e.id} className="pm-card" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 0 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{e.title}</div>

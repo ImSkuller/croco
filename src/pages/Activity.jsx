@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RefreshIcon, TrashIcon, ActivityIcon, GithubIcon, PlayIcon, StopIcon, FolderIcon, IDEIcon, CheckCircleIcon, NoteIcon2, PaletteIcon, ClockIcon } from '../constants/SimpleSvgExports'
 import useDiscordPresence from '../hooks/useDiscordPresence'
 import { EmptyState } from '../components/ui/EmptyState'
+import { useData, refreshData, EMPTY_LIST } from '../lib/store'
 
 // Group-based filter — each group maps to one or more event types
 const FILTER_GROUPS = [
@@ -68,28 +69,17 @@ function groupByDay(entries) {
 export default function Activity() {
   useDiscordPresence('Browsing Croco', 'Activity')
   const navigate = useNavigate()
-  const [entries,  setEntries]  = useState([])
-  const [loading,  setLoading]  = useState(true)
+  const rawEntries = useData('activity')
+  const entries    = rawEntries || EMPTY_LIST
+  const loading    = rawEntries === null
   const [clearing, setClearing] = useState(false)
   const [filter,   setFilter]   = useState('All')
-
-
-  const load = () => {
-    if (!window.api) { setLoading(false); return }
-    setLoading(true)
-    window.api.activity.getAll(200)
-      .then(data => setEntries(data || []))
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { Promise.resolve().then(load) }, [])
 
   const handleClear = async () => {
     if (!window.api || !window.confirm('Clear all activity? This cannot be undone.')) return
     setClearing(true)
     await window.api.activity.clear().catch(console.error)
-    setEntries([])
+    await refreshData('activity')
     setClearing(false)
   }
 
@@ -109,7 +99,7 @@ export default function Activity() {
           {entries.length}
         </span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
+          <button onClick={() => refreshData('activity')} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
             <RefreshIcon /> Refresh
           </button>
           {entries.length > 0 && (

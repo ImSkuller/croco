@@ -670,6 +670,7 @@ export default function Settings() {
     setDangerConfirm(null)
     const todos = await window.api.todos.getAll().catch(console.error) || []
     await Promise.all(todos.map(t => window.api.todos.delete(t.id).catch(console.error)))
+    window.dispatchEvent(new CustomEvent('croco:data-changed'))
   }
 
   const handleClearNotes = async () => {
@@ -677,6 +678,7 @@ export default function Settings() {
     setDangerConfirm(null)
     const notes = await window.api.notes.getAll().catch(console.error) || []
     await Promise.all(notes.map(n => window.api.notes.delete(n.id).catch(console.error)))
+    window.dispatchEvent(new CustomEvent('croco:data-changed'))
   }
 
   const handleDeleteProjects = async () => {
@@ -684,6 +686,7 @@ export default function Settings() {
     setDangerConfirm(null)
     const projects = await window.api.projects.getAll().catch(console.error) || []
     await Promise.all(projects.map(p => window.api.projects.delete(p.id).catch(console.error)))
+    window.dispatchEvent(new CustomEvent('croco:data-changed'))
   }
 
   const ghConnected = ghUsername.trim() !== '' && (ghTokenStored || ghToken.trim() !== '')

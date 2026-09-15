@@ -77,6 +77,7 @@ export default function Notes() {
       const title = lines[0].replace(/^#+\s*/, '').trim() || file.name.replace('.md', '')
       const body  = lines.slice(1).join('\n').trim()
       const note  = await window.api.notes.create({ title, content: body, tags: [], starred: false })
+      patchData('notes', prev => [note, ...(prev || [])])
       navigate(`/note-editor/${note.id}`, { state: { viewMode: 'preview' } })
     } catch (err) {
       console.error('Drop import failed:', err)

@@ -25,7 +25,7 @@ import GitPanel from '../components/ProjectDetail/GitPanel'
 import ConfirmModal from '../components/ProjectDetail/ConfirmModal'
 import DockerPanel from '../components/ProjectDetail/DockerPanel'
 import EnvPanel from '../components/ProjectDetail/EnvPanel'
-import { useData } from '../lib/store'
+import { useData, patchData } from '../lib/store'
 import useDiscordPresence from '../hooks/useDiscordPresence'
 import TagChip from '../components/ui/TagChip'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -47,6 +47,16 @@ export default function ProjectDetail() {
   const envModuleOn   = !!settings?.modules?.envManager?.enabled
 
   const [project,     setProject]     = useState(null)
+  // Every mutation that changes the project object needs to update BOTH this
+  // local state (what this page renders) AND the shared `projects` store
+  // (what Projects.jsx/Dashboard.jsx/Favourites.jsx/GitHub.jsx read via
+  // useData('projects')) — otherwise those other pages keep showing stale
+  // data until the store's 30s TTL naturally expires.
+  const syncProject = (u) => {
+    if (!u) return
+    setProject(u)
+    patchData('projects', prev => (prev || []).map(p => p.id === u.id ? u : p))
+  }
   const [languages,   setLanguages]   = useState([])
   const [gitStatus,   setGitStatus]   = useState(null)
   const [gitLog,      setGitLog]      = useState([])
@@ -263,7 +273,7 @@ export default function ProjectDetail() {
   async function handleToggleFav() {
     if (!window.api || !project) return
     const u = await window.api.projects.toggleFavorite(project.id).catch(console.error)
-    if (u) setProject(u)
+    syncProject(u)
   }
 
   async function handleCommit(push = true, amend = false) {
@@ -1525,7 +1535,7 @@ export default function ProjectDetail() {
                         const rest = { ...editDraft }
                         if (editDraft.name !== project.name) delete rest.name
                         updated = await window.api.projects.edit(project.id, rest)
-                        if (updated) { setProject(updated); toast.success('Project settings saved') }
+                        if (updated) { syncProject(updated); toast.success('Project settings saved') }
                         else toast.error('Save failed')
                       } catch (err) { toast.error(err?.message || 'Save failed') }
                       finally { setEditSaving(false) }
@@ -1604,7 +1614,7 @@ export default function ProjectDetail() {
                   onConfirm: async () => {
                     const newVis = project.visibility === 'public' ? 'hidden' : 'public'
                     const u = await window.api.projects.edit(project.id, { visibility: newVis })
-                    setProject(u)
+                    syncProject(u)
                   },
                 })}
               />
@@ -1627,7 +1637,7 @@ export default function ProjectDetail() {
                   requireTyping: project.name,
                   onConfirm: async () => {
                     const u = await window.api.projects.deleteGithubRepo(project.id)
-                    setProject(u)
+                    syncProject(u)
                   },
                 })}
               />
@@ -1666,7 +1676,7 @@ export default function ProjectDetail() {
                   confirmLabel: project.archived ? 'Unarchive' : 'Archive',
                   onConfirm: async () => {
                     const u = await window.api.projects.setArchived(project.id, !project.archived)
-                    if (u) setProject(u)
+                    syncProject(u)
                   },
                 })}
               />
@@ -1786,6 +1796,12 @@ export default function ProjectDetail() {
                     toast.show({ title: 'Published!', body: `Repository created at ${result.url}`, type: 'success' })
                     setPublishModal(false)
                     setAheadBehind(null)
+                    // publishToGithub only returns { ok, url }, not the updated
+                    // project — the backend already persisted github/githubUrl
+                    // on the project itself, so re-fetch it to pick those up
+                    // (both local state and the shared projects store).
+                    const updated = await window.api.projects.getById(projectId).catch(() => null)
+                    syncProject(updated)
                     checkRemote()
                   } catch (e) {
                     setPublishError(e?.message || String(e))

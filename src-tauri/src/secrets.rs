@@ -24,7 +24,7 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 use tauri::AppHandle;
 
 // Keyring service name. Namespaced when CROCO_DATA_DIR is set (see
@@ -42,11 +42,11 @@ fn service() -> &'static str {
 static FALLBACK_ACTIVE: Lazy<Mutex<bool>> = Lazy::new(|| Mutex::new(false));
 
 pub fn fallback_in_use() -> bool {
-    *FALLBACK_ACTIVE.lock().unwrap()
+    *FALLBACK_ACTIVE.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
 fn mark_fallback() {
-    *FALLBACK_ACTIVE.lock().unwrap() = true;
+    *FALLBACK_ACTIVE.lock().unwrap_or_else(PoisonError::into_inner) = true;
 }
 
 fn entry(account: &str) -> Option<keyring::Entry> {

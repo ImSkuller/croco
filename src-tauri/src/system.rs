@@ -201,7 +201,9 @@ pub fn templates_list() -> Vec<Value> {
 pub fn app_restart(app: AppHandle) {
     // Relaunch the current binary then exit cleanly
     if let Ok(exe) = std::env::current_exe() {
-        std::process::Command::new(exe).spawn().ok();
+        let mut c = std::process::Command::new(exe);
+        crate::no_window(&mut c);
+        c.spawn().ok();
     }
     app.exit(0);
 }
@@ -391,7 +393,7 @@ fn assert_write_target_safe(app: &AppHandle, path: &Path) -> Result<(), String> 
 }
 
 #[tauri::command]
-pub fn system_write_bytes(app: AppHandle, path: String, data: Vec<u8>) -> Result<(), String> {
+pub async fn system_write_bytes(app: AppHandle, path: String, data: Vec<u8>) -> Result<(), String> {
     let target = Path::new(&path);
     assert_write_target_safe(&app, target)?;
     std::fs::write(target, data).map_err(|e| e.to_string())
@@ -406,7 +408,7 @@ const READ_TEXT_FILE_MAX_BYTES: u64 = 4 * 1024 * 1024;
 // read, the same way it is for showSavePicker's write path. Size-capped
 // so a huge or unexpected file can't be read wholesale into memory.
 #[tauri::command]
-pub fn system_read_text_file(path: String) -> Result<String, String> {
+pub async fn system_read_text_file(path: String) -> Result<String, String> {
     let target = Path::new(&path);
     let metadata = std::fs::metadata(target).map_err(|e| e.to_string())?;
     if metadata.len() > READ_TEXT_FILE_MAX_BYTES {

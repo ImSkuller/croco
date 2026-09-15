@@ -1,4 +1,4 @@
-import { useData } from '../../../lib/store'
+import { useData, refreshData } from '../../../lib/store'
 import { DiscordIcon } from '../../../constants/SimpleSvgExports'
 import { SettingsCard, FieldLabel, FieldDesc, Toggle } from '../Exports'
 import WebhookFields from './WebhookFields'
@@ -44,7 +44,7 @@ export default function DiscordModuleCard() {
             enabled={!!d.webhook?.enabled}
             urlStored={!!d.webhook?.urlStored}
             onToggle={() => update({ webhook: { enabled: !d.webhook?.enabled } })}
-            onSaveUrl={(url) => window.api.settings.setDiscordWebhook(url)}
+            onSaveUrl={(url) => window.api.settings.setDiscordWebhook(url).then(() => refreshData('settings'))}
             onTest={() => window.api.discord.webhookTest()}
           />
         </div>

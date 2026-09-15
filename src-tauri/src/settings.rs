@@ -608,7 +608,7 @@ pub fn migrate_avatar_out_of_settings(app: &AppHandle) {
 }
 
 #[tauri::command]
-pub fn settings_save_avatar(app: AppHandle, file_path: String) -> Result<String, String> {
+pub async fn settings_save_avatar(app: AppHandle, file_path: String) -> Result<String, String> {
     let data = fs::read(&file_path).map_err(|e| e.to_string())?;
     let ext = Path::new(&file_path)
         .extension()

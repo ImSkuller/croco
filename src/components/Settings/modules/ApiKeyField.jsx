@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { EyeIcon, EyeOffIcon } from '../../../constants/SimpleSvgExports'
 import { FieldLabel, FieldDesc, TextInput, SmallBtn } from '../Exports'
 import { useToast } from '../../Toast/useToast.js'
+import { refreshData } from '../../../lib/store'
 
 const LABELS = { anthropic: 'Anthropic', openai: 'OpenAI', gemini: 'Gemini' }
 
@@ -21,6 +22,7 @@ export default function ApiKeyField({ provider, keyStored }) {
     try {
       await window.api.settings.setAiKey(provider, keyInput.trim())
       setKeyInput('')
+      await refreshData('settings')
       toast.success('API key saved')
     } catch (e) {
       toast.error('Could not save key', e.message)
@@ -31,6 +33,7 @@ export default function ApiKeyField({ provider, keyStored }) {
 
   const handleClear = async () => {
     await window.api?.settings.setAiKey(provider, '').catch(() => {})
+    await refreshData('settings')
   }
 
   return (

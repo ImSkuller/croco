@@ -5,6 +5,7 @@ import { ArrowLeftIcon, StarIcon, TagIcon, FolderIcon, CheckIcon } from '../cons
 import { modKeyHint } from '../lib/platform'
 import useDiscordPresence from '../hooks/useDiscordPresence'
 import TagChip from '../components/ui/TagChip'
+import { useData, EMPTY_LIST } from '../lib/store'
 
 marked.setOptions({ gfm: true, breaks: true })
 
@@ -55,7 +56,7 @@ export default function NoteEditor() {
   const [viewMode,  setViewMode]  = useState(() => location.state?.viewMode || 'split')
   const [showMeta,  setShowMeta]  = useState(false)
   const [showEmoji, setShowEmoji] = useState(false)
-  const [projects,  setProjects]  = useState([])
+  const projects = useData('projects') || EMPTY_LIST
   const [createdAt, setCreatedAt] = useState(null)
   const [updatedAt, setUpdatedAt] = useState(null)
   const [currentId, setCurrentId] = useState(noteId || null)
@@ -78,11 +79,6 @@ export default function NoteEditor() {
       })
       .catch(console.error)
   }, [noteId])
-
-  useEffect(() => {
-    if (!window.api) return
-    window.api.projects.getAll().then(setProjects).catch(console.error)
-  }, [])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps -- focus the editor once on mount only, not on every view-mode change
   useEffect(() => { if (viewMode !== 'preview') editorRef.current?.focus() }, [])
