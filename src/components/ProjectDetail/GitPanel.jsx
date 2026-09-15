@@ -12,6 +12,7 @@ import Spinner from './Spinner'
 import DiffView from './DiffView'
 import { EmptyState } from '../ui/EmptyState'
 import StashPanel from './StashPanel'
+import CommitGraph from './CommitGraph'
 
 export default function GitPanel({
   project, projectId, toast,
@@ -31,6 +32,7 @@ export default function GitPanel({
   const [generatingMsg, setGeneratingMsg] = useState(false)
   const [amendCommit, setAmendCommit] = useState(false)
   const [prOpen, setPrOpen] = useState(false)
+  const [historyView, setHistoryView] = useState('list') // 'list' | 'graph'
   // Same click-to-arm pattern as discard, for branch deletion.
   const [deleteArmed, setDeleteArmed] = useState(null)
   const headPushed = !!gitStatus?.headPushed
@@ -490,7 +492,24 @@ export default function GitPanel({
 
           {/* Commit history */}
           <InfoSection label={`Commit History${gitLog.length > 0 ? ` (${gitLog.length})` : ''}`}>
-            {gitLog.length === 0 ? (
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+              {[{ v: 'list', label: 'List' }, { v: 'graph', label: 'Graph' }].map(({ v, label }) => (
+                <button
+                  key={v}
+                  onClick={() => setHistoryView(v)}
+                  style={{
+                    padding: '3px 10px', borderRadius: 'var(--r-xl)', cursor: 'pointer',
+                    border: `1px solid ${historyView === v ? 'var(--accent)' : 'var(--border)'}`,
+                    background: historyView === v ? 'var(--accent-dim)' : 'transparent',
+                    color: historyView === v ? 'var(--accent)' : 'var(--dimmer)',
+                    fontSize: 10.5, fontFamily: 'Geist, sans-serif', transition: 'all var(--transition-fast)',
+                  }}
+                >{label}</button>
+              ))}
+            </div>
+            {historyView === 'graph' ? (
+              <CommitGraph projectId={projectId} />
+            ) : gitLog.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--dimmer)', fontSize: 12 }}>No commits yet</div>
             ) : (
               <div style={{ marginTop: 4 }}>
