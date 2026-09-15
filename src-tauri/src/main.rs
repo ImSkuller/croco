@@ -71,6 +71,9 @@ pub(crate) use ide::*;
 mod claude_cli;
 pub(crate) use claude_cli::*;
 
+mod pty;
+pub(crate) use pty::*;
+
 mod ai_brain;
 pub(crate) use ai_brain::*;
 
@@ -375,6 +378,7 @@ fn main() {
             github_list_workflow_runs,
             // run
             run_start, run_stop, run_get_running, run_is_running,
+            pty_spawn, pty_write, pty_resize, pty_kill,
             // notes
             notes_get_all, notes_get_by_id, notes_create, notes_update, notes_delete,
             notes_restore, notes_delete_permanently,
