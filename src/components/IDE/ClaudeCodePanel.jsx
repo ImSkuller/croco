@@ -20,7 +20,6 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
   const [sending, setSending] = useState(false)
   const sessionIdRef = useRef(null)
   const listRef = useRef(null)
-  const draftRef = useRef('') // accumulates streamed assistant text for the in-progress turn
 
   useEffect(() => {
     let cancelled = false
@@ -28,17 +27,19 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
     return () => { cancelled = true }
   }, [])
 
+  // Appends to the in-progress assistant bubble, or starts a new one —
+  // derived entirely from the previous messages array (no side-channel ref)
+  // so this stays correct even if a tool_use block sits between two text
+  // blocks in the same turn (the tool_use message becomes `last`, so the
+  // next text block correctly starts a fresh bubble instead of being
+  // concatenated onto stale leftover text from before the tool call).
   const appendAssistantChunk = useCallback((text) => {
-    draftRef.current += text
     setMessages(prev => {
-      const next = [...prev]
-      const last = next[next.length - 1]
+      const last = prev[prev.length - 1]
       if (last && last.role === 'assistant' && last.streaming) {
-        next[next.length - 1] = { ...last, text: draftRef.current }
-      } else {
-        next.push({ role: 'assistant', text: draftRef.current, streaming: true })
+        return [...prev.slice(0, -1), { ...last, text: last.text + text }]
       }
-      return next
+      return [...prev, { role: 'assistant', text, streaming: true }]
     })
   }, [])
 
@@ -60,7 +61,6 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
         }
       } else if (event.type === 'result') {
         sessionIdRef.current = event.session_id || sessionIdRef.current
-        draftRef.current = ''
         setMessages(prev => {
           const next = [...prev]
           const last = next[next.length - 1]
@@ -91,7 +91,6 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
     if (!text || sending) return
     setInput('')
     setMessages(prev => [...prev, { role: 'user', text }])
-    draftRef.current = ''
     setSending(true)
     try {
       await window.api.ide.claudeCode.send(projectId, text, sessionIdRef.current, permissionMode)
@@ -154,7 +153,7 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
                 {m.role === 'tool' ? `→ ${m.text}` : m.text}
               </div>
             ))}
-            {sending && draftRef.current === '' && (
+            {sending && !(messages[messages.length - 1]?.role === 'assistant' && messages[messages.length - 1]?.streaming) && (
               <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Thinking…</div>
             )}
           </div>
