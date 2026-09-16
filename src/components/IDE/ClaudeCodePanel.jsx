@@ -103,7 +103,22 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
     }
   }
 
-  const stop = () => { window.api?.ide.claudeCode.stop(projectId).catch(() => {}); setSending(false) }
+  const stop = () => {
+    window.api?.ide.claudeCode.stop(projectId).catch(() => {})
+    setSending(false)
+    // The killed process won't emit a `result` event to close out its own
+    // streaming bubble (and the backend now deliberately withholds a stale
+    // claudecode:done for it too — see claude_cli.rs), so without this a
+    // stopped mid-stream bubble would stay marked `streaming: true` forever,
+    // which also hides its "Add as Todos" affordance permanently.
+    setMessages(prev => {
+      const last = prev[prev.length - 1]
+      if (last && last.role === 'assistant' && last.streaming) {
+        return [...prev.slice(0, -1), { ...last, streaming: false }]
+      }
+      return prev
+    })
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0 }}>

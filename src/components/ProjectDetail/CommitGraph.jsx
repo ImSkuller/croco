@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { layoutCommitGraph } from '../../lib/gitGraphLayout'
 import { authorColor, initials } from '../../lib/projectDetailHelpers'
 import DiffView from './DiffView'
@@ -29,9 +29,28 @@ export default function CommitGraph({ projectId }) {
   const [selected, setSelected] = useState(null) // { hash, parents }
   const [diff, setDiff] = useState(null)
   const [diffLoading, setDiffLoading] = useState(false)
+  // Bumped on every selectCommit call and every project switch so a
+  // slow-to-resolve diff request from a stale click (or a previous project)
+  // can recognize it's no longer current and not clobber a newer one.
+  const diffRequestRef = useRef(0)
+
+  // A hash selected in the previously-viewed project means nothing here —
+  // reset during render (the standard "adjusting state when a prop
+  // changes" pattern) rather than in the effect below, so it can't ever
+  // paint a stale selection/diff for one project under another's header.
+  const [prevProjectId, setPrevProjectId] = useState(projectId)
+  if (projectId !== prevProjectId) {
+    setPrevProjectId(projectId)
+    setSelected(null)
+    setDiff(null)
+  }
 
   useEffect(() => {
     let cancelled = false
+    // Invalidate any diff fetch still in flight from the previous project —
+    // done here rather than during the render above since refs aren't
+    // meant to be touched mid-render.
+    diffRequestRef.current++
     window.api?.git.getGraphLog(projectId, 200)
       .then(data => { if (!cancelled) setCommits(data || []) })
       .catch(() => { if (!cancelled) setCommits([]) })
@@ -43,15 +62,16 @@ export default function CommitGraph({ projectId }) {
   const selectCommit = async (node) => {
     setSelected(node)
     setDiff(null)
+    const requestId = ++diffRequestRef.current
     if (!node.parents?.length) return // root commit — nothing to diff against
     setDiffLoading(true)
     try {
       const result = await window.api.git.diffBetweenRefs(projectId, node.parents[0], node.hash)
-      setDiff(result?.diff || '')
+      if (diffRequestRef.current === requestId) setDiff(result?.diff || '')
     } catch {
-      setDiff('')
+      if (diffRequestRef.current === requestId) setDiff('')
     } finally {
-      setDiffLoading(false)
+      if (diffRequestRef.current === requestId) setDiffLoading(false)
     }
   }
 

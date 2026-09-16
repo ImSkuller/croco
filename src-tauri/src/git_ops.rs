@@ -455,10 +455,15 @@ pub async fn git_get_log(app: AppHandle, id: String, limit: Option<u32>) -> Resu
 pub async fn git_get_graph_log(app: AppHandle, id: String, limit: Option<u32>) -> Result<Vec<Value>, String> {
     let cwd   = project_root(&app, &id)?;
     let limit = limit.unwrap_or(200);
-    let out   = run_git(&["log", "--all", "--topo-order", &format!("-{}", limit), "--format=%H|%P|%d|%s|%ar|%an"], &cwd)?;
+    // %x1f (ASCII unit separator) rather than a literal `|` — a commit
+    // subject containing a pipe character (not unusual: "fix: A | B") would
+    // otherwise shift every field after the message out of position, since
+    // splitn can't tell a delimiter from a coincidental pipe in the text.
+    // \x1f is not something anyone types into a commit message.
+    let out   = run_git(&["log", "--all", "--topo-order", &format!("-{}", limit), "--format=%H%x1f%P%x1f%d%x1f%s%x1f%ar%x1f%an"], &cwd)?;
     let short = |h: &str| h.chars().take(7).collect::<String>();
     Ok(out.lines().filter(|l| !l.is_empty()).map(|line| {
-        let parts: Vec<&str> = line.splitn(6, '|').collect();
+        let parts: Vec<&str> = line.splitn(6, '\u{1f}').collect();
         let hash = parts.first().copied().unwrap_or("");
         let parents: Vec<String> = parts.get(1)
             .map(|p| p.split_whitespace().map(short).collect())

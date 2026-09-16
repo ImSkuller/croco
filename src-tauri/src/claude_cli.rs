@@ -33,6 +33,12 @@ fn claude_cli_pids() -> std::sync::MutexGuard<'static, HashMap<String, u32>> {
     CLAUDE_CLI_PIDS.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
+// True only while `pid` is still the pid tracked for `project_id` — see the
+// stop-then-resend race explained where this is used in claude_cli_send.
+fn is_current_pid(project_id: &str, pid: u32) -> bool {
+    claude_cli_pids().get(project_id).copied() == Some(pid)
+}
+
 // Permission modes the panel is allowed to request. "auto" and
 // "bypassPermissions" are deliberately never accepted here — those let the
 // CLI run arbitrary tools (including Bash) with zero confirmation, which is
@@ -84,8 +90,21 @@ pub async fn claude_cli_send(
     session_id: Option<String>,
     permission_mode: String,
 ) -> Result<Value, String> {
-    if claude_cli_pids().contains_key(&project_id) {
-        return Err("Claude Code is already working on a message for this project. Wait for it to finish, or stop it first.".into());
+    // Check-and-reserve under one lock acquisition — checking with
+    // contains_key() and inserting separately (after the spawn below, which
+    // itself isn't instant) left a window where two near-simultaneous calls
+    // (e.g. a rapid stop-then-resend, or a fast double-click before the
+    // Send button's own disabled state took effect) could both see no
+    // in-flight request and both spawn a `claude` process for the same
+    // project, defeating the single-in-flight guard entirely. Reserve the
+    // slot with a placeholder pid immediately; it's replaced with the real
+    // pid once spawn succeeds, or released if anything below fails.
+    {
+        let mut guard = claude_cli_pids();
+        if guard.contains_key(&project_id) {
+            return Err("Claude Code is already working on a message for this project. Wait for it to finish, or stop it first.".into());
+        }
+        guard.insert(project_id.clone(), 0);
     }
     if !ALLOWED_PERMISSION_MODES.contains(&permission_mode.as_str()) {
         return Err(format!("Unsupported permission mode: {permission_mode}"));
@@ -94,8 +113,20 @@ pub async fn claude_cli_send(
         return Err("Message is empty".into());
     }
 
-    crate::validate_safe_id(&project_id)?;
-    let project = crate::get_project(&app, &project_id).ok_or("Project not found")?;
+    // From here on, every early return must release the reservation made
+    // above — otherwise a validation failure or a spawn error would leave
+    // the project permanently stuck looking "busy".
+    if let Err(e) = crate::validate_safe_id(&project_id) {
+        claude_cli_pids().remove(&project_id);
+        return Err(e);
+    }
+    let project = match crate::get_project(&app, &project_id) {
+        Some(p) => p,
+        None => {
+            claude_cli_pids().remove(&project_id);
+            return Err("Project not found".into());
+        }
+    };
     let cwd = crate::project_root_str(&project);
 
     let mut cmd = claude_cmd();
@@ -110,58 +141,82 @@ pub async fn claude_cli_send(
     #[cfg(windows)]
     crate::no_window(&mut cmd);
 
-    let mut child = cmd.spawn().map_err(|e| {
-        format!("Could not start the `claude` CLI — is it installed and on PATH? ({e})")
-    })?;
+    let mut child = match cmd.spawn() {
+        Ok(c) => c,
+        Err(e) => {
+            claude_cli_pids().remove(&project_id);
+            return Err(format!("Could not start the `claude` CLI — is it installed and on PATH? ({e})"));
+        }
+    };
 
     // Write the prompt to stdin and close it immediately (drop the handle)
     // so `claude -p`'s stdin read sees EOF and proceeds — it isn't a
     // conversational stdin stream (that's --input-format stream-json, a
     // separate, unused mode here), just a one-shot prompt delivery.
     if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(message.as_bytes()).map_err(|e| e.to_string())?;
+        if let Err(e) = stdin.write_all(message.as_bytes()) {
+            claude_cli_pids().remove(&project_id);
+            let _ = child.kill();
+            return Err(e.to_string());
+        }
     }
 
-    let pid = child.id();
-    claude_cli_pids().insert(project_id.clone(), pid);
+    let child_pid = child.id();
+    claude_cli_pids().insert(project_id.clone(), child_pid); // replace the placeholder with the real pid
     app.emit("claudecode:started", json!({ "projectId": project_id })).ok();
 
     let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
     let stderr = child.stderr.take().ok_or("Failed to capture stderr")?;
 
+    // A stop() immediately followed by a new send() for the same project
+    // races this (now-being-killed) process's own background threads
+    // against the fresh request: the map entry gets overwritten with the
+    // new child's pid almost immediately, but this process's stdout/stderr
+    // readers and exit-wait thread are still unwinding in the background.
+    // Every thread below checks the map still points at *its own* pid
+    // before emitting anything — without that, the old process's eventual
+    // exit would remove the new request's still-running guard and fire a
+    // claudecode:done for it, silently ending the new turn in the UI while
+    // the real one keeps streaming.
     {
         let app = app.clone();
-        let pid = project_id.clone();
+        let proj = project_id.clone();
         thread::spawn(move || {
             for line in BufReader::new(stdout).lines().map_while(Result::ok) {
                 if line.trim().is_empty() { continue; }
+                if !is_current_pid(&proj, child_pid) { continue; }
                 match serde_json::from_str::<Value>(&line) {
-                    Ok(parsed) => { app.emit("claudecode:event", json!({ "projectId": pid, "event": parsed })).ok(); }
+                    Ok(parsed) => { app.emit("claudecode:event", json!({ "projectId": proj, "event": parsed })).ok(); }
                     // Not every line is guaranteed structured JSON (e.g. a
                     // stray warning printed before the CLI settles into
                     // stream-json mode) — surface it as raw text rather
                     // than silently dropping it.
-                    Err(_) => { app.emit("claudecode:raw", json!({ "projectId": pid, "text": line })).ok(); }
+                    Err(_) => { app.emit("claudecode:raw", json!({ "projectId": proj, "text": line })).ok(); }
                 }
             }
         });
     }
     {
         let app = app.clone();
-        let pid = project_id.clone();
+        let proj = project_id.clone();
         thread::spawn(move || {
             for line in BufReader::new(stderr).lines().map_while(Result::ok) {
-                app.emit("claudecode:stderr", json!({ "projectId": pid, "text": line })).ok();
+                if !is_current_pid(&proj, child_pid) { continue; }
+                app.emit("claudecode:stderr", json!({ "projectId": proj, "text": line })).ok();
             }
         });
     }
     {
         let app = app.clone();
-        let pid = project_id.clone();
+        let proj = project_id.clone();
         thread::spawn(move || {
             let code = child.wait().map(|s| s.code().unwrap_or(0)).unwrap_or(-1);
-            claude_cli_pids().remove(&pid);
-            app.emit("claudecode:done", json!({ "projectId": pid, "exitCode": code })).ok();
+            let mut guard = claude_cli_pids();
+            if guard.get(&proj).copied() == Some(child_pid) {
+                guard.remove(&proj);
+                drop(guard);
+                app.emit("claudecode:done", json!({ "projectId": proj, "exitCode": code })).ok();
+            }
         });
     }
 
