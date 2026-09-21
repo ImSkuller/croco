@@ -52,6 +52,8 @@ pub(crate) use secrets::*;
 
 mod entitlements;
 pub(crate) use entitlements::*;
+mod social;
+pub(crate) use social::*;
 
 mod projects;
 pub(crate) use projects::*;
@@ -417,6 +419,19 @@ fn main() {
             projects_publish_to_github,
             // entitlements
             entitlements_refresh, entitlements_get,
+            // social module (beta)
+            social_get_me, social_update_me, social_set_field_visibility, social_get_streak, social_check_github_streak,
+            social_get_user_profile, social_get_user_posts, social_get_public_profile,
+            social_create_post, social_get_post, social_delete_post,
+            social_like_post, social_unlike_post, social_vote_post, social_unvote_post,
+            social_share_post, social_post_feedback,
+            social_create_comment, social_list_comments, social_delete_comment,
+            social_follow, social_unfollow, social_block, social_unblock, social_mute, social_unmute,
+            social_list_notifications, social_mark_notification_read, social_mark_all_notifications_read,
+            social_get_feed, social_search, social_suggested_users,
+            social_create_report,
+            social_create_launch, social_get_launch, social_list_launches, social_upvote_launch,
+            social_create_launch_comment, social_list_launch_comments,
             // data backup / restore
             data_export_all, data_import_all, backup_run_now,
             // obsidian vault sync

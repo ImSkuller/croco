@@ -710,6 +710,102 @@ export const api = {
     get:     () => invoke('entitlements_get'),
   },
 
+  // ── Social (beta module) ─────────────────────────────────────────────────────
+  // Thin wrappers over croco-server's REST API — see
+  // src-tauri/src/social.rs and docs/social/*.md. Every call hits the
+  // network; there is no local cache/business logic on the client beyond
+  // the usual useData() SWR layer these get plugged into. Off unless
+  // settings.modules.social.enabled is true.
+  social: {
+    /** @returns {Promise<any>} */
+    getMe: () => invoke('social_get_me'),
+    /** @param {string} [displayName] @param {string} [bio] @returns {Promise<any>} */
+    updateMe: (displayName, bio) => invoke('social_update_me', { displayName, bio }),
+    /** @param {string} field @param {'public'|'followers'|'private'} visibility @returns {Promise<any>} */
+    setFieldVisibility: (field, visibility) => invoke('social_set_field_visibility', { field, visibility }),
+    /** @returns {Promise<any>} */
+    getStreak: () => invoke('social_get_streak'),
+    /** @returns {Promise<any>} opt-in only — check settings.modules.social.streak.includeGithubActivity before calling */
+    checkGithubStreak: () => invoke('social_check_github_streak'),
+    /** @param {string} login @returns {Promise<any>} */
+    getUserProfile: (login) => invoke('social_get_user_profile', { login }),
+    /** @param {string} login @returns {Promise<any>} */
+    getUserPosts: (login) => invoke('social_get_user_posts', { login }),
+    /** @param {string} login @returns {Promise<any>} */
+    getPublicProfile: (login) => invoke('social_get_public_profile', { login }),
+
+    /** @param {{bodyText: string, mdBody?: string, youtubeUrl?: string, githubRepo?: string, visibility?: string}} post @returns {Promise<any>} */
+    createPost: ({ bodyText, mdBody, youtubeUrl, githubRepo, visibility }) =>
+      invoke('social_create_post', { bodyText, mdBody, youtubeUrl, githubRepo, visibility }),
+    /** @param {string} id @returns {Promise<any>} */
+    getPost: (id) => invoke('social_get_post', { id }),
+    /** @param {string} id @returns {Promise<any>} */
+    deletePost: (id) => invoke('social_delete_post', { id }),
+    /** @param {string} id @returns {Promise<any>} */
+    likePost: (id) => invoke('social_like_post', { id }),
+    /** @param {string} id @returns {Promise<any>} */
+    unlikePost: (id) => invoke('social_unlike_post', { id }),
+    /** @param {string} id @param {1|-1} value @returns {Promise<any>} */
+    votePost: (id, value) => invoke('social_vote_post', { id, value }),
+    /** @param {string} id @returns {Promise<any>} */
+    unvotePost: (id) => invoke('social_unvote_post', { id }),
+    /** @param {string} id @returns {Promise<any>} */
+    sharePost: (id) => invoke('social_share_post', { id }),
+    /** @param {string} id @param {'not_interested'|'more_like_this'} signal @returns {Promise<any>} */
+    postFeedback: (id, signal) => invoke('social_post_feedback', { id, signal }),
+
+    /** @param {string} postId @param {string} bodyText @param {string} [parentId] @returns {Promise<any>} */
+    createComment: (postId, bodyText, parentId) => invoke('social_create_comment', { postId, bodyText, parentId }),
+    /** @param {string} postId @returns {Promise<any>} */
+    listComments: (postId) => invoke('social_list_comments', { postId }),
+    /** @param {string} id @returns {Promise<any>} */
+    deleteComment: (id) => invoke('social_delete_comment', { id }),
+
+    /** @param {string} login @returns {Promise<any>} */
+    follow: (login) => invoke('social_follow', { login }),
+    /** @param {string} login @returns {Promise<any>} */
+    unfollow: (login) => invoke('social_unfollow', { login }),
+    /** @param {string} login @returns {Promise<any>} */
+    block: (login) => invoke('social_block', { login }),
+    /** @param {string} login @returns {Promise<any>} */
+    unblock: (login) => invoke('social_unblock', { login }),
+    /** @param {string} login @returns {Promise<any>} */
+    mute: (login) => invoke('social_mute', { login }),
+    /** @param {string} login @returns {Promise<any>} */
+    unmute: (login) => invoke('social_unmute', { login }),
+
+    /** @returns {Promise<any>} */
+    listNotifications: () => invoke('social_list_notifications'),
+    /** @param {string} id @returns {Promise<any>} */
+    markNotificationRead: (id) => invoke('social_mark_notification_read', { id }),
+    /** @returns {Promise<any>} */
+    markAllNotificationsRead: () => invoke('social_mark_all_notifications_read'),
+
+    /** @param {'following'|'discover'} feedType @param {'chrono'} [sort] @param {string} [cursor] only honored for feedType 'following' — see croco-server's FeedQuery doc comment @returns {Promise<any>} */
+    getFeed: (feedType, sort, cursor) => invoke('social_get_feed', { feedType, sort, cursor }),
+    /** @param {string} query @param {'users'|'posts'|'all'} [searchType] @returns {Promise<any>} */
+    search: (query, searchType) => invoke('social_search', { query, searchType }),
+    /** @returns {Promise<any>} */
+    suggestedUsers: () => invoke('social_suggested_users'),
+
+    /** @param {'post'|'comment'|'account'} targetType @param {string} targetId @param {string} reason @param {string} [detail] @returns {Promise<any>} */
+    createReport: (targetType, targetId, reason, detail) => invoke('social_create_report', { targetType, targetId, reason, detail }),
+
+    /** @param {{tagline: string, description?: string, coverImageUrl?: string, category: string, githubRepo?: string, externalUrl?: string}} launch @returns {Promise<any>} */
+    createLaunch: ({ tagline, description, coverImageUrl, category, githubRepo, externalUrl }) =>
+      invoke('social_create_launch', { tagline, description, coverImageUrl, category, githubRepo, externalUrl }),
+    /** @param {string} id @returns {Promise<any>} */
+    getLaunch: (id) => invoke('social_get_launch', { id }),
+    /** @param {'trending'|'newest'} [sort] @returns {Promise<any>} */
+    listLaunches: (sort) => invoke('social_list_launches', { sort }),
+    /** @param {string} id @returns {Promise<any>} */
+    upvoteLaunch: (id) => invoke('social_upvote_launch', { id }),
+    /** @param {string} launchId @param {string} bodyText @param {string} [parentId] @returns {Promise<any>} */
+    createLaunchComment: (launchId, bodyText, parentId) => invoke('social_create_launch_comment', { launchId, bodyText, parentId }),
+    /** @param {string} launchId @returns {Promise<any>} */
+    listLaunchComments: (launchId) => invoke('social_list_launch_comments', { launchId }),
+  },
+
   // ── Ping (legacy stub) ───────────────────────────────────────────────────────
   /** @returns {Promise<string>} */
   ping: () => Promise.resolve('pong'),

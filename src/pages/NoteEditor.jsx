@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { marked } from 'marked'
 import { ArrowLeftIcon, StarIcon, TagIcon, FolderIcon, CheckIcon } from '../constants/SimpleSvgExports'
 import { modKeyHint } from '../lib/platform'
 import useDiscordPresence from '../hooks/useDiscordPresence'
 import TagChip from '../components/ui/TagChip'
 import { useData, EMPTY_LIST } from '../lib/store'
-
-marked.setOptions({ gfm: true, breaks: true })
+import { renderMarkdown } from '../lib/markdown'
 
 const EMOJIS = ['📡', '📁', '⚡', '🎨', '🔧', '🌐', '💡', '🗒️', '🔬', '📊', '🛠️', '🚀', '📝', '🧪', '🎯', '🔑']
 
@@ -85,7 +83,7 @@ export default function NoteEditor() {
 
   const wordCount   = content.trim() ? content.trim().split(/\s+/).length : 0
   const charCount   = content.length
-  const previewHtml = marked.parse(content || '*Start writing to see a preview…*')
+  const previewHtml = renderMarkdown(content || '*Start writing to see a preview…*')
 
   useEffect(() => {
     if (viewMode === 'edit') return

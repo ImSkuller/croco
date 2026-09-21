@@ -262,6 +262,32 @@ pub fn default_settings() -> Value {
                 "enabled": false,
                 "workMinutes": 25,
                 "breakMinutes": 5
+            },
+            // Social (beta) — the opt-in social layer (posts, feed, follows,
+            // profiles, Launchpad) backed by the separate croco-server
+            // backend, not local storage. The one module that requires an
+            // account and network access to use at all — see docs/SCOPE.md's
+            // "Social layer & profile system" section. Off by default like
+            // every other module; a user who never enables it sees zero
+            // behavioral/performance difference, per the module convention.
+            "social": {
+                "enabled": false,
+                "feed": {
+                    // 'algorithmic' (the ranked Discover feed) or 'chrono'
+                    // (chronological) — the brief's required non-algorithmic
+                    // alternative, not a hidden/removed toggle.
+                    "defaultSort": "algorithmic"
+                },
+                "streak": {
+                    // Opt-in only — see social_layer_v1_plan.md §10: this
+                    // tells the server to also check the account's real
+                    // GitHub commit activity for streak purposes, which is a
+                    // real, disclosable privacy trade distinct from the
+                    // purely local Patterns/personality tracking elsewhere
+                    // in the app. Defaults off; in-app activity alone still
+                    // counts toward the streak regardless of this setting.
+                    "includeGithubActivity": false
+                }
             }
         }
     })

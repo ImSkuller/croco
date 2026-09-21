@@ -20,7 +20,11 @@ use tauri::AppHandle;
 // Not deployed anywhere yet — see "Decisions made / still open" in
 // croco-server's docs/entitlements.md. Update this the moment a real
 // deployment exists; nothing else on the client needs to change.
-const ENTITLEMENTS_SERVER_URL: &str = "https://entitlements.croco.dev";
+//
+// `pub(crate)` so `social.rs` can reuse the exact same base URL and
+// session — the social layer is server-backed by the same croco-server
+// instance, not a second login/backend.
+pub(crate) const ENTITLEMENTS_SERVER_URL: &str = "https://entitlements.croco.dev";
 
 // Public key only — never secret, safe to compile in. Must match the
 // private key held by croco-server's ENTITLEMENTS_SIGNING_KEY. Generate a
@@ -99,6 +103,19 @@ async fn exchange_for_session(app: &AppHandle, github_token: &str) -> Result<Str
     let session = body["session_token"].as_str().ok_or("no session_token in response")?.to_string();
     crate::set_secret(app, "entitlements_session", &session)?;
     Ok(session)
+}
+
+/// Returns a valid croco-server session token, exchanging one via the
+/// user's stored GitHub token if none is cached yet. `pub(crate)` so
+/// `social.rs` can authenticate against the same backend/session as
+/// entitlements does — the social layer never triggers a second login.
+pub(crate) async fn ensure_session_token(app: &AppHandle) -> Result<String, String> {
+    if let Some(session) = crate::get_secret(app, "entitlements_session") {
+        return Ok(session);
+    }
+    let github_token = crate::stored_github_token(app)
+        .ok_or("Not logged in with GitHub yet — Settings → GitHub to connect an account")?;
+    exchange_for_session(app, &github_token).await
 }
 
 /// Fetches fresh entitlements from the server, verifies the signature,

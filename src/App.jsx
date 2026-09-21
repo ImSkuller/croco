@@ -22,6 +22,7 @@ import Trash from './pages/Trash'
 import AI from './pages/AI'
 import IDE from './pages/IDE'
 import Focus from './pages/Focus'
+import Social from './pages/Social'
 import RequireModule from './components/layout/RequireModule'
 
 export default function App() {
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="ai"    element={<RequireModule module="ai"><AI /></RequireModule>} />
           <Route path="ide"   element={<RequireModule module="ide"><IDE /></RequireModule>} />
           <Route path="focus" element={<RequireModule module="focusTimer"><Focus /></RequireModule>} />
+          <Route path="social" element={<RequireModule module="social"><Social /></RequireModule>} />
           <Route path="easter-eggs" element={<EasterEggs />} />
           <Route path="note-editor" element={<NoteEditor />} />
           <Route path="note-editor/:noteId" element={<NoteEditor />} />

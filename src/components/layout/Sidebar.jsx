@@ -4,7 +4,7 @@ import { GridIcon, ListIcon, Logo, NoteIcon, SearchIcon, SettingsIcon, TodoIcon 
 import {
   StarIcon, ActivityIcon, TrendIcon, GithubIcon, TrashIcon, HomeIcon, BulbIcon,
   PlusCircleIcon, ImportIcon, PaletteIcon, SaveIcon, NoteIcon2, CheckCircleIcon,
-  GameIcon, GiftIcon, MusicNoteIcon, PuzzleIcon, AIIcon, IDEIcon, ClockIcon,
+  GameIcon, GiftIcon, MusicNoteIcon, PuzzleIcon, AIIcon, IDEIcon, ClockIcon, UserIcon,
 } from '../../constants/SimpleSvgExports.jsx'
 import ManagerVersion from '../../constants/versionManager.jsx'
 import { useToast } from '../Toast/useToast.js'
@@ -40,11 +40,12 @@ const STATIC_PAGES = [
 // Beta module pages only exist while their module is on — same flags the
 // sidebar nav uses, so Ctrl+K never offers a route RequireModule would
 // bounce straight back off.
-function modulePages({ ai, ide, focus }) {
+function modulePages({ ai, ide, focus, social }) {
   const pages = []
-  if (ai)    pages.push({ type: 'page', label: 'AI',    sub: 'page · beta', to: '/ai',    icon: <AIIcon /> })
-  if (ide)   pages.push({ type: 'page', label: 'IDE',   sub: 'page · beta', to: '/ide',   icon: <IDEIcon /> })
-  if (focus) pages.push({ type: 'page', label: 'Focus', sub: 'page · beta', to: '/focus', icon: <ClockIcon /> })
+  if (ai)     pages.push({ type: 'page', label: 'AI',     sub: 'page · beta', to: '/ai',     icon: <AIIcon /> })
+  if (ide)    pages.push({ type: 'page', label: 'IDE',    sub: 'page · beta', to: '/ide',    icon: <IDEIcon /> })
+  if (focus)  pages.push({ type: 'page', label: 'Focus',  sub: 'page · beta', to: '/focus',  icon: <ClockIcon /> })
+  if (social) pages.push({ type: 'page', label: 'Social', sub: 'page · beta', to: '/social', icon: <UserIcon /> })
   return pages
 }
 
@@ -137,9 +138,10 @@ export default function Sidebar({ position = 'left' }) {
     [projects, notes, todos])
   const initials          = userName ? userName.slice(0, 2).toUpperCase() : '??'
 
-  const aiModuleOn    = !!settings?.modules?.ai?.enabled
-  const ideModuleOn   = !!settings?.modules?.ide?.enabled
-  const focusModuleOn = !!settings?.modules?.focusTimer?.enabled
+  const aiModuleOn     = !!settings?.modules?.ai?.enabled
+  const ideModuleOn    = !!settings?.modules?.ide?.enabled
+  const focusModuleOn  = !!settings?.modules?.focusTimer?.enabled
+  const socialModuleOn = !!settings?.modules?.social?.enabled
 
   const NAV = useMemo(() => {
     const menuItems = [
@@ -153,9 +155,10 @@ export default function Sidebar({ position = 'left' }) {
       { to: '/github',      label: 'GitHub',     badge: null,                    icon: <GithubIcon /> },
     ]
     // Beta modules — only shown once enabled in Settings → Modules.
-    if (aiModuleOn)    menuItems.push({ to: '/ai',    label: 'AI',    badge: 'β', badgeStyle: 'accent', icon: <AIIcon /> })
-    if (ideModuleOn)   menuItems.push({ to: '/ide',   label: 'IDE',   badge: 'β', badgeStyle: 'accent', icon: <IDEIcon /> })
-    if (focusModuleOn) menuItems.push({ to: '/focus', label: 'Focus', badge: 'β', badgeStyle: 'accent', icon: <ClockIcon /> })
+    if (aiModuleOn)     menuItems.push({ to: '/ai',     label: 'AI',     badge: 'β', badgeStyle: 'accent', icon: <AIIcon /> })
+    if (ideModuleOn)    menuItems.push({ to: '/ide',     label: 'IDE',    badge: 'β', badgeStyle: 'accent', icon: <IDEIcon /> })
+    if (focusModuleOn)  menuItems.push({ to: '/focus',   label: 'Focus',  badge: 'β', badgeStyle: 'accent', icon: <ClockIcon /> })
+    if (socialModuleOn) menuItems.push({ to: '/social',  label: 'Social', badge: 'β', badgeStyle: 'accent', icon: <UserIcon /> })
     return [
       { label: 'Menu', items: menuItems },
       {
@@ -166,7 +169,7 @@ export default function Sidebar({ position = 'left' }) {
         ],
       },
     ]
-  }, [activeProjects, unarchivedNotes, openTodosCount, trashedCount, hasUpdate, aiModuleOn, ideModuleOn, focusModuleOn])
+  }, [activeProjects, unarchivedNotes, openTodosCount, trashedCount, hasUpdate, aiModuleOn, ideModuleOn, focusModuleOn, socialModuleOn])
 
   // Command-palette actions — the part that makes Ctrl/Cmd+K an actual
   // command palette rather than just an entity/page search. Each calls the
@@ -249,8 +252,8 @@ export default function Sidebar({ position = 'left' }) {
       icon:  t.emoji || <CheckCircleIcon />,
     })),
     ...STATIC_PAGES,
-    ...modulePages({ ai: aiModuleOn, ide: ideModuleOn, focus: focusModuleOn }),
-  ], [actionItems, projects, notes, todos, aiModuleOn, ideModuleOn, focusModuleOn])
+    ...modulePages({ ai: aiModuleOn, ide: ideModuleOn, focus: focusModuleOn, social: socialModuleOn }),
+  ], [actionItems, projects, notes, todos, aiModuleOn, ideModuleOn, focusModuleOn, socialModuleOn])
 
   return (
     <>
