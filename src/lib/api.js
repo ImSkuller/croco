@@ -372,6 +372,8 @@ export const api = {
     restore: (id)          => invoke('notes_restore',  { id }),
     /** @param {string} id @returns {Promise<any>} permanent — bypasses trash */
     deletePermanently: (id) => invoke('notes_delete_permanently', { id }),
+    /** Full-text search over note BODY content (title/preview/tags are already filtered instantly client-side). @param {string} query @param {string} [projectId] @returns {Promise<{id: string, snippet: string}[]>} */
+    search: (query, projectId) => invoke('notes_search', { query, projectId }),
   },
 
   // ── Obsidian vault sync ─────────────────────────────────────────────────────

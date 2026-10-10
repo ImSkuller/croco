@@ -383,7 +383,7 @@ fn main() {
             pty_spawn, pty_write, pty_resize, pty_kill,
             // notes
             notes_get_all, notes_get_by_id, notes_create, notes_update, notes_delete,
-            notes_restore, notes_delete_permanently,
+            notes_restore, notes_delete_permanently, notes_search,
             // todos
             todos_get_all, todos_create, todos_toggle, todos_update, todos_delete,
             todos_restore, todos_delete_permanently,

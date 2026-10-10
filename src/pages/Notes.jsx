@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PlusIcon, GridIcon, ListViewIcon, SearchIcon, StarIcon, TrashIcon, PackageIcon, NoteIcon2, UndoIcon, ImportIcon } from '../constants/SimpleSvgExports'
 import { ViewBtn } from '../components/Projects/Exports'
@@ -91,10 +91,37 @@ export default function Notes() {
   const liveNotes = useMemo(() => notes.filter(n => !n.trashedAt), [notes])
   const allTags   = useMemo(() => [...new Set(liveNotes.flatMap(n => n.tags || []))].sort(), [liveNotes])
 
+  // Title/preview/tag matching above is instant (client-side, against the
+  // already-cached lightweight payload). Body content isn't in that
+  // payload at all (notes_get_all strips it — see notes_todos.rs), so a
+  // real full-text search needs a debounced server round trip, merged in
+  // alongside the instant filter rather than replacing it.
+  const [bodyMatches, setBodyMatches] = useState(null) // null = no body search in flight/needed; [] = searched, no hits
+  useEffect(() => {
+    const q = search.trim()
+    // No clear-on-empty needed: `n.title.includes('')` is always true, so
+    // an empty query already matches every note via the instant filter
+    // below regardless of whatever stale body-match state lingers here.
+    if (!q || !window.api) return
+    const handle = setTimeout(() => {
+      window.api.notes.search(q, project === 'All' ? undefined : project)
+        .then(setBodyMatches)
+        .catch(() => setBodyMatches(null))
+    }, 250)
+    return () => clearTimeout(handle)
+  }, [search, project])
+
+  const bodySnippetById = useMemo(() => {
+    const m = new Map()
+    for (const r of (bodyMatches || [])) m.set(r.id, r.snippet)
+    return m
+  }, [bodyMatches])
+
   const filtered = useMemo(() => liveNotes.filter(n => {
     const matchSearch  = n.title.toLowerCase().includes(search.toLowerCase()) ||
                          (n.preview || '').toLowerCase().includes(search.toLowerCase()) ||
-                         (n.tags || []).some(t => t.toLowerCase().includes(search.toLowerCase()))
+                         (n.tags || []).some(t => t.toLowerCase().includes(search.toLowerCase())) ||
+                         bodySnippetById.has(n.id)
     const matchFilter  = filter === 'Archived'
       ? n.archived
       : filter === 'Starred'
@@ -103,7 +130,14 @@ export default function Notes() {
     const matchProject = project === 'All' ? true : n.projectId === project
     const matchTag     = !selectedTag || (n.tags || []).includes(selectedTag)
     return matchSearch && matchFilter && matchProject && matchTag
-  }), [liveNotes, search, filter, project, selectedTag])
+  }).map(n => {
+    // When a note only matches via body content (title/preview didn't),
+    // show the matched snippet instead of the normal preview so the user
+    // can see *why* it matched, not just that it did.
+    const snippet = bodySnippetById.get(n.id)
+    const alreadyVisible = n.title.toLowerCase().includes(search.toLowerCase()) || (n.preview || '').toLowerCase().includes(search.toLowerCase())
+    return snippet && !alreadyVisible ? { ...n, preview: snippet } : n
+  }), [liveNotes, search, filter, project, selectedTag, bodySnippetById])
 
   const counts = useMemo(() => ({
     All:      liveNotes.filter(n => !n.archived).length,

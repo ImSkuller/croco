@@ -127,6 +127,48 @@ pub fn notes_get_all(app: AppHandle, project_id: Option<String>) -> Vec<Value> {
     notes
 }
 
+/// Full-text search over note BODY content — notes_get_all() strips
+/// `_content` before returning (title/preview/tag matching already
+/// happens instantly client-side against that lighter payload; see
+/// Notes.jsx), so a real body-content search has to happen server-side
+/// against the same cached raw data, not by shipping every note's full
+/// body into the frontend's zustand cache just to filter it there.
+/// Returns a short snippet of surrounding context per match, not the
+/// full body, keeping the response small regardless of note length.
+#[tauri::command]
+pub fn notes_search(app: AppHandle, query: String, project_id: Option<String>) -> Vec<Value> {
+    let needle = query.trim().to_lowercase();
+    if needle.is_empty() {
+        return vec![];
+    }
+    let raw = read_all_notes_raw(&app);
+    raw.into_iter().filter_map(|meta| {
+        if let Some(ref pid) = project_id {
+            if meta["projectId"].as_str() != Some(pid.as_str()) { return None; }
+        }
+        let id = meta["id"].as_str()?.to_string();
+        let content = meta["_content"].as_str().unwrap_or("");
+        let haystack = content.to_lowercase();
+        let match_pos = haystack.find(&needle)?;
+        Some(json!({ "id": id, "snippet": note_search_snippet(content, match_pos, needle.len()) }))
+    }).collect()
+}
+
+/// Context around a match, not the whole body — ~40 chars before, ~90
+/// after, widened outward to the nearest char boundary (`content` is
+/// arbitrary user text, so byte-slicing at an exact offset could land
+/// mid-character for non-ASCII content).
+fn note_search_snippet(content: &str, match_byte_pos: usize, match_len: usize) -> String {
+    let start_target = match_byte_pos.saturating_sub(40);
+    let end_target = (match_byte_pos + match_len + 90).min(content.len());
+    let start = content.char_indices().map(|(i, _)| i).rev().find(|&i| i <= start_target).unwrap_or(0);
+    let end = content.char_indices().map(|(i, c)| i + c.len_utf8()).find(|&i| i >= end_target).unwrap_or(content.len());
+    let mut snippet = content[start..end].replace('\n', " ");
+    if start > 0 { snippet = format!("…{snippet}"); }
+    if end < content.len() { snippet = format!("{snippet}…"); }
+    snippet
+}
+
 #[tauri::command]
 pub fn notes_get_by_id(app: AppHandle, id: String) -> Option<Value> {
     crate::validate_safe_id(&id).ok()?;
@@ -505,5 +547,38 @@ pub fn purge_expired_notes_todos_trash(app: &AppHandle) {
         .collect();
     for id in expired_todos {
         let _ = todos_delete_permanently(app.clone(), id);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn snippet_trims_to_surrounding_context_with_ellipses_at_the_cut_points() {
+        let content = "a".repeat(100) + "NEEDLE" + &"b".repeat(100);
+        let pos = content.find("NEEDLE").unwrap();
+        let snippet = note_search_snippet(&content, pos, "NEEDLE".len());
+        assert!(snippet.starts_with('…'), "cut before the real start must show a leading ellipsis");
+        assert!(snippet.ends_with('…'), "cut before the real end must show a trailing ellipsis");
+        assert!(snippet.contains("NEEDLE"), "the match itself must survive the trim");
+        assert!(snippet.len() < content.len(), "the snippet must actually be shorter than the full body");
+    }
+
+    #[test]
+    fn snippet_has_no_ellipsis_when_the_match_is_near_the_edges() {
+        let content = "NEEDLE at the very start of a short note";
+        let snippet = note_search_snippet(content, 0, "NEEDLE".len());
+        assert!(!snippet.starts_with('…'), "nothing was trimmed off the front, so no leading ellipsis");
+    }
+
+    #[test]
+    fn snippet_does_not_panic_on_a_multibyte_boundary() {
+        // "é" is 2 bytes in UTF-8 — a naive byte-offset slice near it could
+        // split a character in half and panic. Regression guard.
+        let content = format!("{}café{}", "x".repeat(45), "y".repeat(100));
+        let pos = content.find("café").unwrap();
+        let snippet = note_search_snippet(&content, pos, "café".len());
+        assert!(snippet.contains("café"));
     }
 }
