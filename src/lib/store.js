@@ -13,6 +13,7 @@
  */
 import { useEffect } from 'react'
 import { create } from 'zustand'
+import { listen } from '@tauri-apps/api/event'
 
 const TTL = 30_000 // consider data fresh for 30s; navigation within it is instant
 
@@ -116,4 +117,18 @@ if (typeof window !== 'undefined') {
     useDataStore.getState().invalidate()
     refreshData()
   })
+}
+
+// Same invalidation, but for a mutation made from a DIFFERENT window —
+// `window.dispatchEvent` above only reaches listeners in that same
+// window's own JS realm, which is useless for e.g. the quick-capture
+// popup (src/pages/QuickCapture.jsx) saving a todo/note and needing the
+// main window's lists to notice. Tauri's own event system is cross-window
+// by default, unlike a DOM CustomEvent, so it's the one case here that
+// needs it instead of the plain window event above.
+if (typeof window !== 'undefined') {
+  listen('croco:cross-window-data-changed', () => {
+    useDataStore.getState().invalidate()
+    refreshData()
+  }).catch(() => {})
 }

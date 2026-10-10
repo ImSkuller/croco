@@ -23,6 +23,7 @@ import AI from './pages/AI'
 import IDE from './pages/IDE'
 import Focus from './pages/Focus'
 import Social from './pages/Social'
+import QuickCapture from './pages/QuickCapture'
 import RequireModule from './components/layout/RequireModule'
 
 export default function App() {
@@ -49,6 +50,11 @@ export default function App() {
   return (
     <HashRouter>
       <Routes>
+        {/* Standalone — rendered in its own small OS window (see
+            main.rs::show_quick_capture_window), not inside AppShell:
+            no sidebar, no nav, just the capture form. */}
+        <Route path="/quick-capture" element={<QuickCapture />} />
+
         <Route path="/" element={<AppShell />}>
           <Route index element={<Dashboard />} />
           <Route path="projects" element={<Projects />} />

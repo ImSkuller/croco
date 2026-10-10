@@ -15,6 +15,7 @@ tauri-plugin-opener  = "2"
 tauri-plugin-process = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-updater = "2"
+tauri-plugin-global-shortcut = "2"
 semver          = "1"
 keyring         = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
 aes-gcm         = "0.11"

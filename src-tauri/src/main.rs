@@ -188,11 +188,52 @@ fn activity_file(app: &AppHandle) -> PathBuf {
 
 // ─── App setup ─────────────────────────────────────────────────────────────────
 
+/// Shows the existing quick-capture popup if one's already open (avoids
+/// spawning a second window on a repeat hotkey press before the first is
+/// closed), otherwise creates it fresh. A separate small window — not the
+/// main window plus a modal — so the global hotkey works even while the
+/// main window is hidden to the tray (the common case this feature exists
+/// for: capture a thought without breaking whatever you're doing).
+/// Points at the same bundled frontend as the main window, just a
+/// different hash route (`#/quick-capture`) that App.jsx renders outside
+/// the normal AppShell — see src/App.jsx and src/pages/QuickCapture.jsx.
+fn show_quick_capture_window(app: &tauri::AppHandle) {
+    if let Some(w) = app.get_webview_window("quick-capture") {
+        w.show().ok();
+        w.set_focus().ok();
+        return;
+    }
+    let builder = tauri::WebviewWindowBuilder::new(app, "quick-capture", tauri::WebviewUrl::App("index.html#/quick-capture".into()))
+        .title("Quick Capture")
+        .inner_size(420.0, 220.0)
+        .resizable(false)
+        .always_on_top(true)
+        .center()
+        .skip_taskbar(true);
+    // See system.rs::system_open_in_app_browser's identical comment —
+    // drag_and_drop() is a Windows-only WebView2 quirk, not compiled in
+    // on other platforms.
+    #[cfg(windows)]
+    let builder = builder.drag_and_drop(false);
+    let _ = builder.build();
+}
+
 fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::{
         menu::{Menu, MenuItem, PredefinedMenuItem},
         tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     };
+    use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
+
+    // Global quick-capture hotkey — not yet user-remappable (a fixed v1
+    // default, same "good enough, not exhaustive" scoping as the
+    // outdated-deps check only covering npm/pip). Registration failure
+    // (e.g. another app already holds this combo) is logged, not fatal —
+    // the rest of the app must still start.
+    let quick_capture_shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::Space);
+    if let Err(e) = app.global_shortcut().register(quick_capture_shortcut) {
+        eprintln!("quick-capture global shortcut registration failed (non-fatal): {e}");
+    }
 
     // Ensure app data dirs exist
     let handle = app.handle().clone();
@@ -342,6 +383,15 @@ fn main() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, event| {
+                    if event.state() == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        show_quick_capture_window(app);
+                    }
+                })
+                .build(),
+        )
         .setup(|app| setup_app(app))
         .invoke_handler(tauri::generate_handler![
             // settings
