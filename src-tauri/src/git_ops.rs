@@ -499,6 +499,47 @@ pub async fn git_get_branches(app: AppHandle, id: String) -> Result<Vec<Value>, 
     }).collect())
 }
 
+const STALE_BRANCH_DAYS: i64 = 60;
+
+/// Flags local branches as "stale" — either already merged into the
+/// current branch (safe to delete, nothing would be lost) or with no
+/// commits in `STALE_BRANCH_DAYS` days (probably abandoned). The current
+/// branch itself is never flagged. Feeds the project health card; see
+/// docs/FUTURE_PLANS.md's separately-scoped "Branch cleanup helper" item
+/// for a future one-click-delete UI built on top of this same data.
+#[tauri::command]
+pub async fn git_get_stale_branches(app: AppHandle, id: String) -> Result<Vec<Value>, String> {
+    let cwd = project_root(&app, &id)?;
+    let current = run_git(&["rev-parse", "--abbrev-ref", "HEAD"], &cwd).unwrap_or_else(|_| "main".into());
+
+    // `git branch --merged` (no arg) compares against HEAD — exactly the
+    // "already merged into what I'm on now" question this card wants to
+    // answer, not "merged into some fixed default branch name".
+    let merged_out = run_git(&["branch", "--merged"], &cwd).unwrap_or_default();
+    let merged: std::collections::HashSet<String> = merged_out.lines()
+        .map(|l| l.trim_start_matches('*').trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+
+    let branches_out = run_git(&["branch"], &cwd)?;
+    let mut stale = Vec::new();
+    for line in branches_out.lines() {
+        let name = line.trim_start_matches('*').trim().to_string();
+        if name.is_empty() || name == current { continue; }
+
+        let last_commit_iso = run_git(&["log", "-1", "--format=%cI", &name], &cwd).unwrap_or_default();
+        let days_since_commit = chrono::DateTime::parse_from_rfc3339(last_commit_iso.trim())
+            .ok()
+            .map(|d| (chrono::Utc::now() - d.with_timezone(&chrono::Utc)).num_days());
+        let is_merged = merged.contains(&name);
+        let is_stale = is_merged || days_since_commit.is_some_and(|d| d > STALE_BRANCH_DAYS);
+        if is_stale {
+            stale.push(json!({ "name": name, "merged": is_merged, "daysSinceCommit": days_since_commit }));
+        }
+    }
+    Ok(stale)
+}
+
 // A dirty working tree is the common reason a checkout refuses; rather
 // than surfacing git's raw "would be overwritten by checkout" text, report
 // `dirty: true` so the UI can offer "Stash & switch" — which is what

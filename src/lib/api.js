@@ -142,6 +142,8 @@ export const api = {
     addDependency:        (id, name, dev) => invoke('projects_add_dependency',       { id, name, dev: dev ?? false }),
     /** @param {string} id @param {string} name @returns {Promise<any>} */
     removeDependency:     (id, name)      => invoke('projects_remove_dependency',    { id, name }),
+    /** npm/pip only — Rust reports {type:'unsupported'}. @param {string} id @returns {Promise<{type: string, outdatedCount: number|null}>} */
+    checkOutdatedDeps:    (id)            => invoke('projects_check_outdated_deps',  { id }),
     /** @param {string} id @returns {Promise<any>} */
     getFileTree:          (id)            => invoke('projects_get_file_tree',        { id }),
     /** @param {string} id @returns {Promise<any>} */
@@ -245,6 +247,8 @@ export const api = {
     pull:           (id)         => invoke('git_pull',             { id }),
     /** @param {string} id @returns {Promise<any>} */
     getAheadBehind: (id)         => invoke('git_get_ahead_behind', { id }),
+    /** Branches already merged into HEAD, or with no commits in 60+ days. @param {string} id @returns {Promise<{name: string, merged: boolean, daysSinceCommit: number|null}[]>} */
+    getStaleBranches: (id)       => invoke('git_get_stale_branches', { id }),
     /** @param {string} id @returns {Promise<any>} */
     initRepo:       (id)         => invoke('git_init_repo',        { id }),
     /** @param {string} id @param {string} entry @returns {Promise<any>} */

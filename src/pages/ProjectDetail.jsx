@@ -26,6 +26,7 @@ import TerminalPanel from '../components/ProjectDetail/TerminalPanel'
 // the Shell mode; same reasoning as CodeEditor.jsx being lazy for Monaco.
 const InteractiveTerminal = lazy(() => import('../components/ProjectDetail/InteractiveTerminal'))
 import GitPanel from '../components/ProjectDetail/GitPanel'
+import HealthCard from '../components/ProjectDetail/HealthCard'
 import ConfirmModal from '../components/ProjectDetail/ConfirmModal'
 import DockerPanel from '../components/ProjectDetail/DockerPanel'
 import EnvPanel from '../components/ProjectDetail/EnvPanel'
@@ -827,6 +828,8 @@ export default function ProjectDetail() {
                 <StatCard label="Notes"         value={projectNotes.length}                               color="var(--blue)"   />
                 <StatCard label="Times Opened"  value={project.meta?.openCount || 0} color="var(--text)" />
               </div>
+
+              <HealthCard projectId={projectId} isRepo={isRepo} gitStatus={gitStatus} aheadBehind={aheadBehind} />
 
               <InfoSection label="Project Path">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '10px 14px' }}>

@@ -357,12 +357,12 @@ fn main() {
             projects_get_dependencies, projects_install_dependencies, projects_update_dependencies,
             projects_add_dependency, projects_remove_dependency, projects_get_file_tree,
             projects_get_scripts, projects_rename, projects_set_archived,
-            projects_export_as_template,
+            projects_export_as_template, projects_check_outdated_deps,
             // git
             git_status, git_commit, git_get_log, git_get_graph_log, git_is_repo, git_get_branches,
             git_switch_branch, git_create_branch, git_push, git_get_readme, git_pull,
             git_stage_files, git_unstage_files, git_diff_file,
-            git_get_ahead_behind,
+            git_get_ahead_behind, git_get_stale_branches,
             git_stash_save, git_stash_list, git_stash_apply, git_stash_pop, git_stash_drop,
             git_discard_file, git_clone_repo, git_delete_branch,
             // ai

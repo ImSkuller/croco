@@ -1023,6 +1023,50 @@ pub async fn projects_remove_dependency(app: AppHandle, id: String, name: String
     exec_in_root(&app, &id, &format!("npm uninstall {}", name))
 }
 
+/// Runs a read-only "what's outdated" check, used by the project health
+/// card. Deliberately NOT built on `exec_in_root` — `npm outdated`/`pip
+/// list --outdated` both exit non-zero specifically when they *found*
+/// something to report, which is success here, not a failure the way a
+/// non-zero exit means for the mutating commands above. stdout is trusted
+/// regardless of exit status; only a genuine failure to launch the
+/// process at all (missing npm/pip, no shell) is an error.
+fn run_capture_stdout(cmd: &str, root: &str) -> Result<String, String> {
+    let output = {
+        #[cfg(windows)]
+        { let mut c = Command::new("cmd"); c.args(["/c", cmd]).current_dir(root); crate::no_window(&mut c); c.output() }
+        #[cfg(not(windows))]
+        { Command::new("sh").args(["-c", cmd]).current_dir(root).output() }
+    }.map_err(|e| e.to_string())?;
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+/// Scoped to npm and pip, both of which can answer "what's outdated"
+/// with a built-in, already-installed subcommand — no extra tooling to
+/// bundle. Cargo has no bundled equivalent (`cargo-outdated` is a
+/// separate, not-bundled subcommand) — Rust projects report
+/// `"type": "unsupported"` rather than guessing.
+#[tauri::command]
+pub async fn projects_check_outdated_deps(app: AppHandle, id: String) -> Result<Value, String> {
+    crate::validate_safe_id(&id)?;
+    let project = get_project(&app, &id).ok_or("Project not found")?;
+    let root = project_root_str(&project);
+    let root_path = Path::new(&root);
+
+    if root_path.join("package.json").exists() {
+        let out = run_capture_stdout("npm outdated --json", &root)?;
+        let parsed: Value = serde_json::from_str(out.trim()).unwrap_or(json!({}));
+        let count = parsed.as_object().map(|m| m.len()).unwrap_or(0);
+        return Ok(json!({ "type": "node", "outdatedCount": count }));
+    }
+    if root_path.join("requirements.txt").exists() {
+        let out = run_capture_stdout("pip list --outdated --format=json", &root)?;
+        let parsed: Value = serde_json::from_str(out.trim()).unwrap_or(json!([]));
+        let count = parsed.as_array().map(|a| a.len()).unwrap_or(0);
+        return Ok(json!({ "type": "python", "outdatedCount": count }));
+    }
+    Ok(json!({ "type": "unsupported", "outdatedCount": null }))
+}
+
 // Returns Err for the two "this project can't be browsed at all" cases
 // (unknown id, root folder missing/moved/deleted) instead of silently
 // returning an empty array like a genuinely empty directory would — the IDE
