@@ -18,20 +18,36 @@
 
 #![deny(clippy::unwrap_used)]
 
-use once_cell::sync::Lazy;
+use once_cell::sync::{Lazy, OnceCell};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
+use std::net::{TcpListener, TcpStream};
 use std::process::{Command, Stdio};
+use std::sync::mpsc;
 use std::sync::{Mutex, PoisonError};
 use std::thread;
+use std::time::Duration;
 use tauri::{AppHandle, Emitter};
+use uuid::Uuid;
 
 static CLAUDE_CLI_PIDS: Lazy<Mutex<HashMap<String, u32>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 fn claude_cli_pids() -> std::sync::MutexGuard<'static, HashMap<String, u32>> {
     CLAUDE_CLI_PIDS.lock().unwrap_or_else(PoisonError::into_inner)
 }
+
+// request_id -> (project_id, channel to deliver the Accept/Reject decision
+// to the thread blocked on that hook's TCP connection). See
+// start_permission_hook_server below for the full design.
+static PENDING_PERMISSIONS: Lazy<Mutex<HashMap<String, (String, mpsc::Sender<Value>)>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+
+fn pending_permissions() -> std::sync::MutexGuard<'static, HashMap<String, (String, mpsc::Sender<Value>)>> {
+    PENDING_PERMISSIONS.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+static PERMISSION_HOOK_PORT: OnceCell<u16> = OnceCell::new();
 
 // True only while `pid` is still the pid tracked for `project_id` — see the
 // stop-then-resend race explained where this is used in claude_cli_send.
@@ -64,6 +80,160 @@ fn claude_cmd() -> Command {
     #[cfg(not(windows))]
     {
         Command::new("claude")
+    }
+}
+
+// Real tool-use gating for "manual" mode. The CLI's own `--permission-mode
+// manual` has no non-interactive prompt channel at all (a `-p` session just
+// auto-denies every tool), which is why the panel used to describe this mode
+// as "denied automatically — no prompt UI in this panel yet". This replaces
+// that with a genuine Accept/Reject flow using Claude Code's PreToolUse hook:
+// the CLI is actually spawned with `--permission-mode acceptEdits` (so its
+// own built-in gate stays out of the way) plus an inline `--settings` JSON
+// (never written into the project's own .claude/settings.json) registering a
+// PreToolUse hook with no matcher, i.e. it fires for every tool. The hook is
+// this small bundled Node script — Node is already guaranteed present
+// because the `claude` CLI itself is an npm package — which phones home over
+// a loopback TCP socket to the listener started below, blocks for the user's
+// decision, and prints the exact JSON contract Claude Code expects back on
+// its own stdout. All of this was verified against the real installed CLI
+// (manual testing, not assumed from docs) before writing this.
+const PERMISSION_HOOK_JS: &str = r#"
+const net = require('net');
+let input = '';
+process.stdin.on('data', d => { input += d; });
+process.stdin.on('end', () => {
+  let payload;
+  try { payload = JSON.parse(input || '{}'); } catch { payload = {}; }
+  const port = parseInt(process.env.CROCO_HOOK_PORT || '0', 10);
+  const projectId = process.env.CROCO_HOOK_PROJECT_ID || '';
+  if (!port) { deny('Croco hook port not set'); return; }
+  let settled = false;
+  const socket = net.createConnection({ host: '127.0.0.1', port }, () => {
+    socket.write(JSON.stringify({
+      projectId,
+      toolName: payload.tool_name || null,
+      toolInput: payload.tool_input || null,
+      toolUseId: payload.tool_use_id || null,
+    }) + '\n');
+  });
+  socket.setTimeout(620000, () => { socket.destroy(); deny('Timed out waiting for a decision in Croco'); });
+  let buf = '';
+  socket.on('data', d => { buf += d; });
+  socket.on('end', () => {
+    if (settled) return;
+    let decision;
+    try { decision = JSON.parse(buf.trim() || '{}'); } catch { decision = {}; }
+    if (decision.decision === 'allow') allow(decision.reason);
+    else deny(decision.reason || 'Rejected in Croco');
+  });
+  socket.on('error', () => deny('Lost connection to Croco'));
+  function allow(reason) {
+    if (settled) return;
+    settled = true;
+    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', permissionDecisionReason: reason || 'Approved in Croco' } }));
+    process.exit(0);
+  }
+  function deny(reason) {
+    if (settled) return;
+    settled = true;
+    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } }));
+    process.exit(0);
+  }
+});
+"#;
+
+// Writes the embedded hook script to the app data dir (overwritten on every
+// call — cheap, and guarantees it can never drift from what this binary
+// actually expects after an app update) and returns its path with forward
+// slashes, which both Windows and the shell that Claude Code uses to run
+// hook commands accept without the backslash-escaping headaches of
+// embedding a Windows path inside a generated JSON string.
+fn permission_hook_script_path(app: &AppHandle) -> Result<String, String> {
+    let dir = crate::app_data_dir(app);
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let path = dir.join("permission-hook.js");
+    std::fs::write(&path, PERMISSION_HOOK_JS).map_err(|e| e.to_string())?;
+    Ok(path.to_string_lossy().replace('\\', "/"))
+}
+
+// Starts the single loopback TCP listener every "manual"-mode session's hook
+// script talks to, once per app launch. Binds to an OS-assigned port on
+// 127.0.0.1 only — never reachable off-machine. Each accepted connection is
+// one tool-use permission request; its handler thread blocks (with a 10
+// minute safety-net timeout) until claude_cli_respond_permission delivers a
+// decision, or claude_cli_stop cancels it because the session was stopped.
+pub fn start_permission_hook_server(app: AppHandle) {
+    let listener = match TcpListener::bind("127.0.0.1:0") {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!("permission hook server failed to bind (manual mode will fall back to deny-all): {e}");
+            return;
+        }
+    };
+    let port = match listener.local_addr() {
+        Ok(addr) => addr.port(),
+        Err(_) => return,
+    };
+    let _ = PERMISSION_HOOK_PORT.set(port);
+
+    thread::spawn(move || {
+        for stream in listener.incoming().map_while(Result::ok) {
+            let app = app.clone();
+            thread::spawn(move || handle_permission_connection(app, stream));
+        }
+    });
+}
+
+fn handle_permission_connection(app: AppHandle, mut stream: TcpStream) {
+    let mut line = String::new();
+    {
+        let mut reader = BufReader::new(&stream);
+        if reader.read_line(&mut line).unwrap_or(0) == 0 {
+            return;
+        }
+    }
+    let request: Value = match serde_json::from_str(&line) {
+        Ok(v) => v,
+        Err(_) => return,
+    };
+    let project_id = request["projectId"].as_str().unwrap_or("").to_string();
+    let request_id = Uuid::new_v4().to_string();
+
+    let (tx, rx) = mpsc::channel::<Value>();
+    pending_permissions().insert(request_id.clone(), (project_id.clone(), tx));
+
+    app.emit("claudecode:permission-request", json!({
+        "projectId": project_id,
+        "requestId": request_id,
+        "toolName": request["toolName"],
+        "toolInput": request["toolInput"],
+    })).ok();
+
+    // Default-deny on timeout or a dropped sender (e.g. the panel/app closed
+    // mid-request) — an edit must never go through silently just because the
+    // decision channel broke.
+    let decision = rx.recv_timeout(Duration::from_secs(600))
+        .unwrap_or_else(|_| json!({ "decision": "deny", "reason": "No response from Croco (timed out)" }));
+    pending_permissions().remove(&request_id);
+
+    let response = decision.to_string() + "\n";
+    let _ = stream.write_all(response.as_bytes());
+    let _ = stream.shutdown(std::net::Shutdown::Both);
+}
+
+#[tauri::command]
+pub async fn claude_cli_respond_permission(request_id: String, decision: String, reason: Option<String>) -> Result<Value, String> {
+    if decision != "allow" && decision != "deny" {
+        return Err(format!("Unsupported decision: {decision}"));
+    }
+    let entry = pending_permissions().remove(&request_id);
+    match entry {
+        Some((_project_id, tx)) => {
+            tx.send(json!({ "decision": decision, "reason": reason })).ok();
+            Ok(json!({ "ok": true }))
+        }
+        None => Ok(json!({ "ok": false, "message": "Request already resolved or expired" })),
     }
 }
 
@@ -129,10 +299,44 @@ pub async fn claude_cli_send(
     };
     let cwd = crate::project_root_str(&project);
 
+    // "manual" has no real CLI-native prompt channel in `-p` mode (see the
+    // doc comment on PERMISSION_HOOK_JS) — run the CLI itself in acceptEdits
+    // so its own gate stays out of the way, and substitute a real hook-based
+    // Accept/Reject gate in front of every tool call instead. Every other
+    // mode behaves exactly as before.
+    let effective_permission_mode = if permission_mode == "manual" { "acceptEdits" } else { permission_mode.as_str() };
+
     let mut cmd = claude_cmd();
-    cmd.args(["-p", "--output-format", "stream-json", "--verbose", "--permission-mode", &permission_mode]);
+    cmd.args(["-p", "--output-format", "stream-json", "--verbose", "--permission-mode", effective_permission_mode]);
     if let Some(sid) = session_id.as_ref().filter(|s| !s.is_empty()) {
         cmd.args(["--resume", sid]);
+    }
+    if permission_mode == "manual" {
+        match PERMISSION_HOOK_PORT.get() {
+            Some(port) => {
+                let hook_path = match permission_hook_script_path(&app) {
+                    Ok(p) => p,
+                    Err(e) => {
+                        claude_cli_pids().remove(&project_id);
+                        return Err(format!("Could not prepare the permission hook: {e}"));
+                    }
+                };
+                let settings_json = json!({
+                    "hooks": {
+                        "PreToolUse": [
+                            { "hooks": [ { "type": "command", "command": format!("node \"{hook_path}\"") } ] }
+                        ]
+                    }
+                }).to_string();
+                cmd.args(["--settings", &settings_json]);
+                cmd.env("CROCO_HOOK_PORT", port.to_string());
+                cmd.env("CROCO_HOOK_PROJECT_ID", &project_id);
+            }
+            None => {
+                claude_cli_pids().remove(&project_id);
+                return Err("The permission-review channel isn't available (it failed to start at launch) — pick a different permission mode.".into());
+            }
+        }
     }
     cmd.current_dir(&cwd)
         .stdin(Stdio::piped())
@@ -226,6 +430,24 @@ pub async fn claude_cli_send(
 #[tauri::command]
 pub async fn claude_cli_stop(project_id: String) -> Result<Value, String> {
     let pid = claude_cli_pids().remove(&project_id);
+    // Cancel any permission request this project is still waiting on —
+    // `taskkill /T` below kills the hook subprocess too, which would sever
+    // its TCP connection anyway, but that races the kill; resolving it here
+    // directly avoids a dangling "awaiting decision" card in the UI and lets
+    // handle_permission_connection's thread exit immediately instead of
+    // waiting out the 10-minute timeout.
+    {
+        let mut guard = pending_permissions();
+        let stale: Vec<String> = guard.iter()
+            .filter(|(_, (pid, _))| pid == &project_id)
+            .map(|(rid, _)| rid.clone())
+            .collect();
+        for rid in stale {
+            if let Some((_, tx)) = guard.remove(&rid) {
+                tx.send(json!({ "decision": "deny", "reason": "Session stopped" })).ok();
+            }
+        }
+    }
     if let Some(pid) = pid {
         #[cfg(windows)]
         {

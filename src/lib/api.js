@@ -515,6 +515,8 @@ export const api = {
       stop:      (projectId)                                           => invoke('claude_cli_stop', { projectId }),
       /** @param {string} projectId @returns {Promise<boolean>} */
       isRunning: (projectId)                                           => invoke('claude_cli_is_running', { projectId }),
+      /** "Manual" mode only — resolves a pending claudecode:permission-request. @param {string} requestId @param {'allow'|'deny'} decision @param {string} [reason] @returns {Promise<any>} */
+      respondPermission: (requestId, decision, reason)                 => invoke('claude_cli_respond_permission', { requestId, decision, reason: reason || null }),
       /** @param {(payload: any) => void} cb @returns {() => void} */
       onEvent:   (cb) => sub('claudecode:event',   cb),
       /** @param {(payload: any) => void} cb @returns {() => void} */
@@ -525,6 +527,8 @@ export const api = {
       onStarted: (cb) => sub('claudecode:started', cb),
       /** @param {(payload: any) => void} cb @returns {() => void} */
       onDone:    (cb) => sub('claudecode:done',    cb),
+      /** "Manual" mode only — fires once per tool call awaiting Accept/Reject. @param {(payload: any) => void} cb @returns {() => void} */
+      onPermissionRequest: (cb) => sub('claudecode:permission-request', cb),
     },
   },
 

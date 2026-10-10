@@ -5,10 +5,79 @@ import AddTodosButton from '../AI/AddTodosButton'
 
 const PERMISSION_MODES = [
   { value: 'plan',        label: 'Plan',         desc: 'Read-only — can look around and propose, never edits or runs anything.' },
-  { value: 'manual',      label: 'Manual',       desc: 'Asks before each tool use (denied automatically — no prompt UI in this panel yet).' },
+  { value: 'manual',      label: 'Manual',       desc: 'Asks before each tool use — review and Accept or Reject right here.' },
   { value: 'acceptEdits', label: 'Accept Edits', desc: 'Auto-accepts file edits. Still won’t run arbitrary commands unprompted.' },
   { value: 'dontAsk',     label: "Don't Ask",    desc: 'Skips confirmation prompts where the CLI allows it.' },
 ]
+
+// Minimal line-level diff for a single old/new string pair — not a real LCS
+// diff (this is a side panel, not the editor), just labeled removed/added
+// blocks capped so one giant tool_use can't blow out the panel.
+const MAX_DIFF_LINES = 24
+function clipLines(text) {
+  const lines = String(text ?? '').split('\n')
+  if (lines.length <= MAX_DIFF_LINES) return lines.join('\n')
+  return lines.slice(0, MAX_DIFF_LINES).join('\n') + `\n… (${lines.length - MAX_DIFF_LINES} more lines)`
+}
+
+function EditDiff({ oldString, newString }) {
+  return (
+    <>
+      {oldString != null && (
+        <pre style={diffBlockStyle('rgba(255,68,68,0.08)', '#ff6b6b')}>{clipLines(oldString).split('\n').map(l => `- ${l}`).join('\n')}</pre>
+      )}
+      {newString != null && (
+        <pre style={diffBlockStyle('rgba(46,204,113,0.08)', '#2ecc71')}>{clipLines(newString).split('\n').map(l => `+ ${l}`).join('\n')}</pre>
+      )}
+    </>
+  )
+}
+
+function diffBlockStyle(bg, color) {
+  return {
+    margin: '4px 0', padding: '6px 8px', borderRadius: 'var(--r-sm)', background: bg, color,
+    fontFamily: 'Geist Mono, monospace', fontSize: 11, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+  }
+}
+
+// Renders whatever a pending PreToolUse hook request looks like, specialized
+// for the tools that actually touch disk (Edit/MultiEdit/Write); anything
+// else (Bash, Read, …) falls back to a plain input dump.
+function PermissionRequestCard({ request, onRespond, responding }) {
+  const { toolName, toolInput } = request
+  let body
+  if (toolName === 'Edit' && toolInput) {
+    body = <EditDiff oldString={toolInput.old_string} newString={toolInput.new_string} />
+  } else if (toolName === 'MultiEdit' && Array.isArray(toolInput?.edits)) {
+    body = toolInput.edits.map((e, i) => <EditDiff key={i} oldString={e.old_string} newString={e.new_string} />)
+  } else if (toolName === 'Write' && toolInput) {
+    body = <pre style={diffBlockStyle('rgba(46,204,113,0.08)', '#2ecc71')}>{clipLines(toolInput.content)}</pre>
+  } else {
+    body = <pre style={diffBlockStyle('var(--card)', 'var(--dim)')}>{clipLines(JSON.stringify(toolInput, null, 2))}</pre>
+  }
+  const filePath = toolInput?.file_path
+  return (
+    <div style={{ margin: '0 12px 10px', padding: '10px 10px 8px', borderRadius: 'var(--r-md)', border: '1px solid var(--accent)', background: 'var(--card)', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)' }}>{toolName}</span>
+        {filePath && <span style={{ fontSize: 10.5, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', wordBreak: 'break-all' }}>{filePath}</span>}
+      </div>
+      {body}
+      <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+        <button
+          onClick={() => onRespond('allow')}
+          disabled={responding}
+          style={{ flex: 1, padding: '6px 0', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer', background: 'var(--accent)', color: 'var(--base)', fontSize: 11, fontWeight: 600, opacity: responding ? 0.6 : 1 }}
+        >Accept</button>
+        <button
+          onClick={() => onRespond('deny')}
+          disabled={responding}
+          style={{ flex: 1, padding: '6px 0', borderRadius: 'var(--r-md)', border: '1px solid rgba(255,68,68,0.4)', cursor: 'pointer', background: 'rgba(255,68,68,0.1)', color: '#ff6b6b', fontSize: 11, fontWeight: 600, opacity: responding ? 0.6 : 1 }}
+        >Reject</button>
+      </div>
+    </div>
+  )
+}
 
 // Renders the transcript from claude -p --output-format stream-json — one
 // JSON object per line describing a turn (system init, assistant text/
@@ -20,6 +89,8 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
   const [messages, setMessages] = useState([]) // [{role, text, cost, error}]
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [pendingPermission, setPendingPermission] = useState(null) // {requestId, toolName, toolInput}
+  const [respondingPermission, setRespondingPermission] = useState(false)
   const sessionIdRef = useRef(null)
   const listRef = useRef(null)
 
@@ -82,8 +153,13 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
     const offDone = window.api?.ide.claudeCode.onDone((payload) => {
       if (payload?.projectId !== projectId) return
       setSending(false)
+      setPendingPermission(null)
     })
-    return () => { offEvent?.(); offStderr?.(); offDone?.() }
+    const offPermission = window.api?.ide.claudeCode.onPermissionRequest((payload) => {
+      if (payload?.projectId !== projectId) return
+      setPendingPermission(payload)
+    })
+    return () => { offEvent?.(); offStderr?.(); offDone?.(); offPermission?.() }
   }, [projectId, appendAssistantChunk])
 
   useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }) }, [messages])
@@ -103,9 +179,24 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
     }
   }
 
+  const respondPermission = async (decision) => {
+    if (!pendingPermission || respondingPermission) return
+    setRespondingPermission(true)
+    try {
+      await window.api.ide.claudeCode.respondPermission(pendingPermission.requestId, decision)
+      setMessages(prev => [...prev, { role: 'tool', text: `${decision === 'allow' ? 'Accepted' : 'Rejected'}: ${pendingPermission.toolName}`, streaming: false }])
+    } catch (e) {
+      toast.error('Could not send the decision', e.message)
+    } finally {
+      setPendingPermission(null)
+      setRespondingPermission(false)
+    }
+  }
+
   const stop = () => {
     window.api?.ide.claudeCode.stop(projectId).catch(() => {})
     setSending(false)
+    setPendingPermission(null)
     // The killed process won't emit a `result` event to close out its own
     // streaming bubble (and the backend now deliberately withholds a stale
     // claudecode:done for it too — see claude_cli.rs), so without this a
@@ -174,10 +265,14 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
                 )}
               </div>
             ))}
-            {sending && !(messages[messages.length - 1]?.role === 'assistant' && messages[messages.length - 1]?.streaming) && (
+            {sending && !pendingPermission && !(messages[messages.length - 1]?.role === 'assistant' && messages[messages.length - 1]?.streaming) && (
               <div style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Thinking…</div>
             )}
           </div>
+
+          {pendingPermission && (
+            <PermissionRequestCard request={pendingPermission} onRespond={respondPermission} responding={respondingPermission} />
+          )}
 
           <div style={{ padding: 10, borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexShrink: 0 }}>
             <textarea

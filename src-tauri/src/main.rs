@@ -235,6 +235,11 @@ fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("quick-capture global shortcut registration failed (non-fatal): {e}");
     }
 
+    // Loopback TCP listener the Claude Code panel's "manual" mode hook
+    // script talks to for real per-tool-call Accept/Reject — see
+    // claude_cli.rs::start_permission_hook_server.
+    claude_cli::start_permission_hook_server(app.handle().clone());
+
     // Ensure app data dirs exist
     let handle = app.handle().clone();
     let data_dir = app_data_dir(&handle);
@@ -493,7 +498,7 @@ fn main() {
             // ide module (beta)
             ide_read_file, ide_write_file,
             // embedded Claude Code CLI panel (beta, part of the ide module)
-            claude_cli_check, claude_cli_send, claude_cli_stop, claude_cli_is_running,
+            claude_cli_check, claude_cli_send, claude_cli_stop, claude_cli_is_running, claude_cli_respond_permission,
             // ai module (beta) — storage brain
             brain_rebuild_index, brain_search,
             brain_memory_create, brain_memory_update, brain_memory_delete, brain_memory_get, brain_memory_list,
