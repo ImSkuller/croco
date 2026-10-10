@@ -45,6 +45,12 @@ fn default_habits() -> Value {
         "commitDates": Vec::<String>::new(),
         "totalCommits": 0,
         "appOpenDates": Vec::<String>::new(),
+        // Dashboard's activity heatmap (independent of Patterns' commit-only
+        // heatmap) — any day with at least one tracked metric below, not
+        // just commits. Accumulates the same way commitDates/appOpenDates
+        // do, sidestepping the activity log's 500-entry cap (see this
+        // module's header comment).
+        "activityDates": Vec::<String>::new(),
         "notesCreated": 0,
         "notesByWeekday": vec![0; 7],
         "todosCreated": 0,
@@ -141,36 +147,51 @@ pub fn track(app: &AppHandle, metric: &str, data: Value) {
     let hour = local.hour() as usize;
     let weekday = local.weekday().num_days_from_sunday() as usize; // 0 = Sunday
     let project_id = data["projectId"].as_str().unwrap_or("").to_string();
+    let today = local.format("%Y-%m-%d").to_string();
 
-    match metric {
+    // Unrecognized metrics still bail out before anything is touched,
+    // same as before this function also tracked activityDates — an
+    // unknown metric string must not write the file or count as activity.
+    let counted_activity = match metric {
         "commit" => {
             incr_array(&mut habits, "commitsByHour", hour);
             incr_array(&mut habits, "commitsByWeekday", weekday);
             incr_counter(&mut habits, "totalCommits");
-            add_commit_date(&mut habits, &local.format("%Y-%m-%d").to_string());
+            add_commit_date(&mut habits, &today);
             touch_project_stat(&mut habits, &project_id, "commits", &now_utc);
+            true
         }
         "note_created" => {
             incr_counter(&mut habits, "notesCreated");
             incr_array(&mut habits, "notesByWeekday", weekday);
+            true
         }
         "todo_created" => {
             incr_counter(&mut habits, "todosCreated");
             touch_project_stat(&mut habits, &project_id, "todos", &now_utc);
+            true
         }
         "todo_completed" => {
             incr_counter(&mut habits, "todosCompleted");
+            true
         }
         "project_open" => {
             touch_project_stat(&mut habits, &project_id, "opens", &now_utc);
+            true
         }
         "project_run_time" => {
             let seconds = data["seconds"].as_u64().unwrap_or(0);
             if seconds > 0 {
                 add_project_run_time(&mut habits, &project_id, seconds, &now_utc);
+                true
+            } else {
+                false
             }
         }
         _ => return,
+    };
+    if counted_activity {
+        add_unique_date(&mut habits, "activityDates", &today);
     }
 
     habits["lastUpdatedAt"] = json!(now_utc);
@@ -290,29 +311,43 @@ pub fn personality_backfill_from_activity(app: AppHandle) -> Result<Value, Strin
         let weekday = local.weekday().num_days_from_sunday() as usize;
         let project_id = entry["projectId"].as_str().unwrap_or("").to_string();
 
-        match entry["type"].as_str().unwrap_or("") {
+        let day = local.format("%Y-%m-%d").to_string();
+        let counted_activity = match entry["type"].as_str().unwrap_or("") {
             "git.committed" => {
                 incr_array(&mut habits, "commitsByHour", hour);
                 incr_array(&mut habits, "commitsByWeekday", weekday);
                 incr_counter(&mut habits, "totalCommits");
-                add_commit_date(&mut habits, &local.format("%Y-%m-%d").to_string());
+                add_commit_date(&mut habits, &day);
                 touch_project_stat(&mut habits, &project_id, "commits", ts);
+                true
             }
             "note.created" => {
                 incr_counter(&mut habits, "notesCreated");
                 incr_array(&mut habits, "notesByWeekday", weekday);
+                true
             }
             "todo.created" => {
                 incr_counter(&mut habits, "todosCreated");
                 touch_project_stat(&mut habits, &project_id, "todos", ts);
+                true
             }
             "todo.completed" => {
                 incr_counter(&mut habits, "todosCompleted");
+                true
             }
             "ide.opened" => {
                 touch_project_stat(&mut habits, &project_id, "opens", ts);
+                true
             }
-            _ => {}
+            _ => false,
+        };
+        // Same activityDates signal track() maintains going forward — this
+        // backfill is the one-time path that seeds history from whatever
+        // the capped activity log still has, so a long-time user's Dashboard
+        // heatmap isn't empty on first use of this feature (just limited to
+        // however much of their history survived the 500-entry cap).
+        if counted_activity {
+            add_unique_date(&mut habits, "activityDates", &day);
         }
     }
 

@@ -96,12 +96,20 @@ async function main() {
     assert(Array.isArray(startProfile.commitsByHour) && startProfile.commitsByHour.length === 24, 'commitsByHour has 24 buckets')
     assert(Array.isArray(startProfile.commitsByWeekday) && startProfile.commitsByWeekday.length === 7, 'commitsByWeekday has 7 buckets')
 
+    assert(Array.isArray(startProfile.activityDates) && startProfile.activityDates.length === 0, 'isolated profile starts with 0 activityDates')
+
     // ── Notes tracking ──────────────────────────────────────────────────
     await callApi(driver, 'notes.create', { title: 'Habit test note', content: 'hi' })
     await callApi(driver, 'notes.create', { title: 'Second note', content: 'hi again' })
     const afterNotes = await callApi(driver, 'personality.getProfile')
     assert(afterNotes.notesCreated === 2, `notesCreated incremented to 2 (got ${afterNotes.notesCreated})`)
     assert(afterNotes.notesByWeekday.reduce((a, b) => a + b, 0) === 2, 'notesByWeekday sums to 2')
+    // Dashboard's activity heatmap (independent of Patterns' commit-only
+    // one) — today's date must show up exactly once despite 2 separate
+    // note-creation events (add_unique_date dedupes per day).
+    const today = new Date().toISOString().slice(0, 10)
+    assert(afterNotes.activityDates.includes(today), `activityDates includes today (${today}) after creating notes (got ${JSON.stringify(afterNotes.activityDates)})`)
+    assert(afterNotes.activityDates.filter(d => d === today).length === 1, 'activityDates dedupes multiple same-day events into one entry')
 
     // ── Todos tracking ──────────────────────────────────────────────────
     const todo1 = await callApi(driver, 'todos.create', { title: 'Habit test todo 1' })

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, NavLink } from 'react-router-dom'
 import { PlusIcon, FolderIcon, CheckCircleIcon, NoteIcon2 } from '../constants/SimpleSvgExports.jsx'
 import { StatCard, SectionHeader, ProjectCard, TodoItem, NoteItem, TopBtn, FavChip, SuggestionsCard } from '../components/Dashboard/Exports.jsx'
+import CommitHeatmapCard from '../components/Patterns/CommitHeatmapCard'
 import { useToast } from '../components/Toast/useToast.js'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
 import useDiscordPresence from '../hooks/useDiscordPresence'
@@ -201,6 +202,15 @@ export default function Dashboard() {
           <div className="pm-grid-4">
             {stats.map(stat => <StatCard key={stat.label} stat={stat} />)}
           </div>
+
+          {/* Activity heatmap — every tracked metric (commits, notes,
+              todos, project opens/runs), independent of Patterns' own
+              commit-only heatmap. Hidden until there's at least one day
+              of history so a fresh install doesn't show a wall of empty
+              cells above everything else. */}
+          {profile?.activityDates?.length > 0 && (
+            <CommitHeatmapCard dates={profile.activityDates} title="Activity" unitLabel="action" />
+          )}
 
           {/* Language bar */}
           {languages.length > 0 && (
