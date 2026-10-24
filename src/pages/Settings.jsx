@@ -11,6 +11,7 @@ import ObsidianSection from '../components/Settings/ObsidianSection'
 import ModulesSection from '../components/Settings/ModulesSection'
 import TagsSection from '../components/Settings/TagsSection'
 import UpdatesSection from '../components/Settings/UpdatesSection'
+import TerminalSection from '../components/Settings/TerminalSection'
 import ShortcutsSection from '../components/Settings/ShortcutsSection'
 import DangerSection from '../components/Settings/DangerSection'
 import useDiscordPresence from '../hooks/useDiscordPresence'
@@ -59,6 +60,7 @@ const NAV_SECTIONS = [
   { id: 'storage',    label: 'Storage',      icon: <DatabaseIcon /> },
   { id: 'obsidian',   label: 'Obsidian',     icon: <VaultIcon />   },
   { id: 'shortcuts',  label: 'Shortcuts',    icon: <KeyboardIcon />},
+  { id: 'terminal',   label: 'Terminal',     icon: <APIIcon />     },
   { id: 'updates',    label: 'Updates',      icon: <RefreshIcon /> },
   { id: 'danger',     label: 'Danger Zone',  icon: <ShieldIcon />  },
 ]
@@ -1554,6 +1556,9 @@ export default function Settings() {
                 obsidianSyncing={obsidianSyncing} handleObsidianSyncNow={handleObsidianSyncNow}
               />
             )}
+
+            {/* Terminal app */}
+            {activeSection === 'terminal' && <TerminalSection toast={toast} />}
 
             {/* Updates */}
             {activeSection === 'updates' && (

@@ -630,6 +630,14 @@ export const api = {
     onProgress: (cb) => sub('updates:progress', cb),
   },
 
+  // ── Terminal app (`croco` on PATH) ───────────────────────────────────────────
+  cli: {
+    /** @returns {Promise<{available:boolean, installed:boolean, needsRestart:boolean, binPath:string|null}>} */
+    status:    () => invoke('cli_status'),
+    install:   () => invoke('cli_install'),
+    uninstall: () => invoke('cli_uninstall'),
+  },
+
   // ── App lifecycle ─────────────────────────────────────────────────────────────
   app: {
     /** @returns {Promise<void>} */
