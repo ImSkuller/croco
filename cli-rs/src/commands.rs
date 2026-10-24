@@ -23,7 +23,7 @@ pub const COMMANDS: &[Cmd] = &[
     Cmd { name: "todos",     args: "[all|done|<project>]",      desc: "List todos (open by default)" },
     Cmd { name: "add",       args: "<title> [!high] [@project] [due:YYYY-MM-DD]", desc: "Add a todo" },
     Cmd { name: "done",      args: "<# or text>",               desc: "Tick a todo off (or back on)" },
-    Cmd { name: "rm",        args: "<# or text>",               desc: "Delete a todo" },
+    Cmd { name: "rm",        args: "<# or text>",               desc: "Move a todo to the app's Trash" },
     Cmd { name: "notes",     args: "[filter]",                  desc: "List notes" },
     Cmd { name: "note",      args: "<title> [ : body]",         desc: "Create a note" },
     Cmd { name: "read",      args: "<# or text>",               desc: "Print a note" },
@@ -402,7 +402,11 @@ fn toggle_todo(ctx: &Ctx, token: &str) -> Outcome {
 
 fn remove_todo(ctx: &Ctx, token: &str) -> Outcome {
     let t = match pick_todo(ctx, token) { Ok(t) => t, Err(e) => return err(&e) };
-    match ctx.store.remove(Kind::Todos, s(&t, "id")) {
+    // Soft delete, like the app: set trashedAt so it lands in Trash and can be
+    // restored, instead of removing the file/row outright.
+    let mut t = t;
+    t["trashedAt"] = json!(Utc::now().to_rfc3339());
+    match ctx.store.save(Kind::Todos, &t) {
         Ok(()) => {
             ctx.last_todos.borrow_mut().clear();
             ok(&format!("Deleted {}", bold(s(&t, "title"))))

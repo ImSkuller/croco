@@ -44,7 +44,12 @@ impl Prompt {
         let t = self.text();
         let Some(rest) = t.strip_prefix('/') else { return vec![] };
         if rest.contains(char::is_whitespace) { return vec![]; }
-        COMMANDS.iter().filter(|c| c.name.starts_with(&rest.to_lowercase())).take(MAX_SUGGESTIONS).collect()
+        let want = rest.to_lowercase();
+        let mut hits: Vec<&'static Cmd> = COMMANDS.iter().filter(|c| c.name.starts_with(&want)).collect();
+        // An exact name (`/note` vs `/notes`) always ranks first.
+        hits.sort_by_key(|c| c.name != want);
+        hits.truncate(MAX_SUGGESTIONS);
+        hits
     }
 
     /// While typing arguments, the usage line for the command being typed.

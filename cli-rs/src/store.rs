@@ -122,23 +122,6 @@ impl Store {
         Ok(())
     }
 
-    pub fn remove(&self, kind: Kind, id: &str) -> Result<(), String> {
-        safe_id(id)?;
-        if self.sqlite {
-            self.db()?
-                .execute(&format!("DELETE FROM {} WHERE id = ?1", kind.table()), params![id])
-                .map_err(|e| e.to_string())?;
-        } else {
-            let dir = self.data_dir.join(kind.dir());
-            let _ = fs::remove_file(dir.join(format!("{id}.json")));
-            if kind == Kind::Notes {
-                let _ = fs::remove_file(dir.join(format!("{id}.md")));
-            }
-        }
-        self.touch();
-        Ok(())
-    }
-
     /// Body text of a note (a sidecar .md for JSON storage, `_content` in SQLite).
     pub fn note_content(&self, note: &Value) -> String {
         if self.sqlite {
