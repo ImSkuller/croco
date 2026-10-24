@@ -103,12 +103,15 @@ export default function Notes() {
     // an empty query already matches every note via the instant filter
     // below regardless of whatever stale body-match state lingers here.
     if (!q || !window.api) return
+    let stale = false
     const handle = setTimeout(() => {
       window.api.notes.search(q, project === 'All' ? undefined : project)
-        .then(setBodyMatches)
-        .catch(() => setBodyMatches(null))
+        .then(r => { if (!stale) setBodyMatches(r) })
+        .catch(() => { if (!stale) setBodyMatches(null) })
     }, 250)
-    return () => clearTimeout(handle)
+    // A newer query (or project) supersedes this one: drop its late reply and
+    // the previous query's matches so they can't leak into the new result.
+    return () => { stale = true; clearTimeout(handle); setBodyMatches(null) }
   }, [search, project])
 
   const bodySnippetById = useMemo(() => {
