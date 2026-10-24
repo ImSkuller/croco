@@ -512,20 +512,35 @@ pub async fn git_get_stale_branches(app: AppHandle, id: String) -> Result<Vec<Va
     let cwd = project_root(&app, &id)?;
     let current = run_git(&["rev-parse", "--abbrev-ref", "HEAD"], &cwd).unwrap_or_else(|_| "main".into());
 
-    // `git branch --merged` (no arg) compares against HEAD — exactly the
-    // "already merged into what I'm on now" question this card wants to
-    // answer, not "merged into some fixed default branch name".
-    let merged_out = run_git(&["branch", "--merged"], &cwd).unwrap_or_default();
+    // Merged-ness is measured against the repo's default branch, never HEAD:
+    // against HEAD every ancestor of whatever you're on (main, develop, a
+    // brand-new branch) would be reported as "merged → safe to delete".
+    let default_branch = run_git(&["symbolic-ref", "--short", "refs/remotes/origin/HEAD"], &cwd)
+        .ok()
+        .map(|s| s.trim().trim_start_matches("origin/").to_string())
+        .filter(|s| !s.is_empty())
+        .or_else(|| {
+            ["main", "master", "develop"].iter().find(|b| {
+                run_git(&["rev-parse", "--verify", "--quiet", &format!("refs/heads/{b}")], &cwd).is_ok()
+            }).map(|b| b.to_string())
+        });
+    let merged_out = match &default_branch {
+        Some(d) => run_git(&["branch", "--merged", d], &cwd).unwrap_or_default(),
+        None => String::new(),
+    };
     let merged: std::collections::HashSet<String> = merged_out.lines()
-        .map(|l| l.trim_start_matches('*').trim().to_string())
+        .map(|l| l.trim_start_matches(['*', '+']).trim().to_string())
         .filter(|s| !s.is_empty())
         .collect();
 
     let branches_out = run_git(&["branch"], &cwd)?;
     let mut stale = Vec::new();
     for line in branches_out.lines() {
-        let name = line.trim_start_matches('*').trim().to_string();
-        if name.is_empty() || name == current { continue; }
+        // `*` = current, `+` = checked out in another worktree; `(HEAD
+        // detached at …)` isn't a branch at all.
+        let name = line.trim_start_matches(['*', '+']).trim().to_string();
+        if name.is_empty() || name.starts_with('(') || name == current { continue; }
+        if default_branch.as_deref() == Some(name.as_str()) { continue; }
 
         let last_commit_iso = run_git(&["log", "-1", "--format=%cI", &name], &cwd).unwrap_or_default();
         let days_since_commit = chrono::DateTime::parse_from_rfc3339(last_commit_iso.trim())
