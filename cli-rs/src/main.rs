@@ -13,12 +13,22 @@ mod ui;
 use commands::{Ctx, Outcome};
 use std::io::IsTerminal;
 
+#[cfg(windows)]
+fn ansi_ok() -> bool {
+    crossterm::ansi_support::supports_ansi()
+}
+
+#[cfg(not(windows))]
+fn ansi_ok() -> bool {
+    true
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
 
     let want_color = std::env::var_os("NO_COLOR").is_none() && std::io::stdout().is_terminal();
     // On Windows this also switches the console into VT mode where needed.
-    ui::set_color(want_color && crossterm::ansi_support::supports_ansi());
+    ui::set_color(want_color && ansi_ok());
 
     let ctx = Ctx::new(store::Store::open());
 

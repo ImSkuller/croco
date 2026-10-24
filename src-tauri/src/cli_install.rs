@@ -55,6 +55,7 @@ pub async fn cli_status(app: AppHandle) -> Result<Value, String> {
     let Some(bin) = bundled_cli(&app) else {
         return Ok(json!({ "available": false, "installed": false, "needsRestart": false, "binPath": null }));
     };
+    #[cfg(windows)]
     let dir = bin.parent().map(|p| p.to_path_buf()).unwrap_or_default();
 
     #[cfg(windows)]
@@ -68,7 +69,7 @@ pub async fn cli_status(app: AppHandle) -> Result<Value, String> {
             .and_then(|l| std::fs::read_link(&l).ok())
             .map(|t| t == bin)
             .unwrap_or(false);
-        let on_path = link_path().and_then(|l| l.parent().map(|p| path_has(p))).unwrap_or(false);
+        let on_path = link_path().and_then(|l| l.parent().map(path_has)).unwrap_or(false);
         (linked, linked && !on_path)
     };
 
