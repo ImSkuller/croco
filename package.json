@@ -8,8 +8,7 @@
   "type": "module",
   "release": "Beta",
   "bin": {
-    "pm": "cli/index.js",
-    "croco": "cli/croco.js"
+    "pm": "cli/index.js"
   },
   "scripts": {
     "dev": "vite",
