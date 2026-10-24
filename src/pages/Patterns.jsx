@@ -20,6 +20,7 @@ export default function Patterns() {
   useDiscordPresence('Browsing Croco', 'Patterns')
   const profile  = useData('personality')
   const projects = useData('projects') || EMPTY_LIST
+  const todos    = useData('todos') || EMPTY_LIST
   const ensure   = useDataStore(s => s.ensure)
 
   useEffect(() => {
@@ -85,7 +86,7 @@ export default function Patterns() {
           commitsByWeekday={profile.commitsByWeekday || Array(7).fill(0)}
           totalCommits={profile.totalCommits || 0}
         />
-        <TodoCompletionCard todosCreated={profile.todosCreated || 0} todosCompleted={profile.todosCompleted || 0} />
+        <TodoCompletionCard todos={todos} />
         <NotesRhythmCard notesCreated={profile.notesCreated || 0} notesByWeekday={profile.notesByWeekday || Array(7).fill(0)} />
         <LanguageMixCard projects={projects} />
         <ProjectAttentionCard projectStats={profile.projectStats || {}} projects={projects} />
