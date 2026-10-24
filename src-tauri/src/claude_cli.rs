@@ -206,6 +206,9 @@ pub fn start_permission_hook_server(app: AppHandle) {
 fn handle_permission_connection(app: AppHandle, mut stream: TcpStream) {
     let mut line = String::new();
     {
+        // A client that connects and never sends a request must not pin this
+        // thread forever.
+        let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(10)));
         let mut reader = BufReader::new(&stream);
         if reader.read_line(&mut line).unwrap_or(0) == 0 {
             return;
