@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { PlusIcon, ClockIcon, CheckCircleIcon, ListViewIcon } from '../constants/SimpleSvgExports'
+import { PlusIcon, ClockIcon, CheckCircleIcon, ListViewIcon, GridIcon } from '../constants/SimpleSvgExports'
 import { SettingsIcon } from '../constants/SvgExports.jsx'
-import { TodoRow, TodoGroup, TopBtn, SearchBox, FilterTab, PriorityTab } from '../components/Todo/Exports'
+import { TodoRow, TodoGroup, KanbanBoard, TopBtn, SearchBox, FilterTab, PriorityTab } from '../components/Todo/Exports'
 import PriorityManagerModal from '../components/Todo/PriorityManagerModal'
 import { ScheduleRow, ScheduleModal } from '../components/Schedules/Exports'
 import { useKeyboard } from '../hooks/useKeyboard'
@@ -32,6 +32,10 @@ export default function Todo() {
   const [newDueDate,  setNewDueDate]  = useState('')
   const [managingPriorities, setManagingPriorities] = useState(false)
   const [section,        setSection]        = useState('tasks') // 'tasks' | 'schedules'
+  // Persisted like the IDE panel's open/tab state (CodeEditor.jsx) — a
+  // view preference, not data, so localStorage is the right place for it.
+  const [taskView, setTaskView] = useState(() => { try { return localStorage.getItem('croco:todo:view') || 'list' } catch { return 'list' } })
+  useEffect(() => { try { localStorage.setItem('croco:todo:view', taskView) } catch { /* private mode */ } }, [taskView])
   const [scheduleFilter, setScheduleFilter]  = useState('Upcoming')
   const [scheduleModal,  setScheduleModal]   = useState(null) // null = closed, 'new' = create, object = edit
   const addInputRef  = useRef(null)
@@ -88,6 +92,27 @@ export default function Todo() {
     patchData('todos', prev => (prev || []).map(t => t.id === id ? { ...t, completed: !t.completed, completedAt: !t.completed ? new Date().toISOString() : null } : t))
     const updated = await window.api.todos.toggle(id).catch(err => { console.error(err); refreshData('todos'); return null })
     if (updated) patchData('todos', prev => (prev || []).map(t => t.id === id ? { ...t, ...updated } : t))
+  }
+
+  // Board-view drag target — `status` (backlog/doing/done) is separate
+  // from `completed`/`completedAt`, which stay the source of truth
+  // everywhere else (counts, filters, webhook/activity-log side effects on
+  // toggle()) — so crossing into/out of the Done column also calls
+  // toggle() for those side effects, not just a plain field patch.
+  const moveTodoStatus = async (id, status) => {
+    if (!window.api) return
+    const todo = liveTodos.find(t => t.id === id)
+    if (!todo) return
+    const wasCompleted = !!todo.completed
+    const willBeCompleted = status === 'done'
+    patchData('todos', prev => (prev || []).map(t => t.id === id ? {
+      ...t, status,
+      ...(wasCompleted !== willBeCompleted ? { completed: willBeCompleted, completedAt: willBeCompleted ? new Date().toISOString() : null } : {}),
+    } : t))
+    if (wasCompleted !== willBeCompleted) {
+      await window.api.todos.toggle(id).catch(err => { console.error(err); refreshData('todos') })
+    }
+    await window.api.todos.update(id, { status }).catch(err => { console.error(err); refreshData('todos') })
   }
 
   // Soft delete (Phase 6 trash) — patch trashedAt rather than filtering the
@@ -328,6 +353,25 @@ export default function Todo() {
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)' }}>
+            <button
+              onClick={() => setTaskView('list')}
+              title="List view"
+              style={{
+                display: 'flex', alignItems: 'center', padding: '5px 8px', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer',
+                background: taskView === 'list' ? 'var(--card)' : 'transparent', color: taskView === 'list' ? 'var(--text)' : 'var(--dimmer)',
+              }}
+            ><ListViewIcon size={13} /></button>
+            <button
+              onClick={() => setTaskView('board')}
+              title="Board view"
+              style={{
+                display: 'flex', alignItems: 'center', padding: '5px 8px', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer',
+                background: taskView === 'board' ? 'var(--card)' : 'transparent', color: taskView === 'board' ? 'var(--text)' : 'var(--dimmer)',
+              }}
+            ><GridIcon size={13} /></button>
+          </div>
+
+          <div style={{ display: 'flex', gap: 2, padding: 3, background: 'var(--border)', borderRadius: 'var(--r-md)' }}>
             <PriorityTab label="All" active={priority === 'All'} onClick={() => setPriority('All')} />
             {priorities.map(p => (
               <PriorityTab key={p.id} label={p.label} color={p.color} bg={hexToRgba(p.color)} active={priority === p.id} onClick={() => setPriority(p.id)} />
@@ -389,7 +433,7 @@ export default function Todo() {
       {/* ── Content ── */}
       {section === 'tasks' ? (
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-        <div className="pm-page" style={{ maxWidth: 800, margin: '0 auto', padding: '24px 28px' }}>
+        <div className="pm-page" style={{ maxWidth: taskView === 'board' ? 'none' : 800, margin: '0 auto', padding: '24px 28px' }}>
 
           {/* Add new task inline */}
           {adding && (
@@ -462,8 +506,25 @@ export default function Todo() {
             </div>
           )}
 
+          {/* Board view */}
+          {!loading && taskView === 'board' && (
+            <KanbanBoard
+              todos={filtered}
+              priorities={priorities}
+              onMoveStatus={moveTodoStatus}
+              onEdit={startEdit}
+              onDelete={remove}
+              editingId={editingId}
+              editText={editText}
+              setEditText={setEditText}
+              onSaveEdit={saveEdit}
+              onCancelEdit={cancelEdit}
+              editInputRef={editInputRef}
+            />
+          )}
+
           {/* Empty state */}
-          {!loading && filtered.length === 0 && (
+          {!loading && taskView === 'list' && filtered.length === 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: 14 }}>
               <div style={{
                 width: 64, height: 64, borderRadius: 'var(--r-xl)',
@@ -496,7 +557,7 @@ export default function Todo() {
           )}
 
           {/* Grouped view */}
-          {!loading && showGrouped && filtered.length > 0 && (
+          {!loading && taskView === 'list' && showGrouped && filtered.length > 0 && (
             <>
               {groupedByPriority.map(({ priority: p, todos: pTodos }) => pTodos.length > 0 && (
                 <TodoGroup key={p.id} label={`${p.label} Priority`} color={p.color} todos={pTodos} priorities={priorities} onToggle={toggle} onDelete={remove} onEdit={startEdit} editingId={editingId} editText={editText} setEditText={setEditText} onSaveEdit={saveEdit} onCancelEdit={cancelEdit} editInputRef={editInputRef} />
@@ -508,7 +569,7 @@ export default function Todo() {
           )}
 
           {/* Flat view */}
-          {!loading && !showGrouped && filtered.length > 0 && (
+          {!loading && taskView === 'list' && !showGrouped && filtered.length > 0 && (
             <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
               {filtered.map((todo, i) => (
                 <TodoRow
