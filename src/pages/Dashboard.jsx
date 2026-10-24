@@ -117,7 +117,7 @@ export default function Dashboard() {
     },
     {
       label: 'Open Todos', value: String(activeCount),
-      sub: `${liveTodos.filter(t => t.completed).length} completed`, dot: '#ff6b35',
+      sub: activeCount === 1 ? 'task waiting' : 'tasks waiting', dot: '#ff6b35',
       valueColor: activeCount > 0 ? '#ff6b35' : '#4aff91',
     },
     {
