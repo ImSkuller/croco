@@ -16,7 +16,7 @@ use once_cell::sync::Lazy;
 use semver::Version;
 use serde_json::{json, Value};
 use std::sync::{Mutex, PoisonError};
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 use tauri_plugin_updater::{Update, UpdaterExt};
 
 fn parse_version(v: &str) -> Option<Version> {
@@ -96,16 +96,29 @@ pub async fn updates_check(app: AppHandle) -> Result<Value, String> {
 
 #[tauri::command]
 pub async fn updates_install(app: AppHandle) -> Result<(), String> {
-    let update = PENDING_UPDATE.lock().unwrap_or_else(PoisonError::into_inner).take();
+    // Cloned, not taken: if the download or signature check fails the user
+    // can hit "Install" again without having to re-run a check first.
+    let update = PENDING_UPDATE.lock().unwrap_or_else(PoisonError::into_inner).clone();
     let Some(update) = update else {
         return Err("No update was found — run a check first.".into());
     };
 
+    let mut downloaded: u64 = 0;
+    let progress_app = app.clone();
     update
-        .download_and_install(|_chunk, _total| {}, || {})
+        .download_and_install(
+            move |chunk, total| {
+                downloaded += chunk as u64;
+                progress_app
+                    .emit("updates:progress", json!({ "downloaded": downloaded, "total": total }))
+                    .ok();
+            },
+            || {},
+        )
         .await
         .map_err(|e| e.to_string())?;
 
+    PENDING_UPDATE.lock().unwrap_or_else(PoisonError::into_inner).take();
     app.restart();
 }
 

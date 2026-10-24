@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { RefreshIcon, DownloadIcon, CheckCircleIcon } from '../../constants/SimpleSvgExports'
 import { SectionTitle, SettingsCard, FieldLabel, FieldDesc, InfoBox } from './Exports'
 
@@ -5,6 +6,28 @@ export default function UpdatesSection({
   updateChecking, setUpdateChecking, updateInfo, setUpdateInfo,
   updateInstalling, setUpdateInstalling, toast,
 }) {
+  const [progress, setProgress] = useState(null) // { downloaded, total }
+
+  // Opening the Updates tab shows the real state right away instead of an
+  // empty card that needs a manual "Check now".
+  useEffect(() => {
+    if (!window.api?.updates || updateInfo) return
+    setUpdateChecking(true)
+    window.api.updates.check()
+      .then(setUpdateInfo)
+      .catch(() => setUpdateInfo({ error: true }))
+      .finally(() => setUpdateChecking(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (!updateInstalling || !window.api?.updates?.onProgress) return
+    const off = window.api.updates.onProgress(setProgress)
+    return () => { off(); setProgress(null) }
+  }, [updateInstalling])
+
+  const pct = progress?.total ? Math.min(100, Math.round((progress.downloaded / progress.total) * 100)) : null
+
   return (
     <>
       <SectionTitle icon={<RefreshIcon />} title="Updates" desc="Check for the latest version of Croco." />
@@ -54,6 +77,16 @@ export default function UpdatesSection({
                 </div>
               </div>
             </div>
+            {updateInfo.hasUpdate && updateInfo.body && (
+              <pre style={{ margin: '0 0 12px', maxHeight: 160, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: 11.5, lineHeight: 1.5, color: 'var(--dim)', fontFamily: 'Geist, sans-serif' }}>
+                {updateInfo.body}
+              </pre>
+            )}
+            {updateInstalling && (
+              <div style={{ height: 5, borderRadius: 'var(--r-sm)', background: 'var(--border)', marginBottom: 10, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: pct == null ? '35%' : `${pct}%`, background: 'var(--accent)', transition: 'width 0.2s' }} />
+              </div>
+            )}
             {updateInfo.hasUpdate && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <button
@@ -76,7 +109,7 @@ export default function UpdatesSection({
                     fontSize: 12, fontWeight: 600, fontFamily: 'Geist, sans-serif', cursor: updateInstalling ? 'default' : 'pointer',
                   }}
                 >
-                  {updateInstalling ? 'Installing…' : `Install v${updateInfo.latest}`}
+                  {updateInstalling ? (pct == null ? 'Installing…' : `Downloading ${pct}%`) : `Install v${updateInfo.latest}`}
                 </button>
                 <button
                   onClick={() => window.api?.system.openExternal(`https://github.com/ImSkuller/croco/releases/tag/v${updateInfo.latest}`)}

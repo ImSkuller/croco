@@ -69,3 +69,19 @@ jobs:
           releaseDraft: true
           prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
           args: ${{ matrix.args }}
+
+  # The matrix jobs upload into one *draft* release (so a half-built release
+  # is never visible and `latest.json` is never served with missing
+  # platforms). Only once every platform built is the draft published, which
+  # is what makes /releases/latest/download/latest.json — the updater
+  # endpoint — start resolving to this version.
+  publish:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish the draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ github.ref_name }}" --draft=false --repo "${{ github.repository }}"

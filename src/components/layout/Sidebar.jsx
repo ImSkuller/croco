@@ -107,17 +107,26 @@ export default function Sidebar({ position = 'left' }) {
     refreshCapabilitiesOnLaunch()
   }, [])
 
-  // Check for updates once on mount — show toast if update is available
+  // Check for updates at launch, then again every 6 hours while the app stays
+  // open (long-lived sessions would otherwise never hear about a release).
+  // The toast only fires once per version so the recheck isn't naggy.
   useEffect(() => {
     if (!window.api?.updates) return
-    window.api.updates.check()
+    let announced = null
+    const check = () => window.api.updates.check()
       .then(info => {
         if (info?.hasUpdate) {
           setHasUpdate(true)
-          toast.warning(`Update v${info.latest} available`, 'Go to Settings → Updates to install.')
+          if (announced !== info.latest) {
+            announced = info.latest
+            toast.warning(`Update v${info.latest} available`, 'Go to Settings → Updates to install.')
+          }
         }
       })
       .catch(() => {})
+    check()
+    const timer = setInterval(check, 6 * 60 * 60 * 1000)
+    return () => clearInterval(timer)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

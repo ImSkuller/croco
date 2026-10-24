@@ -626,6 +626,8 @@ export const api = {
     check:   ()  => invoke('updates_check'),
     /** @returns {Promise<void>} */
     install: ()  => invoke('updates_install'),
+    /** Download progress while install() runs: cb({ downloaded, total }). */
+    onProgress: (cb) => sub('updates:progress', cb),
   },
 
   // ── App lifecycle ─────────────────────────────────────────────────────────────
