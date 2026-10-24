@@ -37,10 +37,19 @@ dist-ssr
 # AI working notes - never commit
 CLAUDE.md
 improvements.md
-# /docs/* (not /docs) so a "not ignored" exception below can still be
-# reached - git won't traverse into a fully-excluded directory to apply
-# per-file negation patterns underneath it.
-/docs/*
-# Exception: real, reviewable deliverables explicitly asked for by name,
-# not scratch notes. Ask before adding another one.
-!docs/ui-audit.md
+# All internal docs stay local-only: plans, changelogs, audits, scratch notes.
+/docs/
+NOTES-followup.md
+RELEASE_NOTES*.md
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.minisig
+# updater signing keys (never commit — see SECURITY.md)
+croco-updater*
+.tauri/
+# CLI build output copied in for bundling
+/src-tauri/cli-bin/
