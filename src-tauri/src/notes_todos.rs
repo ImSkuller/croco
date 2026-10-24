@@ -553,6 +553,7 @@ pub fn purge_expired_notes_todos_trash(app: &AppHandle) {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

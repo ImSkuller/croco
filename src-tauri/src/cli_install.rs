@@ -6,6 +6,7 @@
 
 use serde_json::{json, Value};
 use std::path::PathBuf;
+#[cfg(windows)]
 use std::process::Command;
 use tauri::{AppHandle, Manager};
 

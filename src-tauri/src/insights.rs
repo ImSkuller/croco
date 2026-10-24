@@ -121,10 +121,10 @@ fn count_lines(lang: &Lang, text: &str, t: &mut Tally) {
         }
         if lang.line.iter().any(|p| line.starts_with(p)) { t.comments += 1; continue; }
         if let Some((open, close)) = lang.block {
-            if line.starts_with(open) {
+            if let Some(rest) = line.strip_prefix(open) {
                 t.comments += 1;
                 // Opens and closes on the same line → not a multi-line block.
-                if !line[open.len()..].contains(close) { in_block = true; }
+                if !rest.contains(close) { in_block = true; }
                 continue;
             }
         }
@@ -145,7 +145,7 @@ pub async fn insights_code_stats(app: AppHandle, id: String) -> Result<Value, St
             count_lines(lang, &text, t);
         }
         let mut rows: Vec<(&str, Tally)> = by_lang.into_iter().collect();
-        rows.sort_by(|a, b| b.1.code.cmp(&a.1.code));
+        rows.sort_by_key(|r| std::cmp::Reverse(r.1.code));
         let totals = rows.iter().fold(Tally::default(), |mut acc, (_, t)| {
             acc.files += t.files; acc.code += t.code; acc.comments += t.comments; acc.blanks += t.blanks; acc
         });
@@ -213,6 +213,8 @@ pub async fn insights_scan_todos(app: AppHandle, id: String) -> Result<Value, St
 
 // ─── dependency audit (OSV.dev) ─────────────────────────────────────────────
 
+type Parser = fn(&str) -> Vec<Dep>;
+
 struct Dep { name: String, version: String, ecosystem: &'static str }
 
 fn parse_package_lock(text: &str) -> Vec<Dep> {
@@ -272,14 +274,14 @@ pub async fn insights_audit_deps(app: AppHandle, id: String) -> Result<Value, St
     let deps = tauri::async_runtime::spawn_blocking(move || {
         let mut deps: Vec<Dep> = vec![];
         let mut sources: Vec<&str> = vec![];
-        let candidates: [(&str, fn(&str) -> Vec<Dep>); 4] = [
+        let candidates: [(&str, Parser); 4] = [
             ("package-lock.json", parse_package_lock),
             ("Cargo.lock", parse_cargo_lock),
             ("src-tauri/Cargo.lock", parse_cargo_lock),
             ("requirements.txt", parse_requirements),
         ];
         for (file, parse) in candidates {
-            if let Some(text) = fs::read_to_string(root.join(file)).ok() {
+            if let Ok(text) = fs::read_to_string(root.join(file)) {
                 deps.extend(parse(&text));
                 sources.push(file);
             }

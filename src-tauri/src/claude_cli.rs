@@ -40,10 +40,12 @@ fn claude_cli_pids() -> std::sync::MutexGuard<'static, HashMap<String, u32>> {
 // request_id -> (project_id, channel to deliver the Accept/Reject decision
 // to the thread blocked on that hook's TCP connection). See
 // start_permission_hook_server below for the full design.
-static PENDING_PERMISSIONS: Lazy<Mutex<HashMap<String, (String, mpsc::Sender<Value>)>>> =
+type PendingMap = HashMap<String, (String, mpsc::Sender<Value>)>;
+
+static PENDING_PERMISSIONS: Lazy<Mutex<PendingMap>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
-fn pending_permissions() -> std::sync::MutexGuard<'static, HashMap<String, (String, mpsc::Sender<Value>)>> {
+fn pending_permissions() -> std::sync::MutexGuard<'static, PendingMap> {
     PENDING_PERMISSIONS.lock().unwrap_or_else(PoisonError::into_inner)
 }
 

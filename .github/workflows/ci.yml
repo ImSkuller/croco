@@ -68,6 +68,26 @@ jobs:
         working-directory: src-tauri
         run: cargo test
 
+  # The standalone `croco` terminal app (cli-rs/) ships in every installer, so
+  # it gets the same lint/build bar as the desktop backend on all three OSes.
+  cli:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-22.04, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: cargo clippy
+        working-directory: cli-rs
+        run: cargo clippy --all-targets -- -D warnings
+      - name: cargo build
+        working-directory: cli-rs
+        run: cargo build --release
+
   cargo-audit:
     runs-on: ubuntu-latest
     steps:
