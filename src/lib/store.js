@@ -119,6 +119,19 @@ if (typeof window !== 'undefined') {
   })
 }
 
+// Edits can also arrive from outside the app entirely — the `croco` terminal
+// app writes todos/notes to disk (and the Rust side drops its caches when it
+// notices, see external_sync.rs). Re-sync when the window regains focus,
+// throttled so alt-tabbing back and forth doesn't hammer the backend.
+if (typeof window !== 'undefined') {
+  let lastFocusSync = 0
+  window.addEventListener('focus', () => {
+    if (Date.now() - lastFocusSync < 5000) return
+    lastFocusSync = Date.now()
+    refreshData()
+  })
+}
+
 // Same invalidation, but for a mutation made from a DIFFERENT window —
 // `window.dispatchEvent` above only reaches listeners in that same
 // window's own JS realm, which is useless for e.g. the quick-capture

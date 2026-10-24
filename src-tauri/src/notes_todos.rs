@@ -42,6 +42,7 @@ fn note_word_count(text: &str) -> usize {
 
 // Read all notes (raw, with _content) — served from the in-memory cache when warm.
 pub fn read_all_notes_raw(app: &AppHandle) -> Vec<Value> {
+    crate::external_changes_check(app);
     {
         let c = NOTES_CACHE.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(ref ns) = *c { return ns.clone(); }
@@ -76,6 +77,7 @@ pub fn read_all_notes_raw(app: &AppHandle) -> Vec<Value> {
 
 // Read all todos (raw) — served from the in-memory cache when warm.
 pub fn read_all_todos_raw(app: &AppHandle) -> Vec<Value> {
+    crate::external_changes_check(app);
     {
         let c = TODOS_CACHE.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(ref ts) = *c { return ts.clone(); }

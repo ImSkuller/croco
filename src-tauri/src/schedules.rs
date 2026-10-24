@@ -20,6 +20,7 @@ pub fn ensure_schedules_dir(app: &AppHandle) { fs::create_dir_all(crate::schedul
 
 // Read all schedules (raw) — served from the in-memory cache when warm.
 pub fn read_all_schedules_raw(app: &AppHandle) -> Vec<Value> {
+    crate::external_changes_check(app);
     {
         let c = SCHEDULES_CACHE.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(ref s) = *c { return s.clone(); }

@@ -82,6 +82,12 @@ pub(crate) use ai_brain::*;
 mod tags;
 pub(crate) use tags::*;
 
+mod external_sync;
+pub(crate) use external_sync::*;
+
+mod cli_install;
+pub(crate) use cli_install::*;
+
 mod slack;
 pub(crate) use slack::*;
 
@@ -399,6 +405,8 @@ fn main() {
         )
         .setup(|app| setup_app(app))
         .invoke_handler(tauri::generate_handler![
+            // terminal app (croco on PATH)
+            cli_status, cli_install, cli_uninstall,
             // settings
             settings_get, settings_set, settings_update, settings_reset,
             settings_test_github, settings_save_avatar, settings_set_github_token,

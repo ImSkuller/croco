@@ -88,6 +88,7 @@ fn unique_slug(base: &str, projects: &[Value]) -> String {
 }
 
 pub fn read_all_projects(app: &AppHandle) -> Vec<Value> {
+    crate::external_changes_check(app);
     // Return from cache if warm
     {
         let c = PROJECTS_CACHE.lock().unwrap_or_else(PoisonError::into_inner);
