@@ -89,7 +89,11 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
   const [messages, setMessages] = useState([]) // [{role, text, cost, error}]
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const [pendingPermission, setPendingPermission] = useState(null) // {requestId, toolName, toolInput}
+  // Claude Code can fire several tool calls at once, each with its own hook
+  // request — keep them all, answer them one at a time, oldest first.
+  const [permissionQueue, setPermissionQueue] = useState([]) // [{requestId, toolName, toolInput}]
+  const pendingPermission = permissionQueue[0] || null
+  const clearPermissions = () => setPermissionQueue([])
   const [respondingPermission, setRespondingPermission] = useState(false)
   const sessionIdRef = useRef(null)
   const listRef = useRef(null)
@@ -153,11 +157,11 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
     const offDone = window.api?.ide.claudeCode.onDone((payload) => {
       if (payload?.projectId !== projectId) return
       setSending(false)
-      setPendingPermission(null)
+      clearPermissions()
     })
     const offPermission = window.api?.ide.claudeCode.onPermissionRequest((payload) => {
       if (payload?.projectId !== projectId) return
-      setPendingPermission(payload)
+      setPermissionQueue(q => (q.some(r => r.requestId === payload.requestId) ? q : [...q, payload]))
     })
     return () => { offEvent?.(); offStderr?.(); offDone?.(); offPermission?.() }
   }, [projectId, appendAssistantChunk])
@@ -188,7 +192,7 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
     } catch (e) {
       toast.error('Could not send the decision', e.message)
     } finally {
-      setPendingPermission(null)
+      setPermissionQueue(q => q.filter(r => r.requestId !== pendingPermission.requestId))
       setRespondingPermission(false)
     }
   }
@@ -196,7 +200,7 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
   const stop = () => {
     window.api?.ide.claudeCode.stop(projectId).catch(() => {})
     setSending(false)
-    setPendingPermission(null)
+    clearPermissions()
     // The killed process won't emit a `result` event to close out its own
     // streaming bubble (and the backend now deliberately withholds a stale
     // claudecode:done for it too — see claude_cli.rs), so without this a
