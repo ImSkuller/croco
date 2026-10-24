@@ -172,7 +172,10 @@ fn find_marker(line: &str) -> Option<(&'static str, String)> {
             let after = &line[at + tag.len()..];
             let boundary_before = before.chars().last().map(|c| !c.is_alphanumeric() && c != '_').unwrap_or(true);
             let boundary_after = after.chars().next().map(|c| !c.is_alphanumeric() && c != '_').unwrap_or(true);
-            if boundary_before && boundary_after && COMMENT_TOKENS.iter().any(|t| before.contains(t)) {
+            // The marker must sit right after a comment opener (`// TODO`,
+            // `# FIXME`, `* HACK`), not merely somewhere after a stray `;`.
+            let opener = before.trim_end();
+            if boundary_before && boundary_after && COMMENT_TOKENS.iter().any(|t| opener.ends_with(t)) {
                 let text = after.trim_start_matches(|c: char| c == ':' || c == '(' || c == ')' || c.is_whitespace() || c == '-');
                 let text = text.trim_end_matches("*/").trim_end_matches("-->").trim();
                 return Some((tag, text.chars().take(160).collect()));
@@ -190,7 +193,7 @@ pub async fn insights_scan_todos(app: AppHandle, id: String) -> Result<Value, St
         let mut items = vec![];
         let mut total = 0usize;
         for path in source_files(&root) {
-            if lang_for(&path).is_none() { continue; }
+            if !matches!(lang_for(&path), Some(l) if l.name != "Markdown" && l.name != "JSON") { continue; }
             let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
             if name.ends_with(".min.js") || name.ends_with(".lock") || name == "package-lock.json" { continue; }
             let Some(text) = read_text(&path) else { continue };
