@@ -88,6 +88,9 @@ pub(crate) use external_sync::*;
 mod cli_install;
 pub(crate) use cli_install::*;
 
+mod insights;
+pub(crate) use insights::*;
+
 mod slack;
 pub(crate) use slack::*;
 
@@ -405,6 +408,8 @@ fn main() {
         )
         .setup(|app| setup_app(app))
         .invoke_handler(tauri::generate_handler![
+            // project insights (code stats, TODO scan, dependency audit)
+            insights_code_stats, insights_scan_todos, insights_audit_deps,
             // terminal app (croco on PATH)
             cli_status, cli_install, cli_uninstall,
             // settings
