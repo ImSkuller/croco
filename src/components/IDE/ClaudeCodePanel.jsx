@@ -246,6 +246,8 @@ export default function ClaudeCodePanel({ projectId, permissionMode, onPermissio
             {messages.length === 0 && (
               <div style={{ fontSize: 12, color: 'var(--dimmer)', textAlign: 'center', marginTop: 20 }}>
                 Ask Claude Code about this project — it runs the real <code style={{ fontFamily: 'Geist Mono, monospace' }}>claude</code> CLI, scoped to this project's folder.
+                <br /><br />
+                Open this project's terminal tab first and any Bash command it runs will echo there too.
               </div>
             )}
             {messages.map((m, i) => (

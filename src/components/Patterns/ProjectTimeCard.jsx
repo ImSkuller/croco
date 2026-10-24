@@ -2,9 +2,10 @@ import SettingsCard from '../Settings/SettingsCard'
 import { ClockIcon } from '../../constants/SimpleSvgExports'
 
 // projectStats.<id>.runSeconds accumulates every time a project's dev/
-// build/test command runs and exits (see run_ops.rs + personality.rs) —
-// this is "how long has this project's process actually been running",
-// not "how long was the app window open".
+// build/test command runs and exits (run_ops.rs), or a real terminal
+// session (pty.rs) for that project closes — see personality.rs. This is
+// "how long has this project actually been worked on/run", not "how long
+// was the app window open".
 function formatDuration(totalSeconds) {
   if (totalSeconds < 60) return '< 1m'
   const hours = Math.floor(totalSeconds / 3600)
@@ -31,7 +32,7 @@ export default function ProjectTimeCard({ projectStats, projects }) {
       </div>
       {rows.length === 0 ? (
         <div style={{ fontSize: 12, color: 'var(--dimmer)', marginTop: 10 }}>
-          Run a project's dev/build/test command to start tracking time here.
+          Run a project's dev/build/test command or open its terminal to start tracking time here.
         </div>
       ) : (
         <>

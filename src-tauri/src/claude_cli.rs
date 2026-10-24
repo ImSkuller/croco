@@ -98,6 +98,21 @@ fn claude_cmd() -> Command {
 // decision, and prints the exact JSON contract Claude Code expects back on
 // its own stdout. All of this was verified against the real installed CLI
 // (manual testing, not assumed from docs) before writing this.
+//
+// The same script also serves a second, unrelated hook event — PostToolUse
+// on Bash — used to mirror a real Bash call's actual output into the
+// project's own terminal pane (see pty.rs::mirror_bash_to_project_sessions).
+// PostToolUse can't change what already happened (the tool already ran by
+// the time it fires), so there's no allow/deny branching for it: send the
+// real tool_response Claude Code already captured, get back an immediate
+// ack, exit. This was a deliberate choice over the alternative of denying
+// the PreToolUse call and substituting captured output as the denial
+// reason — verified empirically that the `is_error: true` a denial carries
+// leaks into the model's own read of the result (it misreported real
+// stdout as having "come through on stderr" in testing), which would
+// quietly corrupt a multi-step agent's judgment of what actually
+// succeeded. Letting the real Bash tool run and only *observing* its
+// result afterward avoids that entirely.
 const PERMISSION_HOOK_JS: &str = r#"
 const net = require('net');
 let input = '';
@@ -105,39 +120,40 @@ process.stdin.on('data', d => { input += d; });
 process.stdin.on('end', () => {
   let payload;
   try { payload = JSON.parse(input || '{}'); } catch { payload = {}; }
+  const hookEventName = payload.hook_event_name || 'PreToolUse';
   const port = parseInt(process.env.CROCO_HOOK_PORT || '0', 10);
   const projectId = process.env.CROCO_HOOK_PROJECT_ID || '';
-  if (!port) { deny('Croco hook port not set'); return; }
+  if (!port) { settle('deny', 'Croco hook port not set'); return; }
   let settled = false;
   const socket = net.createConnection({ host: '127.0.0.1', port }, () => {
     socket.write(JSON.stringify({
       projectId,
+      hookEventName,
       toolName: payload.tool_name || null,
       toolInput: payload.tool_input || null,
+      toolResponse: payload.tool_response || null,
       toolUseId: payload.tool_use_id || null,
     }) + '\n');
   });
-  socket.setTimeout(620000, () => { socket.destroy(); deny('Timed out waiting for a decision in Croco'); });
+  socket.setTimeout(620000, () => { socket.destroy(); settle('deny', 'Timed out waiting for a decision in Croco'); });
   let buf = '';
   socket.on('data', d => { buf += d; });
   socket.on('end', () => {
     if (settled) return;
     let decision;
     try { decision = JSON.parse(buf.trim() || '{}'); } catch { decision = {}; }
-    if (decision.decision === 'allow') allow(decision.reason);
-    else deny(decision.reason || 'Rejected in Croco');
+    const isAllow = decision.decision === 'allow';
+    settle(isAllow ? 'allow' : 'deny', decision.reason || (isAllow ? 'Approved in Croco' : 'Rejected in Croco'));
   });
-  socket.on('error', () => deny('Lost connection to Croco'));
-  function allow(reason) {
+  socket.on('error', () => settle('deny', 'Lost connection to Croco'));
+  function settle(decision, reason) {
     if (settled) return;
     settled = true;
-    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', permissionDecisionReason: reason || 'Approved in Croco' } }));
-    process.exit(0);
-  }
-  function deny(reason) {
-    if (settled) return;
-    settled = true;
-    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } }));
+    // PostToolUse has nothing to gate — Croco's connection handler already
+    // did its one-way job (emitting the mirrored output) by the time this
+    // fires; print a no-op and get out of the way.
+    if (hookEventName !== 'PreToolUse') { process.stdout.write('{}'); process.exit(0); return; }
+    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: decision, permissionDecisionReason: reason } }));
     process.exit(0);
   }
 });
@@ -198,6 +214,24 @@ fn handle_permission_connection(app: AppHandle, mut stream: TcpStream) {
         Err(_) => return,
     };
     let project_id = request["projectId"].as_str().unwrap_or("").to_string();
+
+    // PostToolUse(Bash) — a one-way observer, not a gate (the real Bash
+    // tool already ran by the time this fires). Mirror its actual output
+    // into the project's terminal pane(s), if any are open, and respond
+    // immediately; there's no decision to wait on and nothing in
+    // pending_permissions to register.
+    if request["hookEventName"].as_str() == Some("PostToolUse") {
+        if request["toolName"].as_str() == Some("Bash") {
+            let command = request["toolInput"]["command"].as_str().unwrap_or("");
+            let stdout = request["toolResponse"]["stdout"].as_str().unwrap_or("");
+            let stderr = request["toolResponse"]["stderr"].as_str().unwrap_or("");
+            crate::mirror_bash_to_project_sessions(&app, &project_id, command, stdout, stderr);
+        }
+        let _ = stream.write_all(b"{}\n");
+        let _ = stream.shutdown(std::net::Shutdown::Both);
+        return;
+    }
+
     let request_id = Uuid::new_v4().to_string();
 
     let (tx, rx) = mpsc::channel::<Value>();
@@ -311,31 +345,40 @@ pub async fn claude_cli_send(
     if let Some(sid) = session_id.as_ref().filter(|s| !s.is_empty()) {
         cmd.args(["--resume", sid]);
     }
-    if permission_mode == "manual" {
-        match PERMISSION_HOOK_PORT.get() {
-            Some(port) => {
-                let hook_path = match permission_hook_script_path(&app) {
-                    Ok(p) => p,
-                    Err(e) => {
-                        claude_cli_pids().remove(&project_id);
-                        return Err(format!("Could not prepare the permission hook: {e}"));
-                    }
-                };
-                let settings_json = json!({
-                    "hooks": {
-                        "PreToolUse": [
-                            { "hooks": [ { "type": "command", "command": format!("node \"{hook_path}\"") } ] }
-                        ]
-                    }
-                }).to_string();
+    // Manual mode genuinely needs the hook channel (it's the only gate
+    // standing in for the CLI's own missing prompt) — fail loudly rather
+    // than silently running ungated if the listener never came up. Every
+    // other mode only wants it for the Bash-output mirror below, which is
+    // a bonus, not a safety promise — missing it there just means no
+    // mirroring this session, not an error.
+    if permission_mode == "manual" && PERMISSION_HOOK_PORT.get().is_none() {
+        claude_cli_pids().remove(&project_id);
+        return Err("The permission-review channel isn't available (it failed to start at launch) — pick a different permission mode.".into());
+    }
+    if let Some(port) = PERMISSION_HOOK_PORT.get() {
+        let hook_path = permission_hook_script_path(&app).ok().filter(|p| !p.is_empty());
+        match hook_path {
+            Some(hook_path) => {
+                let command = format!("node \"{hook_path}\"");
+                let mut hooks_obj = serde_json::Map::new();
+                if permission_mode == "manual" {
+                    hooks_obj.insert("PreToolUse".into(), json!([{ "hooks": [{ "type": "command", "command": command.clone() }] }]));
+                }
+                // Mirrors a real Bash call's actual output into the project's
+                // open terminal pane(s), if any — see
+                // pty.rs::mirror_bash_to_project_sessions. Registered in every
+                // mode (not just manual), since it's a pure observer.
+                hooks_obj.insert("PostToolUse".into(), json!([{ "matcher": "Bash", "hooks": [{ "type": "command", "command": command }] }]));
+                let settings_json = json!({ "hooks": hooks_obj }).to_string();
                 cmd.args(["--settings", &settings_json]);
                 cmd.env("CROCO_HOOK_PORT", port.to_string());
                 cmd.env("CROCO_HOOK_PROJECT_ID", &project_id);
             }
-            None => {
+            None if permission_mode == "manual" => {
                 claude_cli_pids().remove(&project_id);
-                return Err("The permission-review channel isn't available (it failed to start at launch) — pick a different permission mode.".into());
+                return Err("Could not prepare the permission hook — check app data dir permissions.".into());
             }
+            None => {} // Non-fatal outside manual mode — just skip the mirror hook this session.
         }
     }
     cmd.current_dir(&cwd)

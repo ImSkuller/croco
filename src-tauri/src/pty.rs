@@ -27,6 +27,7 @@ struct PtySession {
     master: Box<dyn MasterPty + Send>,
     writer: Box<dyn Write + Send>,
     child: Box<dyn Child + Send + Sync>,
+    project_id: String,
 }
 
 static PTY_SESSIONS: Lazy<Mutex<HashMap<String, PtySession>>> = Lazy::new(|| Mutex::new(HashMap::new()));
@@ -92,7 +93,7 @@ pub async fn pty_spawn(app: AppHandle, project_id: String, cols: u16, rows: u16)
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
 
     let session_id = uuid::Uuid::new_v4().to_string();
-    sessions().insert(session_id.clone(), PtySession { master: pair.master, writer, child });
+    sessions().insert(session_id.clone(), PtySession { master: pair.master, writer, child, project_id: project_id.clone() });
 
     // Reader thread: forward raw output to the frontend as it arrives, not
     // line-buffered — a real terminal needs to render partial lines,
@@ -102,6 +103,13 @@ pub async fn pty_spawn(app: AppHandle, project_id: String, cols: u16, rows: u16)
     {
         let app = app.clone();
         let sid = session_id.clone();
+        let pid_for_tracking = project_id.clone();
+        // Captured here rather than on PtySession, since pty_kill removes
+        // that entry from the map before this thread's own exit path runs —
+        // see the Time per Project card (personality.rs's projectStats):
+        // same runSeconds bucket run_ops.rs's dev/build/test tracking
+        // already feeds, now also counting real terminal session time.
+        let started_at = std::time::Instant::now();
         let mut reader = reader;
         thread::spawn(move || {
             let mut buf = [0u8; 4096];
@@ -121,6 +129,7 @@ pub async fn pty_spawn(app: AppHandle, project_id: String, cols: u16, rows: u16)
             let exit_code = sessions().get_mut(&sid).and_then(|s| s.child.wait().ok()).map(|s| s.exit_code());
             sessions().remove(&sid);
             app.emit("pty:exit", json!({ "sessionId": sid, "exitCode": exit_code })).ok();
+            crate::personality::track(&app, "project_run_time", json!({ "projectId": pid_for_tracking, "seconds": started_at.elapsed().as_secs() }));
         });
     }
 
@@ -148,4 +157,33 @@ pub async fn pty_kill(session_id: String) -> Result<(), String> {
         session.child.kill().ok();
     }
     Ok(())
+}
+
+// Lets the Claude Code panel's Bash tool calls show up in a project's own
+// open terminal pane(s) — see claude_cli.rs's PostToolUse hook handling.
+// Deliberately an `app.emit` of a synthetic `pty:output` event, never a
+// `session.writer.write_all` — the writer is the PTY's *input* side (the
+// same channel actual keystrokes go through), so writing formatted text
+// there would feed it to the shell as literal input and get "executed"
+// character by character. Emitting as output instead only ever affects
+// what xterm.js renders (InteractiveTerminal.jsx's onOutput handler does a
+// plain `term.write(data)` keyed by sessionId) — it can't touch the real
+// shell process or its state. A no-op when the project has no terminal
+// pane open; CRLF line endings to match what a real PTY actually emits
+// (xterm.js needs the \r to return the cursor to column 0 before \n).
+pub fn mirror_bash_to_project_sessions(app: &AppHandle, project_id: &str, command: &str, stdout: &str, stderr: &str) {
+    if project_id.is_empty() { return; }
+    let session_ids: Vec<String> = sessions().iter()
+        .filter(|(_, s)| s.project_id == project_id)
+        .map(|(id, _)| id.clone())
+        .collect();
+    if session_ids.is_empty() { return; }
+
+    let mut text = format!("\r\n\x1b[36m[claude code]\x1b[0m $ {command}\r\n");
+    for line in stdout.lines() { text.push_str(line); text.push_str("\r\n"); }
+    for line in stderr.lines() { text.push_str("\x1b[31m"); text.push_str(line); text.push_str("\x1b[0m\r\n"); }
+
+    for sid in session_ids {
+        app.emit("pty:output", json!({ "sessionId": sid, "data": text })).ok();
+    }
 }
