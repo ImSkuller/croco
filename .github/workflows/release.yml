@@ -65,7 +65,23 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Croco ${{ github.ref_name }}'
           releaseBody: |
-            See the release notes for what's changed in this version.
+            ## Croco 2.0.0
+
+            **New**
+            - `croco` terminal command: a Claude Code-style interactive prompt (and one-shot subcommands) sharing your projects, todos and notes. The Windows installer puts it on your PATH; Settings -> Terminal handles other setups.
+            - Todo Kanban board (Backlog / Doing / Done).
+            - Patterns: todo completion rate for today, 7 days, 30 days, 3 months or lifetime. The Dashboard now shows just the open count.
+            - Project Insights: code stats, TODO/FIXME scanner, and a dependency vulnerability audit (OSV.dev).
+            - Updater: release notes, download progress, periodic background checks.
+            - Seven opt-in modules (AI, IDE, Discord, Docker, Env Manager, Slack, Focus Timer), a visual git commit graph, an interactive terminal, and a reworked appearance system.
+
+            **Fixed**
+            - Quick-capture popup could not close after saving.
+            - Parallel Claude Code Accept/Reject requests were dropped.
+            - Project Health flagged main/develop as stale branches.
+            - Stale note-search results, Kanban column mismatches, and more.
+
+            Windows is the supported platform for this release; macOS/Linux builds are provided as-is and untested.
           releaseDraft: true
           prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
           args: ${{ matrix.args }}
