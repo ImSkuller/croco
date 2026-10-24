@@ -27,6 +27,7 @@ import TerminalPanel from '../components/ProjectDetail/TerminalPanel'
 const InteractiveTerminal = lazy(() => import('../components/ProjectDetail/InteractiveTerminal'))
 import GitPanel from '../components/ProjectDetail/GitPanel'
 import HealthCard from '../components/ProjectDetail/HealthCard'
+import InsightsCard from '../components/ProjectDetail/InsightsCard'
 import ConfirmModal from '../components/ProjectDetail/ConfirmModal'
 import DockerPanel from '../components/ProjectDetail/DockerPanel'
 import EnvPanel from '../components/ProjectDetail/EnvPanel'
@@ -830,6 +831,8 @@ export default function ProjectDetail() {
               </div>
 
               <HealthCard projectId={projectId} isRepo={isRepo} gitStatus={gitStatus} aheadBehind={aheadBehind} />
+
+              <InsightsCard projectId={projectId} />
 
               <InfoSection label="Project Path">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '10px 14px' }}>

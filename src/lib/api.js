@@ -630,6 +630,16 @@ export const api = {
     onProgress: (cb) => sub('updates:progress', cb),
   },
 
+  // ── Project insights (on-demand analyses; see src-tauri/src/insights.rs) ─────
+  insights: {
+    /** @param {string} id @returns {Promise<any>} */
+    codeStats:  (id) => invoke('insights_code_stats', { id }),
+    /** @param {string} id @returns {Promise<any>} */
+    scanTodos:  (id) => invoke('insights_scan_todos', { id }),
+    /** Sends package names + versions to osv.dev. @param {string} id @returns {Promise<any>} */
+    auditDeps:  (id) => invoke('insights_audit_deps', { id }),
+  },
+
   // ── Terminal app (`croco` on PATH) ───────────────────────────────────────────
   cli: {
     /** @returns {Promise<{available:boolean, installed:boolean, needsRestart:boolean, binPath:string|null}>} */
