@@ -17,7 +17,7 @@ Go to the [**Releases**](https://github.com/ImSkuller/croco/releases) tab and do
 |---|---|
 | Windows | `Croco_x.x.x_x64_setup.exe` |
 
-Run the installer — Croco installs to `C:\Program Files\Croco` and adds a Start Menu shortcut.
+Run the installer — Croco installs to `C:\Program Files\Croco`, adds a Start Menu shortcut, and puts the `croco` terminal command on your PATH (see [Terminal](#terminal)).
 
 ## Features
 
@@ -27,10 +27,11 @@ Run the installer — Croco installs to `C:\Program Files\Croco` and adds a Star
 - **Tags** — Colour-coded custom tags shared across projects and notes. Rename, merge, recolour and delete them from Settings → Tags and every card updates.
 - **Git** — Commit (with or without pushing), amend, push, pull, fetch; inline colourised diffs; selective staging; stash/unstash; discard changes; create, switch (with stash-and-switch when your tree is dirty) and delete branches locally or on the remote. Pushes retry with your stored GitHub token when no credential helper is configured, so private repos work out of the box.
 - **GitHub** — A dedicated page for every linked repo: overview, releases & tags with version diffing, issues & pull requests (open, comment, close, merge, and an **Open PR** flow from the Git tab), **Actions** run status, an auto-generated changelog, and contribution insights. Auto-create a public or private repo when you create a project.
-- **Todos** — Scoped to a project or global, with due dates, completion tracking, and fully customisable priority levels (add, rename, recolour, reorder).
+- **Todos** — Scoped to a project or global, with due dates, completion tracking, fully customisable priority levels (add, rename, recolour, reorder), and a drag-and-drop **Kanban board** view (Backlog / Doing / Done). The Dashboard shows just how many are open; **Patterns** shows your completion rate for today, 7 days, 30 days, 3 months or lifetime.
 - **Schedules & Deadlines** — Recurring reminders and one-off deadlines per project with desktop notifications.
 - **Notes** — Markdown editor with live preview, image paste, star/pin/archive, project linking, and a tag filter. One-way sync to an Obsidian vault as markdown with frontmatter.
 - **Patterns** — A habit dashboard scanned from every tracked project's real `git log`: contribution heatmap, weekly trend, language mix, todo completion rate, note-taking cadence, per-project time tracking, and two independent streaks (commits and app logins).
+- **Project Insights** — On each project's overview, on demand: lines of code per language, a TODO/FIXME scanner (one click turns a marker into a todo), and a dependency audit that checks `package-lock.json`, `Cargo.lock` or pinned `requirements.txt` against the free [OSV.dev](https://osv.dev) database (only package names and versions are sent, only when you press the button).
 - **Proactive Suggestions** — A Dashboard card that surfaces a streak about to break, overdue todos, a quiet project, or a growing high-priority backlog.
 - **Favourites**, **Activity Log**, **per-project Terminal** with run/stop and streamed output, and an **Ideas** scratchpad with a drawing canvas.
 - **Desktop notifications** — Deadline reminders plus per-event toggles for run finished/failed, push succeeded/failed, AI replies and focus sessions (Settings → Behaviour).
@@ -38,6 +39,22 @@ Run the installer — Croco installs to `C:\Program Files\Croco` and adds a Star
 - **Deep links & local API** — `croco://` links open a project or note; an optional local HTTP API lets editors and scripts talk to Croco.
 - **SQLite or JSON storage** — Switch in Settings → Storage with one-click migration either way.
 - **Auto-updates** — In-app update check; installs silently and restarts on Windows and Linux (AppImage); on macOS the new version downloads and mounts for you to drag into Applications.
+
+### Terminal
+
+Type `croco` in cmd, PowerShell or any shell to open an interactive prompt in the style of Claude Code — boxed input, live `/` command suggestions, history — backed by the same projects, todos and notes as the desktop app (JSON or SQLite). It's a standalone native binary; no Node required.
+
+```sh
+croco                         # interactive prompt
+croco todos                   # what's open
+croco add "Ship it" !high @my-project due:2026-12-31
+croco done 2                  # tick off the 2nd item of the last list
+croco stats                   # completion rate by day / week / month / 3 months / lifetime
+croco code my-project         # start Claude Code in that project's folder
+croco open | run | git | projects | notes | note | schedules | app | help
+```
+
+The Windows installer adds it to your PATH. On other setups use **Settings → Terminal → Add to PATH**.
 
 ### Modules (beta)
 
@@ -68,7 +85,7 @@ Two independent axes in **Settings → Appearance**:
 
 ## Updates
 
-Croco checks for updates on launch. When one is available you'll see a banner in the sidebar. Click **Settings → Updates → Install** — the update downloads and installs silently. The app restarts automatically.
+Croco checks for updates on launch and every six hours after. When one is available you'll get a notification and a badge in the sidebar. **Settings → Updates** shows the release notes and an **Install** button with a download progress bar; updates are signature-verified before installing, and the app restarts automatically.
 
 ## Tech Stack
 
@@ -78,6 +95,7 @@ Croco checks for updates on launch. When one is available you'll see a banner in
 | Desktop | Tauri 2 (Rust) |
 | Styling | CSS custom properties (theme + style system) |
 | Fonts | Geist, Inter, IBM Plex Sans, Nunito, DM Sans, Geist Mono |
+| Terminal app | Rust + crossterm (`cli-rs/`) |
 | Storage | JSON files or bundled SQLite (`rusqlite` with `bundled` feature); secrets in the OS keyring |
 | HTTP | reqwest (GitHub API, AI providers, webhooks) |
 
@@ -88,8 +106,10 @@ Requirements: Node.js (LTS) and the [Rust toolchain](https://www.rust-lang.org/t
 ```sh
 npm install
 npm run tauri:dev    # dev mode with hot reload
-npm run tauri:build  # full production bundle
+npm run tauri:build  # full production bundle (also builds cli-rs/, the `croco` terminal app)
 ```
+
+The terminal app lives in `cli-rs/` and builds on its own with `cargo build --release` there. Release builds sign the updater artifacts with a key supplied through `TAURI_SIGNING_PRIVATE_KEY` — never commit key material or `.env` files.
 
 `npm run build` builds just the frontend (useful for quickly catching JS errors); `cargo check` in `src-tauri/` does the same for the Rust side. `cargo test` runs the backend unit tests.
 
