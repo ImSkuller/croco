@@ -462,7 +462,7 @@ fn parse_todo_tokens(ctx: &Ctx, arg: &str) -> Result<TodoTokens, Outcome> {
                 "high" | "h" => t.priority = Some("high".into()),
                 "low" | "l" => t.priority = Some("low".into()),
                 "med" | "m" => t.priority = Some("med".into()),
-                _ => t.words.push(w.to_string()),
+                _ => return Err(err(&format!("Unknown priority “{w}” — use !high, !med or !low."))),
             }
         } else if let Some(name) = w.strip_prefix('@') {
             if name == "none" {

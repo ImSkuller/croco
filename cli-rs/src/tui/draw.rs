@@ -316,7 +316,7 @@ impl<'a> App<'a> {
         }
         if s.commands.is_empty() { scripts.push(dim("No scripts set up.")); }
         scripts.push(String::new());
-        scripts.push(dim("home / exit to leave · cd to move"));
+        scripts.push(dim("home · exit to leave"));
         vec![info, todos, scripts]
     }
 
