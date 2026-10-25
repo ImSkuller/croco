@@ -77,6 +77,10 @@ impl Store {
         Store { app_dir, data_dir, sqlite }
     }
 
+    pub fn settings(&self) -> Value {
+        read_json(&self.app_dir.join("settings.json")).unwrap_or(Value::Null)
+    }
+
     fn db(&self) -> Result<Connection, String> {
         let conn = Connection::open(self.data_dir.join("croco.db")).map_err(|e| e.to_string())?;
         conn.busy_timeout(std::time::Duration::from_secs(3)).ok();
