@@ -6,6 +6,7 @@
 //! Reads and writes the same data as the desktop app; see `store.rs`.
 
 mod commands;
+mod logo;
 mod store;
 mod tui;
 mod ui;
@@ -31,16 +32,27 @@ fn main() {
     ui::set_color(want_color && ansi_ok());
 
     let ctx = Ctx::new(store::Store::open());
+    ui::init_theme(&ctx.store.settings());
+    let interactive = std::io::stdin().is_terminal() && std::io::stdout().is_terminal();
 
     if args.is_empty() {
-        if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
-            if let Err(e) = tui::run(&ctx) {
+        if interactive {
+            if let Err(e) = tui::run(&ctx, None) {
                 eprintln!("croco: {e}");
                 std::process::exit(1);
             }
         } else {
             println!("croco {} — {}", env!("CARGO_PKG_VERSION"), commands::summary(&ctx));
             println!("Run `croco help` for commands.");
+        }
+        return;
+    }
+
+    // `croco cmd <project>` jumps straight into that project's prompt.
+    if args[0] == "cmd" && args.len() > 1 && interactive {
+        if let Err(e) = tui::run(&ctx, Some(&args[1..].join(" "))) {
+            eprintln!("croco: {e}");
+            std::process::exit(1);
         }
         return;
     }
@@ -56,8 +68,13 @@ fn main() {
             // Errors are printed with a leading ✗ — surface that to scripts.
             if ui::visible_start(&text) == Some('✗') { std::process::exit(1); }
         }
-        Outcome::Clear | Outcome::Exit => {}
-        Outcome::Spawn { label, command, cwd } => {
+        Outcome::Clear | Outcome::Exit | Outcome::Home => {}
+        Outcome::Shell => {
+            eprintln!("{} `croco cmd <project>` needs an interactive terminal.", ui::red("✗"));
+            std::process::exit(1);
+        }
+        // One-shot use has no screen to stream into — run it directly.
+        Outcome::Job { label, command, cwd } | Outcome::Spawn { label, command, cwd } => {
             std::process::exit(tui::run_spawn(&label, &command, &cwd));
         }
     }
