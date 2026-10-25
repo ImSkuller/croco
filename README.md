@@ -42,16 +42,26 @@ Run the installer — Croco installs to `C:\Program Files\Croco`, adds a Start M
 
 ### Terminal
 
-Type `croco` in cmd, PowerShell or any shell to open an interactive prompt in the style of Claude Code — boxed input, live `/` command suggestions, history — backed by the same projects, todos and notes as the desktop app (JSON or SQLite). It's a standalone native binary; no Node required.
+Type `croco` in cmd, PowerShell or any shell to open a full-screen, Claude Code-style prompt backed by the same projects, todos and notes as the desktop app (JSON or SQLite). It's a standalone native binary — no Node required.
+
+- **Follows your theme.** The Croco logo and accent colour use the theme set in the desktop app. On the Default theme it's light green by day and light blue (like the Rio macaws) at night.
+- **Centred command bar** with live `/` suggestions, a live panel underneath (open todos, numbered projects, completion rate), a scrollable output area and a status bar. Everything reflows as you resize the window.
+- **Project prompts.** `cmd <project>` (or `cmd 2`) opens a command prompt inside that project — run any shell command, `cd` around, stream long-running output, `Ctrl+C` stops it. `home` or `exit` goes back; `cmd <other>` switches project.
+- **Numbered projects.** `projects` numbers them, and the number works everywhere: `open 1`, `cmd 2`, `todos 3`, `git 1 status`.
+- **Todos from the terminal:** `add`, `edit`, `done`, `rm`, `todos`.
+- **Git and GitHub:** `git <project> <anything>`, plus `status`, `log`, `diff`, `commit`, `push`, `pull`, `fetch`; `github <project> issues | prs | runs | releases | repo | web` through the GitHub CLI (`gh`).
 
 ```sh
-croco                         # interactive prompt
-croco todos                   # what's open
+croco                          # full-screen prompt
+croco cmd my-project           # jump straight into a project prompt
+croco todos                    # one-shot commands work too
 croco add "Ship it" !high @my-project due:2026-12-31
-croco done 2                  # tick off the 2nd item of the last list
-croco stats                   # completion rate by day / week / month / 3 months / lifetime
-croco code my-project         # start Claude Code in that project's folder
-croco open | run | git | projects | notes | note | schedules | app | help
+croco edit 2 "Ship it today" !med due:none
+croco done 2
+croco git 1 log 5
+croco commit 1 "Fix the login redirect"
+croco github 1 prs
+croco stats                    # completion rate by day / week / month / 3 months / lifetime
 ```
 
 The Windows installer adds it to your PATH. On other setups use **Settings → Terminal → Add to PATH**.

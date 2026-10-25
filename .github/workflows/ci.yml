@@ -84,6 +84,9 @@ jobs:
       - name: cargo clippy
         working-directory: cli-rs
         run: cargo clippy --all-targets -- -D warnings
+      - name: cargo test
+        working-directory: cli-rs
+        run: cargo test
       - name: cargo build
         working-directory: cli-rs
         run: cargo build --release
