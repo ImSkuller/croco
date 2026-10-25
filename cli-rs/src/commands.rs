@@ -1,6 +1,10 @@
 //! Every command Croco's terminal understands. Each one returns text to print
-//! (or a request to hand the terminal to a child process), so the interactive
-//! UI and one-shot `croco <command>` invocations share exactly one code path.
+//! (or a request to run something), so the interactive UI and one-shot
+//! `croco <command>` invocations share exactly one code path.
+//!
+//! Projects can be named by their name, their slug, an id prefix, or the
+//! number shown next to them in `projects` (and in the home screen's project
+//! list): `open 2`, `cmd 1`, `git 3 status` all work.
 
 use crate::store::{Kind, Store};
 use crate::ui::*;
@@ -17,32 +21,47 @@ pub struct Cmd {
 }
 
 pub const COMMANDS: &[Cmd] = &[
-    Cmd { name: "help",      args: "",                          desc: "Show every command" },
-    Cmd { name: "projects",  args: "[filter]",                  desc: "List your projects" },
-    Cmd { name: "project",   args: "<name>",                    desc: "Details for one project" },
-    Cmd { name: "todos",     args: "[all|done|<project>]",      desc: "List todos (open by default)" },
+    Cmd { name: "help",      args: "",                                     desc: "Show every command" },
+    Cmd { name: "projects",  args: "[filter]",                             desc: "List projects (numbered — use the number anywhere)" },
+    Cmd { name: "project",   args: "<name or #>",                          desc: "Details for one project" },
+    Cmd { name: "cmd",       args: "<name or #>",                          desc: "Open a command prompt inside a project" },
+    Cmd { name: "open",      args: "<name or #>",                          desc: "Open a project in its editor" },
+    Cmd { name: "todos",     args: "[all|done|<project>]",                 desc: "List todos (open by default)" },
     Cmd { name: "add",       args: "<title> [!high] [@project] [due:YYYY-MM-DD]", desc: "Add a todo" },
-    Cmd { name: "done",      args: "<# or text>",               desc: "Tick a todo off (or back on)" },
-    Cmd { name: "rm",        args: "<# or text>",               desc: "Move a todo to the app's Trash" },
-    Cmd { name: "notes",     args: "[filter]",                  desc: "List notes" },
-    Cmd { name: "note",      args: "<title> [ : body]",         desc: "Create a note" },
-    Cmd { name: "read",      args: "<# or text>",               desc: "Print a note" },
-    Cmd { name: "schedules", args: "",                          desc: "Upcoming deadlines" },
-    Cmd { name: "stats",     args: "[today|7d|30d|3m|all]",     desc: "Todo completion rate" },
-    Cmd { name: "open",      args: "<project>",                 desc: "Open a project in its editor" },
-    Cmd { name: "code",      args: "[project]",                 desc: "Start Claude Code in a project" },
-    Cmd { name: "run",       args: "<project> [dev|build|test|start]", desc: "Run a project command" },
-    Cmd { name: "git",       args: "<project>",                 desc: "Git status and recent commits" },
-    Cmd { name: "app",       args: "",                          desc: "Launch the Croco desktop app" },
-    Cmd { name: "clear",     args: "",                          desc: "Clear the screen" },
-    Cmd { name: "version",   args: "",                          desc: "Show the version" },
-    Cmd { name: "exit",      args: "",                          desc: "Leave Croco" },
+    Cmd { name: "edit",      args: "<# or id> [new title] [!prio] [due:date|none] [@project|@none]", desc: "Edit a todo" },
+    Cmd { name: "done",      args: "<# or text>",                          desc: "Tick a todo off (or back on)" },
+    Cmd { name: "rm",        args: "<# or text>",                          desc: "Move a todo to the app's Trash" },
+    Cmd { name: "notes",     args: "[filter]",                             desc: "List notes" },
+    Cmd { name: "note",      args: "<title> [ : body]",                    desc: "Create a note" },
+    Cmd { name: "read",      args: "<# or text>",                          desc: "Print a note" },
+    Cmd { name: "schedules", args: "",                                     desc: "Upcoming deadlines" },
+    Cmd { name: "stats",     args: "[today|7d|30d|3m|all]",                desc: "Todo completion rate" },
+    Cmd { name: "git",       args: "<project> [git args…]",                desc: "Run git in a project (no args: status summary)" },
+    Cmd { name: "status",    args: "<project>",                            desc: "git status" },
+    Cmd { name: "log",       args: "<project> [count]",                    desc: "Recent commits as a graph" },
+    Cmd { name: "diff",      args: "<project> [args]",                     desc: "git diff" },
+    Cmd { name: "commit",    args: "<project> <message>",                  desc: "Stage everything and commit" },
+    Cmd { name: "push",      args: "<project>",                            desc: "git push" },
+    Cmd { name: "pull",      args: "<project>",                            desc: "git pull" },
+    Cmd { name: "github",    args: "<project> [issues|prs|runs|releases|repo|web]", desc: "GitHub info via the gh CLI" },
+    Cmd { name: "code",      args: "[project]",                            desc: "Start Claude Code in a project" },
+    Cmd { name: "run",       args: "<project> [dev|build|test|start]",     desc: "Run a project command" },
+    Cmd { name: "app",       args: "",                                     desc: "Launch the Croco desktop app" },
+    Cmd { name: "home",      args: "",                                     desc: "Leave a project prompt, back to home" },
+    Cmd { name: "clear",     args: "",                                     desc: "Clear the screen" },
+    Cmd { name: "version",   args: "",                                     desc: "Show the version" },
+    Cmd { name: "exit",      args: "",                                     desc: "Leave Croco" },
 ];
 
 pub enum Outcome {
     Out(String),
     Clear,
     Exit,
+    Home,
+    /// Switch the UI into a project's command prompt.
+    Shell,
+    /// Run a command with its output streamed into the UI (cancellable).
+    Job { label: String, command: String, cwd: PathBuf },
     /// Hand the terminal to a child process (stdio inherited), then come back.
     Spawn { label: String, command: String, cwd: PathBuf },
 }
@@ -53,11 +72,44 @@ pub struct Ctx {
     /// means the 3rd row on screen.
     last_todos: RefCell<Vec<String>>,
     last_notes: RefCell<Vec<String>>,
+    /// Snapshot of the project order last shown to the user, so the number
+    /// next to a project keeps meaning the same project until it's redrawn.
+    project_order: RefCell<Vec<String>>,
+    current: RefCell<Option<String>>,
 }
 
 impl Ctx {
     pub fn new(store: Store) -> Ctx {
-        Ctx { store, last_todos: RefCell::new(vec![]), last_notes: RefCell::new(vec![]) }
+        Ctx {
+            store,
+            last_todos: RefCell::new(vec![]),
+            last_notes: RefCell::new(vec![]),
+            project_order: RefCell::new(vec![]),
+            current: RefCell::new(None),
+        }
+    }
+
+    pub fn set_current(&self, id: Option<String>) { *self.current.borrow_mut() = id; }
+
+    pub fn current_project(&self) -> Option<Value> {
+        let id = self.current.borrow().clone()?;
+        live(self.store.list(Kind::Projects)).into_iter().find(|p| s(p, "id") == id)
+    }
+
+    /// Fresh, ordered list of visible projects; also refreshes the numbering
+    /// snapshot.
+    pub fn ordered_projects(&self) -> Vec<Value> {
+        let mut ps = live(self.store.list(Kind::Projects));
+        ps.retain(|p| !flag(p, "archived"));
+        ps.sort_by(|a, b| p_opened(b).cmp(p_opened(a)).then_with(|| s(a, "name").to_lowercase().cmp(&s(b, "name").to_lowercase())));
+        *self.project_order.borrow_mut() = ps.iter().map(|p| s(p, "id").to_string()).collect();
+        ps
+    }
+
+    fn project_by_number(&self, n: usize) -> Option<Value> {
+        if self.project_order.borrow().is_empty() { self.ordered_projects(); }
+        let id = self.project_order.borrow().get(n.checked_sub(1)?)?.clone();
+        live(self.store.list(Kind::Projects)).into_iter().find(|p| s(p, "id") == id)
     }
 }
 
@@ -76,8 +128,11 @@ pub fn run(ctx: &Ctx, input: &str) -> Outcome {
         "help" | "?" | "h" => help(),
         "projects" | "ls" | "p" => projects(ctx, rest),
         "project" | "show" => project(ctx, rest),
+        "cmd" | "shell" | "sh" => enter_shell(ctx, rest),
+        "open" => open_project(ctx, rest),
         "todos" | "todo" | "t" => todos(ctx, rest),
         "add" | "a" | "new" => add_todo(ctx, rest),
+        "edit" | "e" => edit_todo(ctx, rest),
         "done" | "toggle" | "check" | "x" => toggle_todo(ctx, rest),
         "rm" | "delete" | "del" => remove_todo(ctx, rest),
         "notes" | "n" => notes(ctx, rest),
@@ -85,11 +140,25 @@ pub fn run(ctx: &Ctx, input: &str) -> Outcome {
         "read" | "cat" => read_note(ctx, rest),
         "schedules" | "schedule" | "deadlines" => schedules(ctx),
         "stats" | "rate" => stats(ctx, rest),
-        "open" | "edit" => open_project(ctx, rest),
+        "git" => git(ctx, rest),
+        "status" | "st" => git_shortcut(ctx, rest, |_| "git status -sb".into()),
+        "log" => git_shortcut(ctx, rest, |r| {
+            let n = r.trim().parse::<u32>().unwrap_or(15);
+            format!("git log --oneline --decorate --graph -n {n}")
+        }),
+        "diff" => git_shortcut(ctx, rest, |r| format!("git diff {r}")),
+        "commit" => commit(ctx, rest),
+        "push" => git_shortcut(ctx, rest, |r| format!("git push {r}")),
+        "pull" => git_shortcut(ctx, rest, |r| format!("git pull {r}")),
+        "fetch" => git_shortcut(ctx, rest, |_| "git fetch --all --prune".into()),
+        "github" | "gh" => github(ctx, rest),
         "code" | "claude" => code(ctx, rest),
         "run" => run_project(ctx, rest),
-        "git" => git(ctx, rest),
         "app" | "gui" => launch_app(),
+        "home" => {
+            ctx.set_current(None);
+            Outcome::Home
+        }
         "clear" | "cls" => Outcome::Clear,
         "version" | "v" | "-v" | "--version" => Outcome::Out(format!("croco {}", env!("CARGO_PKG_VERSION"))),
         "exit" | "quit" | "q" => Outcome::Exit,
@@ -113,15 +182,45 @@ fn live(items: Vec<Value>) -> Vec<Value> {
     items.into_iter().filter(|i| i["trashedAt"].is_null()).collect()
 }
 
+fn p_opened(p: &Value) -> &str { p["meta"]["lastOpenedAt"].as_str().unwrap_or("") }
+
+/// Name, slug, id, or list number → project. Empty means "the project I'm
+/// currently inside" (if any).
 fn find_project(ctx: &Ctx, query: &str) -> Option<Value> {
-    let q = query.trim().to_lowercase();
-    if q.is_empty() { return None; }
+    let query = query.trim();
+    if query.is_empty() { return ctx.current_project(); }
+    if let Ok(n) = query.parse::<usize>() {
+        if let Some(p) = ctx.project_by_number(n) { return Some(p); }
+    }
+    let q = query.to_lowercase();
     let ps = live(ctx.store.list(Kind::Projects));
     let by = |f: &dyn Fn(&Value) -> bool| ps.iter().find(|p| f(p)).cloned();
-    by(&|p| s(p, "id") == query.trim())
+    by(&|p| s(p, "id") == query)
         .or_else(|| by(&|p| s(p, "slug").to_lowercase() == q))
         .or_else(|| by(&|p| s(p, "name").to_lowercase() == q))
         .or_else(|| by(&|p| s(p, "name").to_lowercase().contains(&q)))
+}
+
+fn need_project(ctx: &Ctx, query: &str) -> Result<Value, Outcome> {
+    if query.trim().is_empty() && ctx.current_project().is_none() {
+        return Err(err("Which project? Give a name or its number from /projects."));
+    }
+    find_project(ctx, query).ok_or_else(|| err(&format!("No project matches “{}”.", query.trim())))
+}
+
+/// For commands shaped `<project> <rest…>`: inside a project prompt the
+/// project is implied and everything is `rest`.
+fn split_project_args(ctx: &Ctx, arg: &str) -> Result<(Value, String), Outcome> {
+    if let Some(p) = ctx.current_project() {
+        return Ok((p, arg.trim().to_string()));
+    }
+    let arg = arg.trim();
+    let (first, rest) = match arg.split_once(char::is_whitespace) {
+        Some((f, r)) => (f, r.trim()),
+        None => (arg, ""),
+    };
+    let p = need_project(ctx, first)?;
+    Ok((p, rest.to_string()))
 }
 
 fn project_root(p: &Value) -> Option<PathBuf> {
@@ -131,9 +230,11 @@ fn project_root(p: &Value) -> Option<PathBuf> {
 
 fn existing_root(p: &Value) -> Result<PathBuf, Outcome> {
     project_root(p)
-        .filter(|r| r.exists())
+        .filter(|r| r.is_dir())
         .ok_or_else(|| err("That project's folder doesn't exist on this machine."))
 }
+
+pub fn root_of(p: &Value) -> Option<PathBuf> { project_root(p).filter(|r| r.is_dir()) }
 
 fn prio_rank(p: &str) -> u8 {
     match p { "high" => 0, "low" => 2, _ => 1 }
@@ -202,7 +303,8 @@ fn resolve(ids_on_screen: &[String], pool: Vec<Value>, token: &str) -> Result<Va
 fn help() -> Outcome {
     let mut lines = vec![
         bold("Commands"),
-        dim("  The slash is optional, and every command also works as `croco <command>` in any shell."),
+        dim("  The slash is optional at home. Inside a project prompt (cmd <project>) anything else is a shell command."),
+        dim("  Projects can be given by name or by the number next to them: open 2 · cmd 1 · git 3 status"),
     ];
     for c in COMMANDS {
         lines.push(format!("  {}  {}", pad(&accent(&format!("/{}", c.name)), 12), c.desc));
@@ -215,8 +317,6 @@ fn help() -> Outcome {
 
 // ── projects ─────────────────────────────────────────────────────────────────
 
-fn p_opened(p: &Value) -> &str { p["meta"]["lastOpenedAt"].as_str().unwrap_or("") }
-
 fn top_language(p: &Value) -> Option<String> {
     p["languages"]
         .as_array()?
@@ -228,21 +328,19 @@ fn top_language(p: &Value) -> Option<String> {
 }
 
 fn projects(ctx: &Ctx, filter: &str) -> Outcome {
-    let mut ps = live(ctx.store.list(Kind::Projects));
-    ps.retain(|p| !flag(p, "archived"));
+    let all = ctx.ordered_projects();
+    if all.is_empty() { return Outcome::Out(dim("No projects yet — create one in the Croco app.")); }
     let f = filter.to_lowercase();
-    if !f.is_empty() { ps.retain(|p| s(p, "name").to_lowercase().contains(&f)); }
-    ps.sort_by(|a, b| p_opened(b).cmp(p_opened(a)));
-    if ps.is_empty() { return Outcome::Out(dim("No projects found.")); }
     let todos = live(ctx.store.list(Kind::Todos));
-    let mut lines = vec![bold(&format!("Projects ({})", ps.len()))];
-    for (i, p) in ps.iter().enumerate() {
+    let mut lines = vec![];
+    for (i, p) in all.iter().enumerate() {
+        if !f.is_empty() && !s(p, "name").to_lowercase().contains(&f) { continue; }
         let open = todos.iter().filter(|t| s(t, "projectId") == s(p, "id") && !flag(t, "completed")).count();
         let lang = top_language(p).unwrap_or_default();
         let star = if flag(p, "favourite") { yellow("★") } else { " ".into() };
         lines.push(format!(
             "  {} {} {} {} {} {}",
-            dim(&format!("{:>2}", i + 1)),
+            accent(&format!("{:>2}", i + 1)),
             star,
             pad(&bold(&truncate(s(p, "name"), 26)), 27),
             pad(&dim(&lang), 12),
@@ -250,11 +348,15 @@ fn projects(ctx: &Ctx, filter: &str) -> Outcome {
             if open > 0 { accent(&format!("{open} open")) } else { String::new() },
         ));
     }
-    out(lines)
+    if lines.is_empty() { return Outcome::Out(dim("No projects match.")); }
+    let mut all_lines = vec![bold(&format!("Projects ({})", lines.len()))];
+    all_lines.extend(lines);
+    all_lines.push(dim("  Use the number: open 1 · cmd 2 · todos 3 · git 1 status · github 2 issues"));
+    out(all_lines)
 }
 
 fn project(ctx: &Ctx, query: &str) -> Outcome {
-    let Some(p) = find_project(ctx, query) else { return err(&format!("No project matches “{query}”.")) };
+    let p = match need_project(ctx, query) { Ok(p) => p, Err(e) => return e };
     let todos = live(ctx.store.list(Kind::Todos));
     let mine: Vec<&Value> = todos.iter().filter(|t| s(t, "projectId") == s(&p, "id")).collect();
     let open = mine.iter().filter(|t| !flag(t, "completed")).count();
@@ -276,13 +378,26 @@ fn project(ctx: &Ctx, query: &str) -> Outcome {
     out(lines)
 }
 
+fn enter_shell(ctx: &Ctx, query: &str) -> Outcome {
+    let p = match need_project(ctx, query) { Ok(p) => p, Err(e) => return e };
+    if let Err(e) = existing_root(&p) { return e; }
+    ctx.set_current(Some(s(&p, "id").to_string()));
+    Outcome::Shell
+}
+
 // ── todos ────────────────────────────────────────────────────────────────────
 
 fn todos(ctx: &Ctx, arg: &str) -> Outcome {
     let a = arg.trim().to_lowercase();
     let names = project_name_map(ctx);
     let (mut list, title) = match a.as_str() {
-        "" | "open" => (open_todos_sorted(ctx), "Open todos".to_string()),
+        "" | "open" => match ctx.current_project() {
+            Some(p) => {
+                let v: Vec<Value> = open_todos_sorted(ctx).into_iter().filter(|t| s(t, "projectId") == s(&p, "id")).collect();
+                (v, format!("Open todos · {}", s(&p, "name")))
+            }
+            None => (open_todos_sorted(ctx), "Open todos".to_string()),
+        },
         "all" => {
             let mut v = live(ctx.store.list(Kind::Todos));
             sort_todos(&mut v);
@@ -294,7 +409,7 @@ fn todos(ctx: &Ctx, arg: &str) -> Outcome {
             (v, "Completed".to_string())
         }
         _ => {
-            let Some(p) = find_project(ctx, arg) else { return err(&format!("No project matches “{arg}”.")) };
+            let p = match need_project(ctx, arg) { Ok(p) => p, Err(e) => return e };
             let v: Vec<Value> = open_todos_sorted(ctx).into_iter().filter(|t| s(t, "projectId") == s(&p, "id")).collect();
             (v, format!("Open todos · {}", s(&p, "name")))
         }
@@ -322,59 +437,109 @@ fn todos(ctx: &Ctx, arg: &str) -> Outcome {
         }
         lines.push(format!(
             "  {} {} {} {}  {}",
-            dim(&format!("{:>2}", i + 1)), mark, priority_tag(s(t, "priority")), title_txt, tail.join(" ")
+            accent(&format!("{:>2}", i + 1)), mark, priority_tag(s(t, "priority")), title_txt, tail.join(" ")
         ));
     }
     if total > list.len() {
         lines.push(dim(&format!("  … and {} more", total - list.len())));
     }
+    lines.push(dim("  done <#> · edit <#> <new title> · rm <#>"));
     out(lines)
 }
 
-fn add_todo(ctx: &Ctx, arg: &str) -> Outcome {
-    let mut words = vec![];
-    let mut priority = "med".to_string();
-    let mut due: Option<String> = None;
-    let mut project: Option<Value> = None;
+struct TodoTokens {
+    words: Vec<String>,
+    priority: Option<String>,
+    due: Option<Option<String>>,
+    project: Option<Option<Value>>,
+}
+
+fn parse_todo_tokens(ctx: &Ctx, arg: &str) -> Result<TodoTokens, Outcome> {
+    let mut t = TodoTokens { words: vec![], priority: None, due: None, project: None };
     for w in arg.split_whitespace() {
         if let Some(p) = w.strip_prefix('!') {
             match p {
-                "high" | "h" => priority = "high".into(),
-                "low" | "l" => priority = "low".into(),
-                "med" | "m" => priority = "med".into(),
-                _ => words.push(w),
+                "high" | "h" => t.priority = Some("high".into()),
+                "low" | "l" => t.priority = Some("low".into()),
+                "med" | "m" => t.priority = Some("med".into()),
+                _ => t.words.push(w.to_string()),
             }
         } else if let Some(name) = w.strip_prefix('@') {
-            match find_project(ctx, name) {
-                Some(p) => project = Some(p),
-                None => return err(&format!("No project matches “{name}”.")),
+            if name == "none" {
+                t.project = Some(None);
+            } else {
+                match find_project(ctx, name) {
+                    Some(p) => t.project = Some(Some(p)),
+                    None => return Err(err(&format!("No project matches “{name}”."))),
+                }
             }
         } else if let Some(d) = w.strip_prefix("due:") {
-            if NaiveDate::parse_from_str(d, "%Y-%m-%d").is_err() {
-                return err("Dates look like due:2026-12-31.");
+            if d == "none" {
+                t.due = Some(None);
+            } else if NaiveDate::parse_from_str(d, "%Y-%m-%d").is_err() {
+                return Err(err("Dates look like due:2026-12-31 (or due:none)."));
+            } else {
+                t.due = Some(Some(d.to_string()));
             }
-            due = Some(d.to_string());
         } else {
-            words.push(w);
+            t.words.push(w.to_string());
         }
     }
-    let title = words.join(" ");
+    Ok(t)
+}
+
+fn add_todo(ctx: &Ctx, arg: &str) -> Outcome {
+    let t = match parse_todo_tokens(ctx, arg) { Ok(t) => t, Err(e) => return e };
+    let title = t.words.join(" ");
     if title.is_empty() {
         return err("A todo needs a title: /add Write the release notes !high @croco");
     }
+    // Inside a project prompt, new todos belong to that project by default.
+    let project = match t.project {
+        Some(p) => p,
+        None => ctx.current_project(),
+    };
     let todo = json!({
         "id": uuid::Uuid::new_v4().to_string(),
         "title": title,
         "emoji": Value::Null,
         "completed": false,
-        "priority": priority,
+        "priority": t.priority.unwrap_or_else(|| "med".into()),
         "projectId": project.as_ref().map(|p| json!(s(p, "id"))).unwrap_or(Value::Null),
         "noteId": Value::Null,
-        "dueDate": due.map(Value::from).unwrap_or(Value::Null),
+        "dueDate": t.due.flatten().map(Value::from).unwrap_or(Value::Null),
         "createdAt": Utc::now().to_rfc3339(),
     });
     match ctx.store.save(Kind::Todos, &todo) {
         Ok(()) => ok(&format!("Added {}", bold(&title))),
+        Err(e) => err(&e),
+    }
+}
+
+fn edit_todo(ctx: &Ctx, arg: &str) -> Outcome {
+    let (target, rest) = match arg.trim().split_once(char::is_whitespace) {
+        Some((t, r)) => (t, r.trim()),
+        None => (arg.trim(), ""),
+    };
+    if target.is_empty() || rest.is_empty() {
+        return err("Usage: /edit <#> <new title> [!high] [due:2026-12-31|none] [@project|@none]");
+    }
+    let mut todo = match pick_todo(ctx, target) { Ok(t) => t, Err(e) => return err(&e) };
+    let t = match parse_todo_tokens(ctx, rest) { Ok(t) => t, Err(e) => return e };
+    let mut changed = vec![];
+    if !t.words.is_empty() {
+        todo["title"] = json!(t.words.join(" "));
+        changed.push("title");
+    }
+    if let Some(p) = t.priority { todo["priority"] = json!(p); changed.push("priority"); }
+    if let Some(d) = t.due { todo["dueDate"] = d.map(Value::from).unwrap_or(Value::Null); changed.push("due date"); }
+    if let Some(p) = t.project {
+        todo["projectId"] = p.map(|p| json!(s(&p, "id"))).unwrap_or(Value::Null);
+        changed.push("project");
+    }
+    if changed.is_empty() { return err("Nothing to change."); }
+    match ctx.store.save(Kind::Todos, &todo) {
+        Ok(()) => ok(&format!("Updated {} ({})", bold(s(&todo, "title")), changed.join(", "))),
         Err(e) => err(&e),
     }
 }
@@ -409,7 +574,7 @@ fn remove_todo(ctx: &Ctx, token: &str) -> Outcome {
     match ctx.store.save(Kind::Todos, &t) {
         Ok(()) => {
             ctx.last_todos.borrow_mut().clear();
-            ok(&format!("Deleted {}", bold(s(&t, "title"))))
+            ok(&format!("Moved {} to Trash", bold(s(&t, "title"))))
         }
         Err(e) => err(&e),
     }
@@ -430,7 +595,7 @@ fn notes(ctx: &Ctx, filter: &str) -> Outcome {
         let star = if flag(n, "starred") { yellow("★") } else { " ".into() };
         lines.push(format!(
             "  {} {} {}  {}",
-            dim(&format!("{:>2}", i + 1)), star, pad(&truncate(s(n, "title"), 40), 40), dim(&rel_time(s(n, "updatedAt")))
+            accent(&format!("{:>2}", i + 1)), star, pad(&truncate(s(n, "title"), 40), 40), dim(&rel_time(s(n, "updatedAt")))
         ));
     }
     out(lines)
@@ -445,7 +610,9 @@ fn add_note(ctx: &Ctx, arg: &str) -> Outcome {
     let now = Utc::now().to_rfc3339();
     let meta = json!({
         "id": uuid::Uuid::new_v4().to_string(), "title": title, "emoji": "📝", "starred": false,
-        "archived": false, "projectId": Value::Null, "tags": [], "createdAt": now, "updatedAt": now,
+        "archived": false,
+        "projectId": ctx.current_project().map(|p| json!(s(&p, "id"))).unwrap_or(Value::Null),
+        "tags": [], "createdAt": now, "updatedAt": now,
     });
     match ctx.store.save_note(&meta, body) {
         Ok(()) => ok(&format!("Note {} saved", bold(title))),
@@ -546,7 +713,7 @@ fn stats(ctx: &Ctx, arg: &str) -> Outcome {
 // ── launching things ─────────────────────────────────────────────────────────
 
 fn open_project(ctx: &Ctx, query: &str) -> Outcome {
-    let Some(p) = find_project(ctx, query) else { return err(&format!("No project matches “{query}”.")) };
+    let p = match need_project(ctx, query) { Ok(p) => p, Err(e) => return e };
     let root = match existing_root(&p) { Ok(r) => r, Err(e) => return e };
     let bin = match s(&p, "ide") {
         "cursor" => "cursor",
@@ -572,10 +739,10 @@ fn open_project(ctx: &Ctx, query: &str) -> Outcome {
 }
 
 fn code(ctx: &Ctx, query: &str) -> Outcome {
-    let (cwd, name) = if query.trim().is_empty() {
+    let (cwd, name) = if query.trim().is_empty() && ctx.current_project().is_none() {
         (std::env::current_dir().unwrap_or_default(), "this folder".to_string())
     } else {
-        let Some(p) = find_project(ctx, query) else { return err(&format!("No project matches “{query}”.")) };
+        let p = match need_project(ctx, query) { Ok(p) => p, Err(e) => return e };
         match existing_root(&p) {
             Ok(root) => (root, s(&p, "name").to_string()),
             Err(e) => return e,
@@ -585,22 +752,29 @@ fn code(ctx: &Ctx, query: &str) -> Outcome {
 }
 
 fn run_project(ctx: &Ctx, arg: &str) -> Outcome {
+    let arg = arg.trim();
     let (q, kind) = match arg.rsplit_once(char::is_whitespace) {
         Some((q, k)) if ["dev", "build", "test", "start"].contains(&k) => (q.trim(), k),
-        _ => (arg.trim(), "dev"),
+        None if ["dev", "build", "test", "start"].contains(&arg) => ("", arg),
+        _ => (arg, "dev"),
     };
-    let Some(p) = find_project(ctx, q) else { return err(&format!("No project matches “{q}”.")) };
+    let p = match need_project(ctx, q) { Ok(p) => p, Err(e) => return e };
     let cmd = s(&p["commands"], kind);
     if cmd.is_empty() {
         return err(&format!("{} has no “{kind}” command — set one in the app.", s(&p, "name")));
     }
     let root = match existing_root(&p) { Ok(r) => r, Err(e) => return e };
-    Outcome::Spawn { label: format!("{} — {cmd}", s(&p, "name")), command: cmd.to_string(), cwd: root }
+    Outcome::Job { label: format!("{} — {cmd}", s(&p, "name")), command: cmd.to_string(), cwd: root }
 }
 
-fn git(ctx: &Ctx, query: &str) -> Outcome {
-    let Some(p) = find_project(ctx, query) else { return err(&format!("No project matches “{query}”.")) };
+// ── git & GitHub ─────────────────────────────────────────────────────────────
+
+fn git(ctx: &Ctx, arg: &str) -> Outcome {
+    let (p, rest) = match split_project_args(ctx, arg) { Ok(v) => v, Err(e) => return e };
     let root = match existing_root(&p) { Ok(r) => r, Err(e) => return e };
+    if !rest.is_empty() {
+        return Outcome::Job { label: format!("{} — git {rest}", s(&p, "name")), command: format!("git {rest}"), cwd: root };
+    }
     let run = |args: &[&str]| {
         Command::new("git")
             .arg("-C")
@@ -620,6 +794,53 @@ fn git(ctx: &Ctx, query: &str) -> Outcome {
         lines.extend(log.lines().map(|l| format!("  {l}")));
     }
     out(lines)
+}
+
+fn git_shortcut(ctx: &Ctx, arg: &str, build: impl Fn(&str) -> String) -> Outcome {
+    let (p, rest) = match split_project_args(ctx, arg) { Ok(v) => v, Err(e) => return e };
+    let root = match existing_root(&p) { Ok(r) => r, Err(e) => return e };
+    let command = build(&rest).trim().to_string();
+    Outcome::Job { label: format!("{} — {command}", s(&p, "name")), command, cwd: root }
+}
+
+fn commit(ctx: &Ctx, arg: &str) -> Outcome {
+    let (p, msg) = match split_project_args(ctx, arg) { Ok(v) => v, Err(e) => return e };
+    let msg = msg.trim().trim_matches('"').replace('"', "'");
+    if msg.is_empty() { return err("A commit needs a message: /commit <project> Fix the login redirect"); }
+    let root = match existing_root(&p) { Ok(r) => r, Err(e) => return e };
+    Outcome::Job {
+        label: format!("{} — commit", s(&p, "name")),
+        command: format!("git add -A && git commit -m \"{msg}\""),
+        cwd: root,
+    }
+}
+
+fn have(tool: &str) -> bool {
+    Command::new(tool).arg("--version").output().map(|o| o.status.success()).unwrap_or(false)
+}
+
+fn github(ctx: &Ctx, arg: &str) -> Outcome {
+    let (p, rest) = match split_project_args(ctx, arg) { Ok(v) => v, Err(e) => return e };
+    let root = match existing_root(&p) { Ok(r) => r, Err(e) => return e };
+    if !have("gh") {
+        return err("This needs the GitHub CLI (gh) — install it from https://cli.github.com, then run `gh auth login`.");
+    }
+    let repo = s(&p, "github");
+    let target = if repo.is_empty() { String::new() } else { format!(" -R {repo}") };
+    let (sub, extra) = match rest.split_once(char::is_whitespace) {
+        Some((a, b)) => (a, b.trim()),
+        None => (rest.as_str(), ""),
+    };
+    let command = match sub {
+        "" | "repo" | "info" => format!("gh repo view{}", if repo.is_empty() { String::new() } else { format!(" {repo}") }),
+        "issues" | "issue" => format!("gh issue list{target} {extra}"),
+        "prs" | "pr" => format!("gh pr list{target} {extra}"),
+        "runs" | "actions" => format!("gh run list{target} -L 10 {extra}"),
+        "releases" | "release" => format!("gh release list{target} {extra}"),
+        "web" | "browse" => format!("gh repo view{} --web", if repo.is_empty() { String::new() } else { format!(" {repo}") }),
+        _ => format!("gh {rest}"),
+    };
+    Outcome::Job { label: format!("{} — {}", s(&p, "name"), command.trim()), command: command.trim().to_string(), cwd: root }
 }
 
 fn launch_app() -> Outcome {
@@ -657,7 +878,78 @@ fn launch_app() -> Outcome {
     }
 }
 
-/// The one-line status shown by the welcome banner and a bare piped `croco`.
+// ── dashboard data (home screen panels) ──────────────────────────────────────
+
+pub struct DashTodo {
+    pub priority: String,
+    pub title: String,
+    pub due: Option<(String, bool)>,
+}
+
+pub struct DashProject {
+    pub number: usize,
+    pub name: String,
+    pub ago: String,
+    pub open: usize,
+}
+
+pub struct Dash {
+    pub open_total: usize,
+    pub project_count: usize,
+    pub todos: Vec<DashTodo>,
+    pub projects: Vec<DashProject>,
+    pub rates: Vec<(&'static str, u32)>,
+    /// Open todos of the project the prompt is currently inside.
+    pub scoped_todos: Vec<DashTodo>,
+}
+
+fn dash_todo(t: &Value) -> DashTodo {
+    DashTodo {
+        priority: s(t, "priority").to_string(),
+        title: s(t, "title").to_string(),
+        due: t["dueDate"].as_str().and_then(due_label),
+    }
+}
+
+pub fn dashboard(ctx: &Ctx) -> Dash {
+    let ps = ctx.ordered_projects();
+    let todos_all = live(ctx.store.list(Kind::Todos));
+    let open: Vec<Value> = {
+        let mut v: Vec<Value> = todos_all.iter().filter(|t| !flag(t, "completed")).cloned().collect();
+        sort_todos(&mut v);
+        v
+    };
+    let current = ctx.current_project();
+    let scoped_todos = match &current {
+        Some(p) => open.iter().filter(|t| s(t, "projectId") == s(p, "id")).take(12).map(dash_todo).collect(),
+        None => vec![],
+    };
+    let projects = ps
+        .iter()
+        .enumerate()
+        .take(12)
+        .map(|(i, p)| DashProject {
+            number: i + 1,
+            name: s(p, "name").to_string(),
+            ago: rel_time(p_opened(p)),
+            open: open.iter().filter(|t| s(t, "projectId") == s(p, "id")).count(),
+        })
+        .collect();
+    Dash {
+        open_total: open.len(),
+        project_count: ps.len(),
+        todos: open.iter().take(12).map(dash_todo).collect(),
+        projects,
+        rates: vec![
+            ("Today", window_stats(&todos_all, Some(1)).0),
+            ("7 days", window_stats(&todos_all, Some(7)).0),
+            ("30 days", window_stats(&todos_all, Some(30)).0),
+        ],
+        scoped_todos,
+    }
+}
+
+/// The one-line status shown by a bare piped `croco`.
 pub fn summary(ctx: &Ctx) -> String {
     let projects = live(ctx.store.list(Kind::Projects)).into_iter().filter(|p| !flag(p, "archived")).count();
     let todos = live(ctx.store.list(Kind::Todos));
