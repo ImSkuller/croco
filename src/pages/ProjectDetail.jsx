@@ -763,7 +763,7 @@ export default function ProjectDetail() {
                   ))}
                   <button onClick={async () => {
                     // Force rescan: clear cached languages then re-detect
-                    await window.api.projects.edit(project.id, { languages: [] }).catch(() => {})
+                    await window.api.projects.edit(project.id, { languages: [], languagesScannedAt: null }).catch(() => {})
                     const fresh = await window.api.projects.detectLanguages(project.id).catch(() => [])
                     setLanguages(fresh || [])
                   }} title="Rescan languages"

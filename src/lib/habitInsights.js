@@ -2,6 +2,8 @@
 // used by both the Patterns page widgets and the Suggestions engine — kept
 // in one place so the two never quietly disagree on the same numbers.
 
+import { aggregateLanguages } from './languages.js'
+
 export const NEGLECT_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000 // 14 days
 
 function scoreOf(stat) {
@@ -151,19 +153,5 @@ export function computeHeatmapWeeks(commitDates, weeks = 26) {
  * reads whatever's already cached rather than triggering fresh detection.
  */
 export function computeLanguageMix(projects) {
-  const byName = new Map()
-  let total = 0
-  for (const p of projects || []) {
-    for (const lang of p.languages || []) {
-      const count = lang.count || 0
-      if (count <= 0) continue
-      const prev = byName.get(lang.name) || { name: lang.name, color: lang.color, count: 0 }
-      prev.count += count
-      byName.set(lang.name, prev)
-      total += count
-    }
-  }
-  return [...byName.values()]
-    .map(l => ({ ...l, pct: total > 0 ? Math.round((l.count / total) * 100) : 0 }))
-    .sort((a, b) => b.count - a.count)
+  return aggregateLanguages(projects)
 }

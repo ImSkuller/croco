@@ -5,6 +5,7 @@ import { StatCard, SectionHeader, ProjectCard, TodoItem, NoteItem, TopBtn, FavCh
 import CommitHeatmapCard from '../components/Patterns/CommitHeatmapCard'
 import { useToast } from '../components/Toast/useToast.js'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
+import { aggregateLanguages, languagesNeedRefresh } from '../lib/languages'
 import useDiscordPresence from '../hooks/useDiscordPresence'
 
 export default function Dashboard() {
@@ -35,6 +36,27 @@ export default function Dashboard() {
       .then(r => { if (r?.synced > 0) refreshData('projects') })
       .catch(() => {})
   }, [])
+
+  // Languages are cached per project and used to be rescanned only when a
+  // project's page was opened, so the Dashboard's mix went stale. Re-detect
+  // any project whose cache is missing or older than 3 days, in the
+  // background, one at a time (each scan stamps itself, so this settles).
+  const [langScanned] = useState(() => new Set())
+  useEffect(() => {
+    if (!window.api || projects.length === 0) return
+    const stale = projects.filter(p => !p.trashedAt && !p.archived && languagesNeedRefresh(p) && !langScanned.has(p.id))
+    if (stale.length === 0) return
+    let cancelled = false
+    ;(async () => {
+      for (const p of stale.slice(0, 40)) {
+        if (cancelled) return
+        langScanned.add(p.id)
+        await window.api.projects.detectLanguages(p.id).catch(() => {})
+      }
+      if (!cancelled) refreshData('projects')
+    })()
+    return () => { cancelled = true }
+  }, [projects, langScanned])
 
   const toggleTodo = async (id) => {
     if (!window.api) return
@@ -80,26 +102,16 @@ export default function Dashboard() {
   const projectMap  = Object.fromEntries(projects.map(p => [p.id, p.name]))
   const recentNotes = notes.filter(n => !n.trashedAt).slice(0, 4).map(n => ({ ...n, project: n.projectId ? projectMap[n.projectId] : null }))
 
-  // Aggregate language breakdown from all (non-trashed) projects
-  const langMap = {}
-  for (const p of liveProjects) {
-    for (const lang of (p.languages || [])) {
-      if (!lang.name) continue
-      langMap[lang.name] = langMap[lang.name] || { name: lang.name, color: lang.color, total: 0 }
-      langMap[lang.name].total += lang.pct
-    }
-  }
-  const langTotal  = Object.values(langMap).reduce((s, l) => s + l.total, 0) || 1
-  // Every language is kept (they sum to 100% by construction) — the old
-  // top-5 cap silently dropped languages. Anything under 1% is folded into
-  // a single "Other" entry so the legend stays readable.
-  const rankedLangs = Object.values(langMap)
-    .sort((a, b) => b.total - a.total)
-    .map(l => ({ ...l, pct: Math.round((l.total / langTotal) * 100) }))
+  // Overall language mix: bytes-weighted, code languages only (shared with
+  // Patterns' Language Mix card — see lib/languages.js).
+  const rankedLangs = aggregateLanguages(liveProjects)
+  // Every language is kept; anything under 1% is folded into one "Other"
+  // entry so the legend stays readable.
   const bigLangs   = rankedLangs.filter(l => l.pct >= 1)
-  const otherTotal = rankedLangs.filter(l => l.pct < 1).reduce((s, l) => s + l.total, 0)
+  const otherTotal = rankedLangs.filter(l => l.pct < 1).reduce((s, l) => s + l.count, 0)
+  const langTotal  = rankedLangs.reduce((s, l) => s + l.count, 0) || 1
   const languages  = otherTotal > 0
-    ? [...bigLangs, { name: 'Other', color: 'var(--dimmer)', total: otherTotal, pct: Math.max(1, Math.round((otherTotal / langTotal) * 100)) }]
+    ? [...bigLangs, { name: 'Other', color: 'var(--dimmer)', count: otherTotal, pct: Math.max(1, Math.round((otherTotal / langTotal) * 100)) }]
     : bigLangs
 
   const publicCount  = liveProjects.filter(p => p.visibility === 'public').length
