@@ -815,14 +815,28 @@ fn merge_duplicate_language_names(cached: &[Value]) -> Option<Vec<Value>> {
     }).collect())
 }
 
+// How long detected languages are trusted before a rescan.
+const LANGUAGE_CACHE_DAYS: i64 = 3;
+
+// Same set as src/lib/languages.js — kept out of the language bar unless a
+// project has nothing else.
+const NON_CODE_LANGUAGES: &[&str] = &["JSON", "Markdown", "YAML", "XML", "TOML", "Text", "CSV"];
+
 #[tauri::command]
 pub async fn projects_detect_languages(app: AppHandle, id: String) -> Vec<Value> {
     if crate::validate_safe_id(&id).is_err() { return vec![]; }
     let project = match get_project(&app, &id) { Some(p) => p, None => return vec![] };
-    // Return cached result if already stored in project data — healing it
-    // first if it's stale data from before languages were merged by name.
-    if let Some(arr) = project["languages"].as_array() {
-        if !arr.is_empty() {
+    // Return the cached result while it is fresh — healing it first if it's
+    // stale data from before languages were merged by name. A cache older than
+    // LANGUAGE_CACHE_DAYS (or one that was never stamped, i.e. written before
+    // data/markup languages were filtered out) is rescanned so the numbers
+    // follow the code as it grows.
+    let fresh = project["languagesScannedAt"].as_str()
+        .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+        .is_some_and(|t| (chrono::Utc::now() - t.with_timezone(&chrono::Utc)).num_days() < LANGUAGE_CACHE_DAYS);
+    if fresh {
+        if let Some(arr) = project["languages"].as_array() {
+            if arr.is_empty() { /* scanned before and found nothing */ return vec![]; }
             if let Some(healed) = merge_duplicate_language_names(arr) {
                 let _ = projects_edit(app, id, json!({ "languages": healed.clone() }));
                 return healed;
@@ -830,11 +844,16 @@ pub async fn projects_detect_languages(app: AppHandle, id: String) -> Vec<Value>
             return arr.clone();
         }
     }
+    let scanned_at = chrono::Utc::now().to_rfc3339();
     let root = project_root_str(&project);
     let mut ext_counts: HashMap<String, u64> = HashMap::new();
     walk_count(Path::new(&root), &mut ext_counts, 0);
-    let total: u64 = ext_counts.values().sum();
-    if total == 0 { return vec![]; }
+    if ext_counts.values().sum::<u64>() == 0 {
+        // Nothing readable (folder moved, or empty): keep whatever was cached,
+        // but stamp the attempt so it isn't retried on every page load.
+        let _ = projects_edit(app, id, json!({ "languagesScannedAt": scanned_at }));
+        return project["languages"].as_array().cloned().unwrap_or_default();
+    }
 
     // Multiple extensions can map to the same language (.js/.jsx are both
     // JavaScript, .ts/.tsx both TypeScript) — merge by language name so each
@@ -848,6 +867,13 @@ pub async fn projects_detect_languages(app: AppHandle, id: String) -> Vec<Value>
         entry.0 += bytes;
     }
     let mut sorted: Vec<_> = by_lang.into_iter().collect();
+    // Data/markup formats (JSON lockfiles, docs, YAML…) would drown the real
+    // languages — drop them, like GitHub's language bar, unless that's all
+    // the project has.
+    if sorted.iter().any(|(l, _)| !NON_CODE_LANGUAGES.contains(l)) {
+        sorted.retain(|(l, _)| !NON_CODE_LANGUAGES.contains(l));
+    }
+    let total: u64 = sorted.iter().map(|(_, (bytes, _))| bytes).sum();
     sorted.sort_by_key(|(_, (bytes, _))| std::cmp::Reverse(*bytes));
     // No cap here — every detected language is returned so the language bar
     // always sums to 100%. (Previously capped at the top 8, which silently
@@ -861,7 +887,7 @@ pub async fn projects_detect_languages(app: AppHandle, id: String) -> Vec<Value>
         json!({ "ext": ext, "name": lang, "count": bytes, "color": color, "pct": pct })
     }).collect();
     // Cache in project file — future calls return instantly from in-memory cache
-    let _ = projects_edit(app, id, json!({ "languages": langs }));
+    let _ = projects_edit(app, id, json!({ "languages": langs, "languagesScannedAt": scanned_at }));
     langs
 }
 
