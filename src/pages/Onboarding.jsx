@@ -83,7 +83,7 @@ export default function Onboarding() {
         const cu = await window.api.system.lookupCommunityUser(info.login).catch(() => null)
         if (cu) { setCommunityUser(cu); setUserTag(cu.tag) }
       } else {
-        setGhError('Invalid token — check the token has repo and read:user scope, or skip.')
+        setGhError('That token did not work. Make sure "repo" and "read:user" are ticked, or skip this step.')
       }
     } catch {
       setGhError('Network error — skip for now and connect GitHub later in Settings.')
@@ -126,7 +126,7 @@ export default function Onboarding() {
     const tick = async () => {
       if (state.inFlight) return // previous poll still in flight — don't pile up requests
       if (Date.now() > deadline) {
-        finish('GitHub login timed out before it was approved. Try again, or paste a personal access token below instead.')
+        finish('GitHub login timed out. Try again, or paste a token below instead.')
         return
       }
       state.inFlight = true
@@ -278,7 +278,7 @@ export default function Onboarding() {
           <StepCard>
             <div style={{ display: 'flex', color: 'var(--dim)', marginBottom: 16 }}><GithubIcon size={40} /></div>
             <StepTitle>Connect GitHub</StepTitle>
-            <StepDesc>Link your GitHub account to enable repo creation, commits, and GitHub features. Optional — skip anytime.</StepDesc>
+            <StepDesc>Connect GitHub to upload your projects from Croco. Optional, and you can skip it.</StepDesc>
 
             {!ghInfo ? (
               <div style={{ marginTop: 24 }}>
@@ -333,14 +333,14 @@ export default function Onboarding() {
                 {oauthEnabled && !oauthData && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0 14px' }}>
                     <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                    <span style={{ fontSize: 11, color: 'var(--dimmer)', whiteSpace: 'nowrap' }}>or use a Personal Access Token</span>
+                    <span style={{ fontSize: 11, color: 'var(--dimmer)', whiteSpace: 'nowrap' }}>or use a token</span>
                     <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
                   </div>
                 )}
 
                 {!oauthData && (
                   <>
-                    <FieldLabel>Personal Access Token</FieldLabel>
+                    <FieldLabel>Token</FieldLabel>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <input
                         value={ghToken}
@@ -548,7 +548,7 @@ export default function Onboarding() {
           <StepCard>
             <div style={{ display: 'flex', color: 'var(--dim)', marginBottom: 16 }}><DatabaseIcon size={40} /></div>
             <StepTitle>Storage backend</StepTitle>
-            <StepDesc>How should Croco store your projects, notes, and todos? Activity is always in SQLite.</StepDesc>
+            <StepDesc>How should Croco save your projects, notes, and todos? If unsure, keep the default.</StepDesc>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
               {[
                 {
@@ -556,16 +556,16 @@ export default function Onboarding() {
                   label: 'JSON Files',
                   badge: 'Default',
                   icon:  <FileIcon size={22} />,
-                  pros:  ['Human-readable files', 'Easy to back up manually'],
-                  cons:  ['Slower with large datasets'],
+                  pros:  ['Easy to read', 'Easy to copy'],
+                  cons:  ['Slower with lots of projects'],
                 },
                 {
                   id:    'sqlite',
-                  label: 'SQLite Database',
+                  label: 'Database',
                   badge: null,
                   icon:  <DatabaseIcon size={22} />,
-                  pros:  ['Faster queries', 'Atomic writes — no data loss'],
-                  cons:  ['Binary format — not hand-editable'],
+                  pros:  ['Faster', 'Safer saving'],
+                  cons:  ['Not readable by hand'],
                 },
               ].map(opt => (
                 <button
@@ -614,9 +614,9 @@ export default function Onboarding() {
               {[
                 {
                   id:    'tray',
-                  label: 'Minimize to Tray',
+                  label: 'Keep Running in Background',
                   badge: 'Default',
-                  desc:  'Croco keeps running in the background. Access it from the system tray icon.',
+                  desc:  'Croco keeps running in the background. Click its icon near the clock to open it.',
                   icon:  <BellIcon size={22} />,
                 },
                 {
@@ -683,8 +683,8 @@ export default function Onboarding() {
               <SummaryRow label="Projects"      value={projectPath} mono />
               <SummaryRow label="IDE"           value={IDE_OPTIONS.find(o => o.value === ide)?.label || ide} />
               <SummaryRow label="Data Storage"  value={dataLocation === 'custom' && customDataPath ? customDataPath : 'App Data (Default)'} mono />
-              <SummaryRow label="Storage"       value={storageBackend === 'sqlite' ? 'SQLite Database' : 'JSON Files'} />
-              <SummaryRow label="Close Window"  value={closeBehavior === 'tray' ? 'Minimize to Tray' : 'Quit App'} />
+              <SummaryRow label="Storage"       value={storageBackend === 'sqlite' ? 'Database' : 'JSON Files'} />
+              <SummaryRow label="Close Window"  value={closeBehavior === 'tray' ? 'Keep Running in Background' : 'Quit'} />
             </div>
             <div style={{ fontSize: 11, color: 'var(--dimmer)', marginTop: 10, textAlign: 'center' }}>
               All of this can be changed anytime in Settings.

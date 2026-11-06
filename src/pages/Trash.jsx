@@ -83,7 +83,7 @@ export default function Trash() {
   }
 
   const modalProps = modal === 'empty-all'
-    ? { title: 'Empty Trash?', desc: `This permanently deletes all ${items.length} item${items.length === 1 ? '' : 's'} in Trash. Project entries removed this way do not touch local files or any linked GitHub repository — only the Croco tracking record.`, warning: 'THIS ACTION CANNOT BE UNDONE.', confirmLabel: 'Empty Trash', confirmRed: true }
+    ? { title: 'Empty Trash?', desc: `This permanently deletes all ${items.length} item${items.length === 1 ? '' : 's'} in Trash. Deleted projects are only removed from Croco. Your code folders and GitHub repos are not touched.`, warning: 'THIS ACTION CANNOT BE UNDONE.', confirmLabel: 'Empty Trash', confirmRed: true }
     : modal
       ? { title: `Delete "${modal.title}" Forever?`, desc: 'This permanently removes it. It cannot be restored after this.', warning: 'THIS ACTION CANNOT BE UNDONE.', confirmLabel: 'Delete Forever', confirmRed: true }
       : null

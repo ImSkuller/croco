@@ -218,7 +218,7 @@ function ProviderSetup({ provider, aiKeysStored }) {
       <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
         <div style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center' }}>
           <VaultIcon size={26} />
-          <span style={{ fontSize: 13, color: 'var(--dimmer)' }}>No Ollama model selected yet — set it up in Settings → Modules → AI, then come back.</span>
+          <span style={{ fontSize: 13, color: 'var(--dimmer)' }}>No Ollama model chosen yet. Pick one in Settings → Modules → AI, then come back.</span>
           <button
             onClick={() => window.location.hash = '#/settings'}
             style={{ padding: '8px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif', transition: 'background var(--transition-fast)' }}

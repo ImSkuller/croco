@@ -623,7 +623,7 @@ export default function Todo() {
               <div style={{ fontSize: 13, color: 'var(--dim)', textAlign: 'center', maxWidth: 300, lineHeight: 1.5 }}>
                 {search
                   ? 'Try a different search term'
-                  : 'Schedules are dated commitments with a description and expiry — separate from your quick task list.'}
+                  : 'Schedules are things with a due date, like deadlines. They are separate from your todo list.'}
               </div>
               {!search && (
                 <button

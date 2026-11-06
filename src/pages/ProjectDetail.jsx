@@ -1480,7 +1480,7 @@ export default function ProjectDetail() {
                 {/* IDE + Visibility */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <div style={labelStyle}>Default IDE</div>
+                    <div style={labelStyle}>Code Editor</div>
                     <select value={editDraft.ide} onChange={e => setEditDraft(d => ({ ...d, ide: e.target.value }))}
                       style={{ ...inputStyle, cursor: 'pointer' }}>
                       <option value="">— None —</option>
