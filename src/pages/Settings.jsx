@@ -48,19 +48,19 @@ const PRESET_TAGS = [
 
 const NAV_SECTIONS = [
   { id: 'user',       label: 'User',         icon: <UserIcon />    },
-  { id: 'paths',      label: 'Paths',        icon: <FolderIcon />  },
-  { id: 'defaults',   label: 'Defaults',     icon: <SaveIcon />    },
+  { id: 'paths',      label: 'Folders',      icon: <FolderIcon />  },
+  { id: 'defaults',   label: 'New Projects', icon: <SaveIcon />    },
   { id: 'tags',       label: 'Tags',         icon: <TagIcon />     },
   { id: 'github',     label: 'GitHub',       icon: <GitIcon />     },
   { id: 'ai',         label: 'AI',           icon: <AIIcon />      },
   { id: 'localApi',   label: 'Local API',    icon: <APIIcon />     },
   { id: 'modules',    label: 'Modules',      icon: <PuzzleIcon />, badge: true },
   { id: 'appearance', label: 'Appearance',   icon: <PaletteIcon /> },
-  { id: 'behaviour',  label: 'Behaviour',    icon: <TagIcon />     },
+  { id: 'behaviour',  label: 'General',      icon: <TagIcon />     },
   { id: 'storage',    label: 'Storage',      icon: <DatabaseIcon /> },
   { id: 'obsidian',   label: 'Obsidian',     icon: <VaultIcon />   },
   { id: 'shortcuts',  label: 'Shortcuts',    icon: <KeyboardIcon />},
-  { id: 'terminal',   label: 'Terminal',     icon: <APIIcon />     },
+  { id: 'terminal',   label: 'Terminal App', icon: <APIIcon />     },
   { id: 'updates',    label: 'Updates',      icon: <RefreshIcon /> },
   { id: 'danger',     label: 'Danger Zone',  icon: <ShieldIcon />  },
 ]
@@ -733,7 +733,7 @@ export default function Settings() {
             {/* User */}
             {activeSection === 'user' && (
               <>
-                <SectionTitle icon={<UserIcon />} title="User" desc="Your profile information displayed across the app." />
+                <SectionTitle icon={<UserIcon />} title="User" desc="Your name and photo." />
 
                 <SettingsCard>
                   <FieldLabel>Avatar</FieldLabel>
@@ -757,7 +757,7 @@ export default function Settings() {
 
                 <SettingsCard>
                   <FieldLabel>Display Name</FieldLabel>
-                  <FieldDesc>Shown in the sidebar and on the dashboard greeting.</FieldDesc>
+                  <FieldDesc>Shown in the sidebar and in the Dashboard greeting.</FieldDesc>
                   <TextInput value={userName} onChange={setUserName} onBlur={() => saveField({ user: { name: userName } })} placeholder="Your name" />
                 </SettingsCard>
 
@@ -805,11 +805,11 @@ export default function Settings() {
             {/* Paths */}
             {activeSection === 'paths' && (
               <>
-                <SectionTitle icon={<FolderIcon />} title="Paths" desc="Configure where projects and app data are stored on your machine." />
+                <SectionTitle icon={<FolderIcon />} title="Folders" desc="Where your projects and Croco's data are saved." />
 
                 <SettingsCard>
-                  <FieldLabel>Public Projects Path</FieldLabel>
-                  <FieldDesc>Default location where new public projects are stored.</FieldDesc>
+                  <FieldLabel>Projects Folder</FieldLabel>
+                  <FieldDesc>New projects are created here.</FieldDesc>
                   <PathInput
                     value={publicPath}
                     onChange={setPublicPath}
@@ -819,35 +819,34 @@ export default function Settings() {
                 </SettingsCard>
 
                 <SettingsCard>
-                  <FieldLabel>Hidden Projects Path</FieldLabel>
-                  <FieldDesc>Location for private/hidden projects. This folder is hidden from the OS file explorer.</FieldDesc>
+                  <FieldLabel>Private Projects Folder</FieldLabel>
+                  <FieldDesc>New private projects are created here. The folder is hidden in your file explorer.</FieldDesc>
                   <PathInput
                     value={hiddenPath}
                     onChange={setHiddenPath}
                     onBlur={() => saveField({ paths: { hiddenProjects: hiddenPath } })}
                     onBrowse={() => pickFolder(setHiddenPath, (p) => saveField({ paths: { hiddenProjects: p } }))}
                   />
-                  <InfoBox>On Windows this folder has the Hidden attribute set via <code style={codeStyle}>attrib +h</code>. On macOS/Linux the dot prefix hides it automatically.</InfoBox>
                 </SettingsCard>
 
                 <SettingsCard>
-                  <FieldLabel>App Data Path</FieldLabel>
-                  <FieldDesc>Where Croco stores all project metadata, notes, and todos.</FieldDesc>
+                  <FieldLabel>Croco Data Folder</FieldLabel>
+                  <FieldDesc>Where Croco saves your projects' details, notes, and todos.</FieldDesc>
                   <PathInput value={loading ? 'Loading…' : appDataPath} onChange={() => {}} disabled />
                 </SettingsCard>
 
                 <SettingsCard>
-                  <FieldLabel>Custom Data Path</FieldLabel>
-                  <FieldDesc>Override the data storage location (e.g. a Dropbox or OneDrive folder). Leave empty to use App Data. Changing this does not migrate existing data.</FieldDesc>
+                  <FieldLabel>Use a Different Data Folder</FieldLabel>
+                  <FieldDesc>Save your data somewhere else, like a Dropbox or OneDrive folder. Leave empty to use the default. Your existing data is not moved for you.</FieldDesc>
                   <PathInput
                     value={customDataPath}
                     onChange={setCustomDataPath}
                     onBlur={() => saveField({ app: { dataPath: customDataPath } })}
                     onBrowse={() => pickFolder(setCustomDataPath, (p) => saveField({ app: { dataPath: p } }))}
-                    placeholder="Leave empty for App Data default"
+                    placeholder="Leave empty to use the default"
                   />
                   {customDataPath && (
-                    <InfoBox>Data will be read from and written to <span style={{ fontFamily: 'Geist Mono, monospace', color: 'var(--text)' }}>{customDataPath}</span>. Manually copy existing data from <span style={{ fontFamily: 'Geist Mono, monospace', color: 'var(--text)' }}>{appDataPath}</span> if needed.</InfoBox>
+                    <InfoBox>Croco will now use <span style={{ fontFamily: 'Geist Mono, monospace', color: 'var(--text)' }}>{customDataPath}</span>. To keep your old data, copy it over from <span style={{ fontFamily: 'Geist Mono, monospace', color: 'var(--text)' }}>{appDataPath}</span>.</InfoBox>
                   )}
                 </SettingsCard>
               </>
@@ -856,11 +855,11 @@ export default function Settings() {
             {/* Defaults */}
             {activeSection === 'defaults' && (
               <>
-                <SectionTitle icon={<SaveIcon />} title="Defaults" desc="Default values applied when creating a new project." />
+                <SectionTitle icon={<SaveIcon />} title="New Projects" desc="Starting choices for new projects." />
 
                 <SettingsCard>
-                  <FieldLabel>Default IDE</FieldLabel>
-                  <FieldDesc>Used when a project has no IDE configured.</FieldDesc>
+                  <FieldLabel>Code Editor</FieldLabel>
+                  <FieldDesc>The editor that opens when a project doesn't have its own.</FieldDesc>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginTop: 8 }}>
                     {IDE_OPTIONS.map(ide => (
                       <IDEOption
@@ -874,14 +873,14 @@ export default function Settings() {
                 </SettingsCard>
 
                 <SettingsCard>
-                  <FieldLabel>Default Git Branch</FieldLabel>
-                  <FieldDesc>Branch used for git commit and push operations.</FieldDesc>
+                  <FieldLabel>Main Branch Name</FieldLabel>
+                  <FieldDesc>The branch name used when saving and uploading your changes with Git.</FieldDesc>
                   <TextInput value={defaultBranch} onChange={setDefaultBranch} onBlur={() => saveField({ defaults: { gitBranch: defaultBranch } })} placeholder="main" mono />
                 </SettingsCard>
 
                 <SettingsCard>
-                  <FieldLabel>Default Visibility</FieldLabel>
-                  <FieldDesc>Whether new projects are public or hidden by default.</FieldDesc>
+                  <FieldLabel>New Projects Are</FieldLabel>
+                  <FieldDesc>Public projects show up as normal. Hidden ones are kept private.</FieldDesc>
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                     {['public', 'hidden'].map(v => (
                       <ToggleChip
@@ -897,8 +896,8 @@ export default function Settings() {
                 </SettingsCard>
 
                 <SettingsCard>
-                  <FieldLabel>Default Shell</FieldLabel>
-                  <FieldDesc>Shell used to run dev/build commands in the project terminal.</FieldDesc>
+                  <FieldLabel>Terminal Type</FieldLabel>
+                  <FieldDesc>The command-line program used when you run a project. If unsure, keep the default.</FieldDesc>
                   <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                     {(SHELL_OPTIONS[platform] || SHELL_OPTIONS.other).map(opt => (
                       <ToggleChip
@@ -918,15 +917,15 @@ export default function Settings() {
             {/* GitHub */}
             {activeSection === 'github' && (
               <>
-                <SectionTitle icon={<GitIcon />} title="GitHub" desc="Connect your GitHub account to create and push repos directly from the app." />
+                <SectionTitle icon={<GitIcon />} title="GitHub" desc="Connect GitHub to upload your projects from inside Croco." />
 
                 {/* Quick setup guide */}
                 <SettingsCard>
-                  <FieldLabel>Quick Setup</FieldLabel>
+                  <FieldLabel>How to Connect</FieldLabel>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
                     {[
-                      { n: 1, text: 'Open GitHub token settings', action: () => window.api?.system.openExternal('https://github.com/settings/tokens/new?scopes=repo,read:user&description=Croco+Dev+Manager'), btn: 'Open GitHub →' },
-                      { n: 2, text: 'Select scopes: repo and read:user, then click "Generate token"', action: null, btn: null },
+                      { n: 1, text: 'Open the GitHub page that creates a token (a password for apps)', action: () => window.api?.system.openExternal('https://github.com/settings/tokens/new?scopes=repo,read:user&description=Croco+Dev+Manager'), btn: 'Open GitHub →' },
+                      { n: 2, text: 'Leave "repo" and "read:user" ticked, then click "Generate token"', action: null, btn: null },
                       { n: 3, text: 'Paste the token below and click "Test Connection"', action: null, btn: null },
                     ].map(step => (
                       <div key={step.n} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -945,21 +944,21 @@ export default function Settings() {
                     ))}
                   </div>
                   <InfoBox style={{ marginTop: 12 }}>
-                    Make sure <code style={codeStyle}>git</code> is installed on your system — the app uses your local git binary for all operations. <span style={{ color: 'var(--blue)', cursor: 'pointer', textDecoration: 'underline' }} onClick={() => window.api?.system.openExternal('https://git-scm.com/downloads')}>Download git</span> if you see "cannot initialize repository" errors.
+                    Croco needs Git installed on your computer. <span style={{ color: 'var(--blue)', cursor: 'pointer', textDecoration: 'underline' }} onClick={() => window.api?.system.openExternal('https://git-scm.com/downloads')}>Download git</span> if you see a "cannot initialize repository" error.
                   </InfoBox>
                 </SettingsCard>
 
                 <SettingsCard>
                   <FieldLabel>GitHub Username</FieldLabel>
-                  <FieldDesc>Your GitHub username — used for linking repos and author info on commits.</FieldDesc>
+                  <FieldDesc>Used to link your projects to GitHub.</FieldDesc>
                   <TextInput value={ghUsername} onChange={setGhUsername} onBlur={() => saveField({ user: { github: { username: ghUsername } } })} placeholder="your-username" mono />
                 </SettingsCard>
 
                 <SettingsCard>
                   <FieldLabel>Connect GitHub Account</FieldLabel>
-                  <FieldDesc>Connect with one click — no tokens to manage. Grants <code style={codeStyle}>repo</code> and <code style={codeStyle}>read:user</code> scopes.</FieldDesc>
+                  <FieldDesc>The easiest way: log in on GitHub's website and you're done.</FieldDesc>
                   {!oauthEnabled ? (
-                    <InfoBox style={{ marginTop: 10 }}>One-click login isn't available in this build — use a personal access token below instead.</InfoBox>
+                    <InfoBox style={{ marginTop: 10 }}>Quick login isn't available in this version. Use a token below instead.</InfoBox>
                   ) : !oauthData ? (
                     <button
                       onClick={handleOAuthStart}
@@ -983,11 +982,11 @@ export default function Settings() {
                       background: 'var(--base)', border: '1px solid var(--border)',
                       fontSize: 13,
                     }}>
-                      <div style={{ color: 'var(--dim)', marginBottom: 6 }}>Enter this code at <span style={{ fontFamily: 'Geist Mono, monospace', color: 'var(--text)' }}>github.com/login/device</span>:</div>
+                      <div style={{ color: 'var(--dim)', marginBottom: 6 }}>Type this code on <span style={{ fontFamily: 'Geist Mono, monospace', color: 'var(--text)' }}>github.com/login/device</span>:</div>
                       <div style={{ fontFamily: 'Geist Mono, monospace', fontSize: 22, fontWeight: 700, letterSpacing: 5, color: 'var(--orange)', marginBottom: 6 }}>
                         {oauthData.user_code}
                       </div>
-                      {oauthPolling && <div style={{ fontSize: 11, color: 'var(--dimmer)' }}>Waiting for authorisation…</div>}
+                      {oauthPolling && <div style={{ fontSize: 11, color: 'var(--dimmer)' }}>Waiting for you to approve on GitHub…</div>}
                       <button
                         onClick={() => { stopOauthPolling(); setOauthData(null); setOauthPolling(false) }}
                         style={{ marginTop: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', fontSize: 11, textDecoration: 'underline', fontFamily: 'Geist, sans-serif' }}
@@ -995,19 +994,19 @@ export default function Settings() {
                     </div>
                   )}
                   <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-                    <FieldLabel>Personal Access Token</FieldLabel>
+                    <FieldLabel>Token</FieldLabel>
                     <FieldDesc>
-                      Fallback when one-click login isn't available. Needs the <code style={codeStyle}>repo</code> scope — generate one at github.com/settings/tokens.
-                      {ghTokenStored && ' A token is currently stored — paste a new one here and save to replace it.'}
+                      Use this if the login button above doesn't work. Create one at github.com/settings/tokens with the <code style={codeStyle}>repo</code> option ticked.
+                      {ghTokenStored && ' A token is already saved. Paste a new one to replace it.'}
                     </FieldDesc>
                     <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                      <TextInput type="password" value={ghToken} onChange={setGhToken} placeholder={ghTokenStored ? '••••••••  (stored — paste to replace)' : 'ghp_...'} mono />
+                      <TextInput type="password" value={ghToken} onChange={setGhToken} placeholder={ghTokenStored ? '••••••••  (saved — paste to replace)' : 'ghp_...'} mono />
                       <SmallBtn onClick={handleSaveGithubToken} disabled={!ghToken.trim()}>Save Token</SmallBtn>
                       <SmallBtn onClick={handleTestGithub}>{ghTestStatus === 'testing' ? 'Testing…' : 'Test Connection'}</SmallBtn>
                     </div>
                     {secretsFallbackActive && (
                       <InfoBox style={{ marginTop: 10 }}>
-                        Your OS credential store isn't available, so this token is stored in an encrypted local file instead. It's protected from casual disk access but not from other processes on this machine.
+                        Your computer's secure password storage isn't available, so this token is saved in an encrypted file on this computer instead.
                       </InfoBox>
                     )}
                   </div>
@@ -1034,7 +1033,7 @@ export default function Settings() {
                         Connected as <span style={{ color: 'var(--blue)', fontFamily: 'Geist Mono, monospace' }}>@{ghUsername}</span>
                       </span>
                     ) : (
-                      <span style={{ fontSize: 13, color: 'var(--dimmer)' }}>Not connected — follow the Quick Setup steps above</span>
+                      <span style={{ fontSize: 13, color: 'var(--dimmer)' }}>Not connected. Follow the steps above.</span>
                     )}
                     {ghConnected && (
                       <SmallBtn onClick={() => window.api?.system.openExternal(`https://github.com/${ghUsername}`)}>
@@ -1049,21 +1048,21 @@ export default function Settings() {
             {/* AI */}
             {activeSection === 'ai' && (
               <>
-                <SectionTitle icon={<AIIcon />} title="AI" desc="Generate a commit message from your staged changes. Strictly opt-in — nothing here is called unless you turn it on and provide your own API key." />
+                <SectionTitle icon={<AIIcon />} title="AI" desc="Let AI write your commit messages. Off by default, and it only works if you add your own API key." />
 
                 <SettingsCard>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <FieldLabel>AI Commit Messages</FieldLabel>
-                      <FieldDesc>Adds a "Generate with AI" button to the commit box in each project's Git tab. The diff is sent to the provider below — review the generated message before committing, it's never used automatically.</FieldDesc>
+                      <FieldDesc>Adds a "Generate with AI" button when you save changes. Your changes are sent to the AI company you pick below. You always get to review the message first.</FieldDesc>
                     </div>
                     <Toggle value={aiEnabled} onChange={handleAiToggle} />
                   </div>
                 </SettingsCard>
 
                 <SettingsCard>
-                  <FieldLabel>Provider</FieldLabel>
-                  <FieldDesc>Each provider needs its own API key, entered below.</FieldDesc>
+                  <FieldLabel>AI Company</FieldLabel>
+                  <FieldDesc>Each one needs its own API key (a password you get from their website).</FieldDesc>
                   <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     {[
                       { id: 'anthropic', label: 'Anthropic' },
@@ -1085,8 +1084,8 @@ export default function Settings() {
                     <FieldLabel>{{ anthropic: 'Anthropic', openai: 'OpenAI', gemini: 'Gemini' }[aiProvider]} API Key</FieldLabel>
                     <FieldDesc>
                       {aiKeysStored[aiProvider]
-                        ? 'A key is currently stored for this provider — paste a new one to replace it.'
-                        : 'Paste a key from your provider account. Stored in your OS credential store, never in settings.json.'}
+                        ? 'A key is already saved. Paste a new one to replace it.'
+                        : 'Paste the key from your account on their website. It is stored securely on this computer.'}
                     </FieldDesc>
                     <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                       <div style={{ flex: 1, position: 'relative' }}>
@@ -1094,7 +1093,7 @@ export default function Settings() {
                           type={aiKeyVisible ? 'text' : 'password'}
                           value={aiKeyInput}
                           onChange={setAiKeyInput}
-                          placeholder={aiKeysStored[aiProvider] ? '••••••••  (stored — paste to replace)' : 'sk-...'}
+                          placeholder={aiKeysStored[aiProvider] ? '••••••••  (saved — paste to replace)' : 'sk-...'}
                           mono
                         />
                         <button
@@ -1110,7 +1109,7 @@ export default function Settings() {
                     </div>
                     {secretsFallbackActive && (
                       <InfoBox style={{ marginTop: 10 }}>
-                        Your OS credential store isn't available, so this key is stored in an encrypted local file instead. It's protected from casual disk access but not from other processes on this machine.
+                        Your computer's secure password storage isn't available, so this key is saved in an encrypted file on this computer instead.
                       </InfoBox>
                     )}
                   </div>
@@ -1121,17 +1120,17 @@ export default function Settings() {
             {/* Local API */}
             {activeSection === 'localApi' && (
               <>
-                <SectionTitle icon={<APIIcon />} title="Local API" desc="A small HTTP server on your own machine so editor extensions or scripts can drive Croco — list projects, create notes/todos, start or stop a run. Off by default; every request needs the token below." />
+                <SectionTitle icon={<APIIcon />} title="Local API" desc="For advanced users. Lets other programs on your computer talk to Croco, for example to list projects or add todos. Off by default." />
 
                 <SettingsCard>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <FieldLabel>Enable Local API</FieldLabel>
                       <FieldDesc>
-                        Binds to <code style={codeStyle}>127.0.0.1</code> only — never reachable from another machine or over the internet.
+                        Only programs on this computer can connect. Nothing is reachable over the internet.
                         {apiEnabled && (apiRunning
                           ? <span style={{ color: 'var(--green)' }}> Running on port {apiPort}.</span>
-                          : <span style={{ color: 'var(--orange)' }}> Not running — check the port isn't already in use.</span>)}
+                          : <span style={{ color: 'var(--orange)' }}> Not running. Another app may be using this port, so try a different number.</span>)}
                       </FieldDesc>
                     </div>
                     <Toggle value={apiEnabled} onChange={handleApiToggle} />
@@ -1142,7 +1141,7 @@ export default function Settings() {
                   <>
                     <SettingsCard>
                       <FieldLabel>Port</FieldLabel>
-                      <FieldDesc>Restart isn't needed — the server rebinds immediately when this changes.</FieldDesc>
+                      <FieldDesc>A number other programs use to find Croco. The default works for most people.</FieldDesc>
                       <div style={{ marginTop: 8, maxWidth: 140 }}>
                         <TextInput type="number" value={apiPort} onChange={handleApiPortChange} mono />
                       </div>
@@ -1151,8 +1150,8 @@ export default function Settings() {
                     <SettingsCard>
                       <FieldLabel>Access Token</FieldLabel>
                       <FieldDesc>
-                        Send it as <code style={codeStyle}>Authorization: Bearer &lt;token&gt;</code> on every request except <code style={codeStyle}>/health</code>.
-                        {apiTokenStored && !apiTokenReveal && ' A token is already set — regenerating invalidates it immediately.'}
+                        A password other programs must send as <code style={codeStyle}>Authorization: Bearer &lt;token&gt;</code>.
+                        {apiTokenStored && !apiTokenReveal && ' A token already exists. Making a new one stops the old one from working.'}
                       </FieldDesc>
                       {apiTokenReveal ? (
                         <div style={{ marginTop: 10 }}>
@@ -1165,19 +1164,19 @@ export default function Settings() {
                             ><CopyIcon size={14} /></button>
                           </div>
                           <InfoBox style={{ marginTop: 10 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><AlertTriangleIcon size={12} /> Copy this now — Croco won't show it again. Regenerate to get a new one.</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><AlertTriangleIcon size={12} /> Copy this now. Croco won't show it again. You can make a new one anytime.</div>
                           </InfoBox>
                         </div>
                       ) : (
                         <div style={{ marginTop: 10 }}>
-                          <SmallBtn onClick={handleRegenerateToken}>{apiBusy ? 'Working…' : apiTokenStored ? 'Regenerate Token' : 'Generate Token'}</SmallBtn>
+                          <SmallBtn onClick={handleRegenerateToken}>{apiBusy ? 'Working…' : apiTokenStored ? 'Make New Token' : 'Make Token'}</SmallBtn>
                         </div>
                       )}
                     </SettingsCard>
 
                     <SettingsCard>
                       <FieldLabel>Example</FieldLabel>
-                      <FieldDesc>List projects from a terminal:</FieldDesc>
+                      <FieldDesc>Example: list your projects from a terminal:</FieldDesc>
                       <pre style={{ marginTop: 8, padding: '10px 12px', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', fontSize: 11, fontFamily: 'Geist Mono, monospace', color: 'var(--dim)', overflowX: 'auto' }}>
 {`curl http://127.0.0.1:${apiPort}/projects \\
   -H "Authorization: Bearer <token>"`}
@@ -1197,11 +1196,11 @@ export default function Settings() {
             {/* Appearance */}
             {activeSection === 'appearance' && (
               <>
-                <SectionTitle icon={<PaletteIcon />} title="Appearance" desc="Customise the look and feel of the app." />
+                <SectionTitle icon={<PaletteIcon />} title="Appearance" desc="Change how Croco looks." />
 
                 <SettingsCard>
                   <FieldLabel>Style</FieldLabel>
-                  <FieldDesc>Picks the overall look-and-feel — shapes, blur, motion. Independent of Theme, which only picks colours.</FieldDesc>
+                  <FieldDesc>Changes the shape and feel of buttons and panels. Colours are set separately under Theme.</FieldDesc>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginTop: 12 }}>
                     {STYLES.map(style => {
                       const isActive = selectedStyle === style.id
@@ -1242,7 +1241,7 @@ export default function Settings() {
 
                 <SettingsCard>
                   <FieldLabel>Glass Effect</FieldLabel>
-                  <FieldDesc>Real frosted-glass window (Windows 11 Mica, or Acrylic/Blur as a fallback) behind translucent cards and sidebar. Independent of Style — works with any theme. Falls back gracefully on older Windows versions and other platforms.</FieldDesc>
+                  <FieldDesc>Makes the window see-through with a frosted look. Works with any theme. On older computers it may look slightly different.</FieldDesc>
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                     {[{ v: false, label: 'off' }, { v: true, label: 'on' }].map(({ v, label }) => (
                       <ToggleChip
@@ -1264,7 +1263,7 @@ export default function Settings() {
 
                 <SettingsCard>
                   <FieldLabel>Smooth Animations</FieldLabel>
-                  <FieldDesc>Fluid, Apple-like motion for page transitions, panel swaps, and hover/press feedback throughout the app. Turning this off snaps everything instantly — same effect as your OS's "reduce motion" setting, but toggleable in-app.</FieldDesc>
+                  <FieldDesc>Smooth movement when switching pages and pressing buttons. Turn off if you prefer things to change instantly. Your computer's "reduce motion" setting is always respected.</FieldDesc>
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                     {[{ v: true, label: 'on' }, { v: false, label: 'off' }].map(({ v, label }) => (
                       <ToggleChip
@@ -1285,7 +1284,7 @@ export default function Settings() {
 
                 <SettingsCard>
                   <FieldLabel>Theme</FieldLabel>
-                  <FieldDesc>Choose a colour theme for the entire app.</FieldDesc>
+                  <FieldDesc>Pick the colours for the whole app.</FieldDesc>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginTop: 12 }}>
                     {THEMES.map(theme => {
                       const [bg, accent] = getThemeAccentSwatch(theme.id)
@@ -1346,7 +1345,7 @@ export default function Settings() {
 
                 <SettingsCard>
                   <FieldLabel>Accent Colour</FieldLabel>
-                  <FieldDesc>Override the primary highlight colour for the default theme.</FieldDesc>
+                  <FieldDesc>The colour used for highlights and selected items.</FieldDesc>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
                     {['#e8e4dc', '#ff6b35', '#4a9eff', '#4aff91', '#a855f7', '#ffd700', '#ff4444'].map(color => (
                       <button
@@ -1376,7 +1375,7 @@ export default function Settings() {
 
                 <SettingsCard>
                   <FieldLabel>UI Font</FieldLabel>
-                  <FieldDesc>Body font used throughout the interface. Geist Mono is always used for code and IDs.</FieldDesc>
+                  <FieldDesc>The font used for most text. Code always uses a code font.</FieldDesc>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
                     {[
                       { id: 'Geist',         sample: 'The quick brown fox' },
@@ -1405,8 +1404,8 @@ export default function Settings() {
                 </SettingsCard>
 
                 <SettingsCard>
-                  <FieldLabel>Display Font</FieldLabel>
-                  <FieldDesc>Serif font used for page titles and headings. Choose "Same as body" to turn the serif look off.</FieldDesc>
+                  <FieldLabel>Heading Font</FieldLabel>
+                  <FieldDesc>The font used for page titles. Choose "Same as body" for a plainer look.</FieldDesc>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
                     {[
                       { id: 'Lora',             label: 'Lora',             sample: 'Rise of the Croco' },
@@ -1436,15 +1435,15 @@ export default function Settings() {
             {/* Behaviour */}
             {activeSection === 'behaviour' && (
               <>
-                <SectionTitle icon={<TagIcon />} title="Behaviour" desc="Configure how the app behaves." />
+                <SectionTitle icon={<TagIcon />} title="General" desc="How Croco starts, closes, and notifies you." />
 
                 <SettingsCard>
                   <FieldLabel>When closing the window</FieldLabel>
-                  <FieldDesc>Controls what happens when you click the X on the title bar.</FieldDesc>
+                  <FieldDesc>What happens when you click the X button.</FieldDesc>
                   <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     {[
-                      { id: 'tray', label: <><BellIcon size={12} /> Minimize to Tray</> },
-                      { id: 'quit', label: <><XCircleIcon size={12} /> Quit App</> },
+                      { id: 'tray', label: <><BellIcon size={12} /> Keep Running in Background</> },
+                      { id: 'quit', label: <><XCircleIcon size={12} /> Quit</> },
                     ].map(opt => (
                       <ToggleChip
                         key={opt.id}
@@ -1457,13 +1456,13 @@ export default function Settings() {
                     ))}
                   </div>
                   {closeBehavior === 'tray' && (
-                    <InfoBox>The app will continue running in the background. Use the tray icon to reopen it or quit fully.</InfoBox>
+                    <InfoBox>Croco stays open in the background. Click its icon near the clock to reopen it or quit for good.</InfoBox>
                   )}
                 </SettingsCard>
 
                 <SettingsCard>
-                  <FieldLabel>Start on startup</FieldLabel>
-                  <FieldDesc>Launch Croco automatically when you log in.</FieldDesc>
+                  <FieldLabel>Open When I Turn On My Computer</FieldLabel>
+                  <FieldDesc>Croco opens by itself when you log in.</FieldDesc>
                   <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     {[
                       { id: true,  label: <><CheckCircleIcon size={12} /> Enabled</> },
@@ -1486,7 +1485,7 @@ export default function Settings() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <FieldLabel>Show hidden projects on the Dashboard</FieldLabel>
-                      <FieldDesc>Hidden (private-path) projects stay off the home page by default. Archived projects never show there either way.</FieldDesc>
+                      <FieldDesc>Hidden projects are left off the Dashboard unless you turn this on. Archived projects never show there.</FieldDesc>
                     </div>
                     <Toggle value={showHiddenOnDashboard} onChange={handleShowHiddenToggle} />
                   </div>
@@ -1494,19 +1493,19 @@ export default function Settings() {
 
                 <SettingsCard>
                   <FieldLabel>Desktop Notifications</FieldLabel>
-                  <FieldDesc>OS-level notifications (Action Center / Notification Center), one switch per event.</FieldDesc>
+                  <FieldDesc>Pop-up alerts from your computer. Choose which ones you want.</FieldDesc>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12, marginBottom: desktopPermissionGranted === false ? 12 : 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 12, color: 'var(--text)' }}>Deadline reminders <span style={{ color: 'var(--dimmer)' }}>— when a schedule's due date/time arrives</span></span>
+                      <span style={{ fontSize: 12, color: 'var(--text)' }}>Deadline reminders <span style={{ color: 'var(--dimmer)' }}>— when a deadline arrives</span></span>
                       <Toggle value={deadlineRemindersEnabled} onChange={handleDeadlineRemindersToggle} />
                     </div>
                     {[
-                      { id: 'runFinished',   label: 'Run finished',        desc: 'a project run exits cleanly' },
-                      { id: 'runFailed',     label: 'Run failed',          desc: 'a project run exits with an error' },
-                      { id: 'pushSucceeded', label: 'Push succeeded',      desc: 'only while Croco is in the background' },
-                      { id: 'pushFailed',    label: 'Push failed',         desc: 'auth or network problems on push' },
-                      { id: 'aiReply',       label: 'AI reply ready',      desc: 'only while Croco is in the background' },
-                      { id: 'focusEnded',    label: 'Focus session ended', desc: 'work or break timer completes' },
+                      { id: 'runFinished',   label: 'Run finished',        desc: 'a project run completes' },
+                      { id: 'runFailed',     label: 'Run failed',          desc: 'a project run stops with an error' },
+                      { id: 'pushSucceeded', label: 'Upload succeeded',    desc: 'only when Croco is in the background' },
+                      { id: 'pushFailed',    label: 'Upload failed',       desc: 'the upload to GitHub did not work' },
+                      { id: 'aiReply',       label: 'AI reply ready',      desc: 'only when Croco is in the background' },
+                      { id: 'focusEnded',    label: 'Focus session ended', desc: 'a work or break timer ends' },
                     ].map(n => (
                       <div key={n.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ fontSize: 12, color: 'var(--text)' }}>{n.label} <span style={{ color: 'var(--dimmer)' }}>— {n.desc}</span></span>
@@ -1516,12 +1515,12 @@ export default function Settings() {
                   </div>
                   {desktopPermissionGranted === false && (
                     <InfoBox>
-                      Desktop notification permission hasn't been granted yet — reminders won't show until it is.
+                      Your computer hasn't allowed Croco to show notifications yet.
                       <button
                         onClick={handleRequestDesktopPermission}
                         style={{ marginLeft: 8, padding: '3px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
                       >
-                        Grant Permission
+                        Allow Notifications
                       </button>
                     </InfoBox>
                   )}
