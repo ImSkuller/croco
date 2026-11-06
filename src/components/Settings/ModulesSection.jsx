@@ -15,7 +15,7 @@ import SocialModuleCard from './modules/SocialModuleCard'
 export default function ModulesSection({ aiKeysStored }) {
   return (
     <>
-      <SectionTitle icon={<AIIcon />} title="Modules" desc="Optional features, off by default. Each is in beta — expect rough edges, and enable only what you want to try." />
+      <SectionTitle icon={<AIIcon />} title="Modules" desc="Extra features you can turn on. They're all off by default and still in beta, so expect a few rough edges." />
       <DiscordModuleCard />
       <IdeModuleCard />
       <AiModuleCard aiKeysStored={aiKeysStored} />

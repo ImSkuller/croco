@@ -33,16 +33,16 @@ export default function IdeModuleCard() {
   return (
     <SettingsCard>
       <ModuleHeader icon={<IDEIcon />} title="IDE" enabled={ide.enabled} onToggle={() => updateModule({ enabled: !ide.enabled })}
-        desc="An embedded code editor — adds an IDE tab to the sidebar and to each project, for quick edits without leaving Croco." />
+        desc="A built-in code editor. Adds an Editor tab to the sidebar and to each project, so you can make quick edits without leaving Croco." />
       {ide.enabled && (
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <InfoBox>
-            This is a lightweight editor (syntax highlighting, multi-file tabs, save-to-disk, themed to match Croco) — not a replacement for your real IDE. No extensions, no debugger.
+            This is a simple editor for quick changes. It isn't a replacement for a full editor like VS Code, and has no extensions or debugger.
           </InfoBox>
 
           <div>
             <FieldLabel>Explorer Position</FieldLabel>
-            <FieldDesc>Which side the file explorer sits on. Whenever it's actually visible — the IDE page, or a project's own Code tab — Croco's own sidebar moves to the opposite edge, framing the content from both sides instead of stacking together. Everywhere else, the sidebar stays put on the left. There's also a quick-flip button right in the explorer panel itself.</FieldDesc>
+            <FieldDesc>Which side the file list is on. While it's showing, Croco's main sidebar moves to the opposite side. Everywhere else the sidebar stays on the left. You can also flip it with the button on the file list.</FieldDesc>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <ToggleChip label="Left" active={layout.explorerSide !== 'right'} color="var(--accent)" bg="var(--accent-dim)" onClick={() => setExplorerSide('left')} />
               <ToggleChip label="Right" active={layout.explorerSide === 'right'} color="var(--accent)" bg="var(--accent-dim)" onClick={() => setExplorerSide('right')} />
@@ -51,7 +51,7 @@ export default function IdeModuleCard() {
 
           <div>
             <FieldLabel>Editor Color Theme</FieldLabel>
-            <FieldDesc>Catppuccin Mocha is a real ported syntax theme (not just re-tinted chrome) and is the default regardless of your app-wide Croco theme — the same way a real IDE's editor theme is its own choice. "Match Croco Theme" instead derives editor colors from whatever app theme/accent is active.</FieldDesc>
+            <FieldDesc>The color scheme used for code. Catppuccin Mocha is the default and doesn't change with your app theme. "Match Croco Theme" uses your current app colors instead.</FieldDesc>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <ToggleChip label="Catppuccin Mocha" active={editor.colorTheme !== 'croco'} color="var(--accent)" bg="var(--accent-dim)" onClick={() => updateEditor({ colorTheme: 'catppuccin-mocha' })} />
               <ToggleChip label="Match Croco Theme" active={editor.colorTheme === 'croco'} color="var(--accent)" bg="var(--accent-dim)" onClick={() => updateEditor({ colorTheme: 'croco' })} />
@@ -61,7 +61,7 @@ export default function IdeModuleCard() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <FieldLabel>Claude Code Panel</FieldLabel>
-              <FieldDesc>Adds a Claude Code tab next to Ask AI, backed by your own locally-installed <code>claude</code> CLI, scoped to the open project's folder. Defaults to read-only ("Plan") permission — escalate per-session from inside the panel.</FieldDesc>
+              <FieldDesc>Adds a Claude Code tab next to Ask AI. It uses the <code>claude</code> program installed on your computer and only works inside the open project's folder. It starts in read-only ("Plan") mode, and you can allow more from inside the panel.</FieldDesc>
             </div>
             <Toggle value={claudeCode.enabled} onChange={() => updateClaudeCode({ enabled: !claudeCode.enabled })} />
           </div>
@@ -124,7 +124,7 @@ export default function IdeModuleCard() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <FieldLabel>Format on Save</FieldLabel>
-              <FieldDesc>Runs Monaco's built-in formatter before writing — works well for JSON/CSS/HTML; other languages fall back to saving as-is if no formatter is registered.</FieldDesc>
+              <FieldDesc>Tidies up your code when you save. Works best for JSON, CSS, and HTML. Other languages are saved as they are.</FieldDesc>
             </div>
             <Toggle value={editor.formatOnSave} onChange={() => updateEditor({ formatOnSave: !editor.formatOnSave })} />
           </div>

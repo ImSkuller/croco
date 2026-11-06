@@ -14,10 +14,10 @@ export default function DockerModuleCard() {
   return (
     <SettingsCard>
       <ModuleHeader icon={<PackageIcon />} title="Docker" enabled={d.enabled} onToggle={() => update({ enabled: !d.enabled })}
-        desc="Adds a Docker tab to any project with a docker-compose file — see services, start/stop them, and view logs, using your own docker CLI." />
+        desc="Adds a Docker tab to projects that use Docker, so you can start, stop, and see logs for each service." />
       {d.enabled && (
         <InfoBox style={{ marginTop: 16 }}>
-          Needs Docker Desktop/Engine installed and on PATH. Nothing to configure here — open a project with a <code>docker-compose.yml</code> to see the Docker tab.
+          Docker must be installed on your computer. Nothing to set up here. Open a project that has a <code>docker-compose.yml</code> file to see the Docker tab.
         </InfoBox>
       )}
     </SettingsCard>

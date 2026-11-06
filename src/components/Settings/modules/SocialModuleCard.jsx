@@ -23,12 +23,12 @@ export default function SocialModuleCard() {
         title="Social"
         enabled={s.enabled}
         onToggle={() => update({ enabled: !s.enabled })}
-        desc="Posts, a feed, follows, and Launchpad — Croco's opt-in social layer. Requires GitHub login and a network connection."
+        desc="Posts, a feed, following people, and Launchpad. Needs a GitHub login and an internet connection."
       />
       {s.enabled && (
         <>
           <InfoBox style={{ marginTop: 16 }}>
-            We never store your code — GitHub attachments are fetched live and only a small cached repo card (name, stars, description, a short README excerpt) is kept, never full file contents.
+            Your code is never stored. Only a small summary card of each repo is kept (name, stars, description, and a short intro).
           </InfoBox>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontSize: 13, color: 'var(--text)' }}>
             <input

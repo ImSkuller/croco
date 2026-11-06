@@ -49,7 +49,7 @@ export default function WebhookFields({ title, desc, placeholder, enabled, urlSt
       {enabled && (
         <div style={{ marginTop: 12 }}>
           <FieldLabel>Webhook URL</FieldLabel>
-          {urlStored && <FieldDesc>A URL is currently stored — paste a new one here and Save to replace it.</FieldDesc>}
+          {urlStored && <FieldDesc>A URL is already saved. Paste a new one and click Save to replace it.</FieldDesc>}
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <div style={{ flex: 1, position: 'relative' }}>
               <TextInput

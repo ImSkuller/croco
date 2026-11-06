@@ -14,7 +14,7 @@ export default function FocusTimerModuleCard() {
   return (
     <SettingsCard>
       <ModuleHeader icon={<ClockIcon />} title="Focus Timer" enabled={f.enabled} onToggle={() => update({ enabled: !f.enabled })}
-        desc="A local Pomodoro-style work/break timer with a Focus tab in the sidebar. No network calls, no accounts." />
+        desc="A work and break timer (Pomodoro style) in the sidebar. Works offline, no account needed." />
       {f.enabled && (
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', gap: 16 }}>
           <div style={{ flex: 1 }}>

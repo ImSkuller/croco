@@ -14,10 +14,10 @@ export default function EnvManagerModuleCard() {
   return (
     <SettingsCard>
       <ModuleHeader icon={<LockIcon />} title="Env Manager" enabled={e.enabled} onToggle={() => update({ enabled: !e.enabled })}
-        desc="Adds an Env tab to each project — view and edit its .env file with values masked by default." />
+        desc="Adds an Env tab to each project to view and edit its .env file (secret settings). Values are hidden until you reveal them." />
       {e.enabled && (
         <InfoBox style={{ marginTop: 16 }}>
-          Edits go straight to the project's real <code>.env</code> file — there's no separate encrypted store, so this is exactly as secure as that file already was on disk.
+          Changes are saved straight into the project's own <code>.env</code> file. It is no more or less secure than that file already was.
         </InfoBox>
       )}
     </SettingsCard>

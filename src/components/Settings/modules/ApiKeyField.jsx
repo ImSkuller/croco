@@ -40,7 +40,7 @@ export default function ApiKeyField({ provider, keyStored }) {
     <div>
       <FieldLabel>{LABELS[provider] || provider} API Key</FieldLabel>
       <FieldDesc>
-        {keyStored ? 'A key is currently stored for this provider — paste a new one to replace it.' : 'Paste a key from your provider account. Stored in your OS credential store, never in settings.json.'}
+        {keyStored ? 'A key is already saved. Paste a new one to replace it.' : 'Paste the key from your account on their website. It is stored securely on this computer.'}
       </FieldDesc>
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
         <div style={{ flex: 1, position: 'relative' }}>
