@@ -31,14 +31,14 @@ export default function TerminalSection({ toast }) {
 
   return (
     <>
-      <SectionTitle icon={<APIIcon />} title="Terminal" desc="Use Croco from any terminal — type croco in cmd, PowerShell, or your shell of choice." />
+      <SectionTitle icon={<APIIcon />} title="Terminal" desc="Use Croco by typing commands. Type croco in any terminal window." />
       <SettingsCard>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <div>
             <FieldLabel>The croco command</FieldLabel>
             <FieldDesc>
-              A standalone terminal app that shares your projects, todos and notes with the desktop app. It opens a
-              Claude Code–style prompt with slash commands — no Node or extra install needed.
+              A text-based version of Croco that uses the same projects, todos, and notes as this app.
+              Nothing extra to install.
             </FieldDesc>
           </div>
           {status?.available && (
@@ -60,7 +60,7 @@ export default function TerminalSection({ toast }) {
 
         {status === null && <FieldDesc>Checking…</FieldDesc>}
         {status && !status.available && (
-          <InfoBox>This build doesn't include the terminal app (development builds don't). Installed releases do.</InfoBox>
+          <InfoBox>The terminal app isn't included in this version. It comes with the normal installed app.</InfoBox>
         )}
         {status?.available && (
           <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: status.installed ? '#4aff91' : 'var(--dim)' }}>
@@ -85,7 +85,7 @@ export default function TerminalSection({ toast }) {
             </div>
           ))}
         </div>
-        <FieldDesc>Inside the prompt, type / to see every command with live suggestions. Changes made there appear here when you switch back to the app.</FieldDesc>
+        <FieldDesc>Type / in the terminal to see all commands. Changes made there show up here when you switch back.</FieldDesc>
       </SettingsCard>
     </>
   )

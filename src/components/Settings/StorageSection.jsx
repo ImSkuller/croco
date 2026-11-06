@@ -16,13 +16,13 @@ export default function StorageSection({
 }) {
   return (
     <>
-      <SectionTitle icon={<DatabaseIcon />} title="Storage" desc="Choose how Croco stores your data. Activity logs are always kept in SQLite." />
+      <SectionTitle icon={<DatabaseIcon />} title="Storage" desc="Choose how Croco saves your data, and back it up." />
       <SettingsCard>
-        <FieldLabel>Storage Backend</FieldLabel>
+        <FieldLabel>Save Format</FieldLabel>
         <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
           {[
-            { id: 'json',   label: 'JSON Files',  desc: 'One file per item. Easy to inspect and back up manually.', pros: ['Human-readable', 'Easy backup'], cons: ['Slower with many projects'] },
-            { id: 'sqlite', label: 'SQLite',      desc: 'Single database file. Faster reads, better for large datasets.', pros: ['Faster queries', 'Atomic writes'], cons: ['Binary format'] },
+            { id: 'json',   label: 'JSON Files',  desc: 'One file for each project, note, and todo. Easy to open and copy yourself.', pros: ['Easy to read', 'Easy to copy'], cons: ['Slower with many projects'] },
+            { id: 'sqlite', label: 'Database',    desc: 'Everything in one file. Faster when you have lots of projects.', pros: ['Faster', 'Safer saving'], cons: ['Not readable by hand'] },
           ].map(opt => (
             <div
               key={opt.id}
@@ -51,7 +51,7 @@ export default function StorageSection({
           return changed ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '10px 14px', borderRadius: 'var(--r-md)', background: 'rgba(255,107,53,0.06)', border: '1px solid rgba(255,107,53,0.2)' }}>
               <div style={{ fontSize: 11, color: 'var(--dimmer)', lineHeight: 1.5 }}>
-                Switching to <strong style={{ color: 'var(--text)' }}>{storageBackend === 'sqlite' ? 'SQLite' : 'JSON'}</strong> will sync all data and restart the app.
+                Switching to <strong style={{ color: 'var(--text)' }}>{storageBackend === 'sqlite' ? 'SQLite' : 'JSON'}</strong> will move your data over and restart Croco.
               </div>
               <button
                 disabled={migrating}
@@ -84,7 +84,7 @@ export default function StorageSection({
 
       <SettingsCard>
         <FieldLabel>Backup & Restore</FieldLabel>
-        <FieldDesc>Export all projects, notes and todos to a single backup file, or restore from a previous backup. Settings and tokens are never included in restores.</FieldDesc>
+        <FieldDesc>Save all your projects, notes, and todos into one backup file, or restore from an earlier one. Your settings and passwords are not included.</FieldDesc>
 
         {backupResult && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '12px 0', padding: '10px 14px', borderRadius: 'var(--r-md)', background: backupResult.ok ? 'rgba(74,255,145,0.07)' : 'rgba(255,80,80,0.07)', border: `1px solid ${backupResult.ok ? 'rgba(74,255,145,0.2)' : 'rgba(255,80,80,0.2)'}`, fontSize: 12, color: backupResult.ok ? '#4aff91' : '#ff5050', fontFamily: 'Geist Mono, monospace' }}>
@@ -138,7 +138,7 @@ export default function StorageSection({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
             <FieldLabel>Automatic Backups</FieldLabel>
-            <FieldDesc>Periodically saves a backup file locally (in the app data folder) with no action needed. Older backups are pruned automatically.</FieldDesc>
+            <FieldDesc>Saves a backup on this computer by itself. Old backups are deleted automatically so they don't pile up.</FieldDesc>
           </div>
           <Toggle value={autoBackupEnabled} onChange={onToggleAutoBackup} />
         </div>

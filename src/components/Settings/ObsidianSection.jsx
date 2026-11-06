@@ -7,12 +7,12 @@ export default function ObsidianSection({
 }) {
   return (
     <>
-      <SectionTitle icon={<VaultIcon />} title="Obsidian" desc="Mirror your notes into an Obsidian vault as markdown files with frontmatter. Croco is the source of truth — edits made directly in the vault aren't read back." />
+      <SectionTitle icon={<VaultIcon />} title="Obsidian" desc="Keep a copy of your notes in an Obsidian vault. Changes only go one way: edits you make inside Obsidian do not come back to Croco." />
       <SettingsCard>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
-            <FieldLabel>Sync notes to Obsidian vault</FieldLabel>
-            <FieldDesc>Every note create, edit, archive, and delete pushes a markdown file into the vault below.</FieldDesc>
+            <FieldLabel>Copy notes to Obsidian</FieldLabel>
+            <FieldDesc>Whenever you add, change, archive, or delete a note, the copy in your vault is updated too.</FieldDesc>
           </div>
           <Toggle value={obsidianEnabled} onChange={handleObsidianToggle} />
         </div>

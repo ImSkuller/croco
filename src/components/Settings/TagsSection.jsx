@@ -77,13 +77,13 @@ export default function TagsSection() {
 
   return (
     <>
-      <SectionTitle icon={<TagIcon />} title="Tags" desc="Every tag used across your projects and notes. Give them colors, rename or merge duplicates, or remove one everywhere at once." />
+      <SectionTitle icon={<TagIcon />} title="Tags" desc="All the tags on your projects and notes. Change colors, rename them, or remove them." />
 
       <SettingsCard>
         {tags === null ? (
           <FieldDesc>Loading…</FieldDesc>
         ) : tags.length === 0 ? (
-          <FieldDesc>No tags yet — add some to a project or note and they'll show up here.</FieldDesc>
+          <FieldDesc>No tags yet. Add a tag to a project or note and it will appear here.</FieldDesc>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {tags.map(t => (
@@ -156,7 +156,7 @@ export default function TagsSection() {
       </SettingsCard>
 
       <InfoBox>
-        Renaming or merging rewrites the tag on every project and note that has it. Deleting removes it everywhere — the projects and notes themselves are untouched.
+        Renaming a tag changes it on every project and note that uses it. Deleting a tag removes it everywhere, but your projects and notes stay.
       </InfoBox>
     </>
   )

@@ -6,7 +6,7 @@ import { formatKeyToken } from '../../lib/platform'
 export default function ShortcutsSection({ capturingId, setCapturingId, shortcutOverrides, setShortcutOverrides }) {
   return (
     <>
-      <SectionTitle icon={<KeyboardIcon />} title="Shortcuts" desc="Remap global navigation and action shortcuts. Page-level shortcuts (tabs, run, commit) are built-in and cannot be remapped." />
+      <SectionTitle icon={<KeyboardIcon />} title="Shortcuts" desc="Change the keyboard shortcuts for moving around the app. Shortcuts inside a page (like run or commit) can't be changed." />
 
       <SettingsCard>
         <InfoBox>Click <strong>Edit</strong> on any shortcut, then press the new key or combo. Changes take effect immediately.</InfoBox>
@@ -86,7 +86,7 @@ export default function ShortcutsSection({ capturingId, setCapturingId, shortcut
 
       <SettingsCard>
         <FieldLabel>Built-in (read-only)</FieldLabel>
-        <FieldDesc>These shortcuts are registered per-page and cannot be remapped from here.</FieldDesc>
+        <FieldDesc>These only work inside their page and can't be changed here.</FieldDesc>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 }}>
           {SHORTCUT_DEFS.filter(d => !d.remappable).map((def, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', gap: 10 }}>

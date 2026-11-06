@@ -35,7 +35,7 @@ export default function UpdatesSection({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <div>
             <FieldLabel>Check for Updates</FieldLabel>
-            <FieldDesc>Fetches the latest release from GitHub to compare with your installed version.</FieldDesc>
+            <FieldDesc>Looks on GitHub for a newer version than the one you have.</FieldDesc>
           </div>
           <button
             onClick={async () => {
@@ -125,7 +125,7 @@ export default function UpdatesSection({
           </div>
         )}
         {updateInfo?.error && (
-          <InfoBox>Could not reach GitHub. Check your internet connection.</InfoBox>
+          <InfoBox>Couldn't reach GitHub. Check your internet connection.</InfoBox>
         )}
       </SettingsCard>
     </>

@@ -9,22 +9,22 @@ export default function DangerSection({
 }) {
   return (
     <>
-      <SectionTitle icon={<ShieldIcon />} title="Danger Zone" desc="Irreversible actions. Be careful." />
+      <SectionTitle icon={<ShieldIcon />} title="Danger Zone" desc="These can't be undone. Be careful." />
 
       <div style={{ background: 'rgba(255,68,68,0.04)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
 
         <DangerRow
-          title="Re-run Setup Wizard"
-          desc="Takes you back through the onboarding flow to reconfigure your name, tag, GitHub, data path, and close behavior. The app will reload."
-          action="Re-run Setup"
+          title="Run Setup Again"
+          desc="Walks you through the first-time setup again. Croco will reload."
+          action="Run Again"
           onAction={() => setRerunConfirm(true)}
         />
 
         <div style={{ height: 1, background: 'rgba(255,68,68,0.15)' }} />
 
         <DangerRow
-          title="Reset All Settings"
-          desc="Resets all settings to their default values. Your projects and data are not affected."
+          title="Reset Settings"
+          desc="Puts every setting back to how it started. Your projects, notes, and todos are kept."
           action="Reset Settings"
           onAction={() => setResetConfirm(true)}
         />
@@ -33,7 +33,7 @@ export default function DangerSection({
 
         <DangerRow
           title="Clear All Todos"
-          desc="Permanently deletes all todos across all projects. This cannot be undone."
+          desc="Permanently deletes every todo. This cannot be undone."
           action="Clear Todos"
           onAction={() => setDangerConfirm('todos')}
         />
@@ -42,7 +42,7 @@ export default function DangerSection({
 
         <DangerRow
           title="Clear All Notes"
-          desc="Permanently deletes all notes across all projects. This cannot be undone."
+          desc="Permanently deletes every note. This cannot be undone."
           action="Clear Notes"
           onAction={() => setDangerConfirm('notes')}
         />
@@ -51,7 +51,7 @@ export default function DangerSection({
 
         <DangerRow
           title="Delete All Projects"
-          desc="Removes all project metadata from the app. Your actual code folders are not deleted."
+          desc="Removes every project from Croco. Your code folders on your computer are not deleted."
           action="Delete All"
           onAction={() => setDangerConfirm('projects')}
         />
@@ -61,9 +61,9 @@ export default function DangerSection({
       {/* Re-run setup confirm modal */}
       {rerunConfirm && (
         <ConfirmModal
-          title="Re-run setup wizard?"
+          title="Run setup again?"
           body="The app will reload and take you back through the setup flow. Your projects, notes, and todos are not affected."
-          confirm="Re-run Setup"
+          confirm="Run Again"
           onConfirm={handleRerunSetup}
           onCancel={() => setRerunConfirm(false)}
         />
