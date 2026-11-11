@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon, AIIcon, EyeIcon, EyeOffIcon, APIIcon, CopyIcon, AlertTriangleIcon, PuzzleIcon } from '../constants/SimpleSvgExports'
-import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, ToggleChip, Toggle, InfoBox, SmallBtn } from '../components/Settings/Exports'
+import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon, AIIcon, APIIcon, PuzzleIcon } from '../constants/SimpleSvgExports'
+import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, ToggleChip, Toggle, InfoBox } from '../components/Settings/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { THEMES, applyTheme, getThemeAccentSwatch, normalizeThemeId } from '../lib/theme.js'
 import { STYLES, applyStyle, normalizeStyleId, applySmoothAnimations } from '../lib/appearanceStyle.js'
@@ -15,10 +15,12 @@ import TerminalSection from '../components/Settings/TerminalSection'
 import ShortcutsSection from '../components/Settings/ShortcutsSection'
 import DangerSection from '../components/Settings/DangerSection'
 import GitHubSection from '../components/Settings/GitHubSection'
+import AiSection from '../components/Settings/AiSection'
+import LocalApiSection from '../components/Settings/LocalApiSection'
 import UserSection from '../components/Settings/UserSection'
 import PathsSection from '../components/Settings/PathsSection'
 import DefaultsSection from '../components/Settings/DefaultsSection'
-import { codeStyle, mergeDeep } from '../components/Settings/shared.js'
+import { mergeDeep } from '../components/Settings/shared.js'
 import useDiscordPresence from '../hooks/useDiscordPresence'
 
 const NAV_SECTIONS = [
@@ -69,24 +71,6 @@ export default function Settings() {
     return window.api?.settings.update(patch).catch(console.error)
   }, [patchLocal])
 
-  const [secretsFallbackActive, setSecretsFallbackActive] = useState(false)
-  const [aiEnabled,     setAiEnabled]     = useState(false)
-  const [aiProvider,    setAiProvider]    = useState('anthropic')
-  const [aiKeysStored,  setAiKeysStored]  = useState({ anthropic: false, openai: false, gemini: false })
-  // Same "only holds what was just typed this session" rule as ghToken —
-  // settings_get never returns a real stored AI key.
-  const [aiKeyInput,    setAiKeyInput]    = useState('')
-  const [aiKeyVisible,  setAiKeyVisible]  = useState(false)
-  const [aiKeySaving,   setAiKeySaving]   = useState(false)
-  const [apiEnabled,    setApiEnabled]    = useState(false)
-  const [apiPort,       setApiPort]       = useState(3131)
-  const [apiRunning,    setApiRunning]    = useState(false)
-  const [apiTokenStored,setApiTokenStored]= useState(false)
-  // Only ever holds a token this session just generated/regenerated — the
-  // backend never returns a stored token's real value, by design (same
-  // "shown once" rule as e.g. a GitHub OAuth device code).
-  const [apiTokenReveal,setApiTokenReveal]= useState(null)
-  const [apiBusy,       setApiBusy]       = useState(false)
   const [closeBehavior, setCloseBehavior] = useState('tray')
   const [launchOnStartup, setLaunchOnStartup] = useState(false)
   const [launchOnStartupBusy, setLaunchOnStartupBusy] = useState(false)
@@ -207,14 +191,6 @@ export default function Settings() {
   const applySettings = useCallback((s) => {
     if (!s) return
     setSettings(s)
-    setSecretsFallbackActive(!!s.app?.secretsFallbackActive)
-    setAiEnabled(!!s.ai?.commitMessages?.enabled)
-    setAiProvider(s.ai?.commitMessages?.provider || 'anthropic')
-    setAiKeysStored(s.ai?.keysStored || { anthropic: false, openai: false, gemini: false })
-    setApiEnabled(!!s.api?.enabled)
-    setApiPort(s.api?.port || 3131)
-    setApiRunning(!!s.api?.running)
-    setApiTokenStored(!!s.api?.tokenStored)
     setCloseBehavior(s.app?.closeBehavior || 'tray')
     const color = s.appearance?.accentColor || '#e8e4dc'
     setAccentColor(color)
@@ -368,86 +344,6 @@ export default function Settings() {
     })
   }
 
-  const handleAiToggle = () => {
-    setAiEnabled(prev => {
-      const next = !prev
-      window.api?.settings.update({ ai: { commitMessages: { enabled: next, provider: aiProvider } } }).catch(() => {})
-      return next
-    })
-  }
-
-  const handleAiProviderChange = (provider) => {
-    setAiProvider(provider)
-    setAiKeyInput('')
-    window.api?.settings.update({ ai: { commitMessages: { enabled: aiEnabled, provider } } }).catch(() => {})
-  }
-
-  const handleAiKeySave = async () => {
-    if (!aiKeyInput.trim() || !window.api) return
-    setAiKeySaving(true)
-    try {
-      await window.api.settings.setAiKey(aiProvider, aiKeyInput.trim())
-      setAiKeysStored(prev => ({ ...prev, [aiProvider]: true }))
-      setAiKeyInput('')
-      toast.success('API key saved')
-    } catch (e) {
-      toast.error('Could not save key', e.message)
-    } finally {
-      setAiKeySaving(false)
-    }
-  }
-
-  const handleAiKeyClear = async () => {
-    if (!window.api) return
-    await window.api.settings.setAiKey(aiProvider, '').catch(() => {})
-    setAiKeysStored(prev => ({ ...prev, [aiProvider]: false }))
-  }
-
-  const applyLocalApi = async () => {
-    if (!window.api) return
-    setApiBusy(true)
-    try {
-      const result = await window.api.localApi.apply()
-      setApiRunning(!!result.running)
-      setApiTokenStored(prev => prev || !!result.tokenJustGenerated)
-      if (result.tokenJustGenerated) setApiTokenReveal(result.tokenJustGenerated)
-    } catch (e) {
-      toast.error('Local API', e.message)
-    } finally {
-      setApiBusy(false)
-    }
-  }
-
-  const handleApiToggle = async () => {
-    const next = !apiEnabled
-    setApiEnabled(next)
-    await window.api?.settings.update({ api: { enabled: next, port: apiPort } }).catch(() => {})
-    await applyLocalApi()
-  }
-
-  const handleApiPortChange = async (port) => {
-    const n = Math.max(1024, Math.min(65535, Number(port) || 3131))
-    setApiPort(n)
-    await window.api?.settings.update({ api: { enabled: apiEnabled, port: n } }).catch(() => {})
-    if (apiEnabled) await applyLocalApi()
-  }
-
-  const handleRegenerateToken = async () => {
-    if (!window.api) return
-    setApiBusy(true)
-    try {
-      const token = await window.api.localApi.regenerateToken()
-      setApiTokenStored(true)
-      setApiTokenReveal(token)
-      setApiRunning(true)
-      toast.success('Token regenerated', 'Copy it now — it will not be shown again.')
-    } catch (e) {
-      toast.error('Could not regenerate token', e.message)
-    } finally {
-      setApiBusy(false)
-    }
-  }
-
   const handleRequestDesktopPermission = async () => {
     if (!window.api) return
     const granted = await window.api.notify.requestDesktopPermission().catch(() => false)
@@ -542,153 +438,14 @@ export default function Settings() {
 
             {settings && activeSection === 'github'   && <GitHubSection   key={version} settings={settings} saveField={saveField} patchLocal={patchLocal} />}
 
-            {/* AI */}
-            {activeSection === 'ai' && (
-              <>
-                <SectionTitle icon={<AIIcon />} title="AI" desc="Let AI write your commit messages. Off by default, and it only works if you add your own API key." />
-
-                <SettingsCard>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                      <FieldLabel>AI Commit Messages</FieldLabel>
-                      <FieldDesc>Adds a "Generate with AI" button when you save changes. Your changes are sent to the AI company you pick below. You always get to review the message first.</FieldDesc>
-                    </div>
-                    <Toggle value={aiEnabled} onChange={handleAiToggle} />
-                  </div>
-                </SettingsCard>
-
-                <SettingsCard>
-                  <FieldLabel>AI Company</FieldLabel>
-                  <FieldDesc>Each one needs its own API key (a password you get from their website).</FieldDesc>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                    {[
-                      { id: 'anthropic', label: 'Anthropic' },
-                      { id: 'openai',    label: 'OpenAI'    },
-                      { id: 'gemini',    label: 'Gemini'    },
-                    ].map(opt => (
-                      <ToggleChip
-                        key={opt.id}
-                        label={<>{opt.label}{aiKeysStored[opt.id] && <CheckIcon size={11} />}</>}
-                        active={aiProvider === opt.id}
-                        color="var(--accent)"
-                        bg="var(--accent-dim)"
-                        onClick={() => handleAiProviderChange(opt.id)}
-                      />
-                    ))}
-                  </div>
-
-                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-                    <FieldLabel>{{ anthropic: 'Anthropic', openai: 'OpenAI', gemini: 'Gemini' }[aiProvider]} API Key</FieldLabel>
-                    <FieldDesc>
-                      {aiKeysStored[aiProvider]
-                        ? 'A key is already saved. Paste a new one to replace it.'
-                        : 'Paste the key from your account on their website. It is stored securely on this computer.'}
-                    </FieldDesc>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                      <div style={{ flex: 1, position: 'relative' }}>
-                        <TextInput
-                          type={aiKeyVisible ? 'text' : 'password'}
-                          value={aiKeyInput}
-                          onChange={setAiKeyInput}
-                          placeholder={aiKeysStored[aiProvider] ? '••••••••  (saved — paste to replace)' : 'sk-...'}
-                          mono
-                        />
-                        <button
-                          onClick={() => setAiKeyVisible(v => !v)}
-                          title={aiKeyVisible ? 'Hide' : 'Show'}
-                          style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dimmer)', display: 'flex' }}
-                        >
-                          {aiKeyVisible ? <EyeOffIcon size={14} /> : <EyeIcon size={14} />}
-                        </button>
-                      </div>
-                      <SmallBtn onClick={handleAiKeySave}>{aiKeySaving ? 'Saving…' : 'Save Key'}</SmallBtn>
-                      {aiKeysStored[aiProvider] && <SmallBtn onClick={handleAiKeyClear}>Clear</SmallBtn>}
-                    </div>
-                    {secretsFallbackActive && (
-                      <InfoBox style={{ marginTop: 10 }}>
-                        Your computer's secure password storage isn't available, so this key is saved in an encrypted file on this computer instead.
-                      </InfoBox>
-                    )}
-                  </div>
-                </SettingsCard>
-              </>
-            )}
-
-            {/* Local API */}
-            {activeSection === 'localApi' && (
-              <>
-                <SectionTitle icon={<APIIcon />} title="Local API" desc="For advanced users. Lets other programs on your computer talk to Croco, for example to list projects or add todos. Off by default." />
-
-                <SettingsCard>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                      <FieldLabel>Enable Local API</FieldLabel>
-                      <FieldDesc>
-                        Only programs on this computer can connect. Nothing is reachable over the internet.
-                        {apiEnabled && (apiRunning
-                          ? <span style={{ color: 'var(--green)' }}> Running on port {apiPort}.</span>
-                          : <span style={{ color: 'var(--orange)' }}> Not running. Another app may be using this port, so try a different number.</span>)}
-                      </FieldDesc>
-                    </div>
-                    <Toggle value={apiEnabled} onChange={handleApiToggle} />
-                  </div>
-                </SettingsCard>
-
-                {apiEnabled && (
-                  <>
-                    <SettingsCard>
-                      <FieldLabel>Port</FieldLabel>
-                      <FieldDesc>A number other programs use to find Croco. The default works for most people.</FieldDesc>
-                      <div style={{ marginTop: 8, maxWidth: 140 }}>
-                        <TextInput type="number" value={apiPort} onChange={handleApiPortChange} mono />
-                      </div>
-                    </SettingsCard>
-
-                    <SettingsCard>
-                      <FieldLabel>Access Token</FieldLabel>
-                      <FieldDesc>
-                        A password other programs must send as <code style={codeStyle}>Authorization: Bearer &lt;token&gt;</code>.
-                        {apiTokenStored && !apiTokenReveal && ' A token already exists. Making a new one stops the old one from working.'}
-                      </FieldDesc>
-                      {apiTokenReveal ? (
-                        <div style={{ marginTop: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--base)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-md)', padding: '10px 12px' }}>
-                            <code style={{ ...codeStyle, flex: 1, fontSize: 12, wordBreak: 'break-all' }}>{apiTokenReveal}</code>
-                            <button
-                              onClick={() => { navigator.clipboard.writeText(apiTokenReveal); toast.success('Copied') }}
-                              title="Copy"
-                              style={{ display: 'flex', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dim)', flexShrink: 0 }}
-                            ><CopyIcon size={14} /></button>
-                          </div>
-                          <InfoBox style={{ marginTop: 10 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><AlertTriangleIcon size={12} /> Copy this now. Croco won't show it again. You can make a new one anytime.</div>
-                          </InfoBox>
-                        </div>
-                      ) : (
-                        <div style={{ marginTop: 10 }}>
-                          <SmallBtn onClick={handleRegenerateToken}>{apiBusy ? 'Working…' : apiTokenStored ? 'Make New Token' : 'Make Token'}</SmallBtn>
-                        </div>
-                      )}
-                    </SettingsCard>
-
-                    <SettingsCard>
-                      <FieldLabel>Example</FieldLabel>
-                      <FieldDesc>Example: list your projects from a terminal:</FieldDesc>
-                      <pre style={{ marginTop: 8, padding: '10px 12px', background: 'var(--base)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', fontSize: 11, fontFamily: 'Geist Mono, monospace', color: 'var(--dim)', overflowX: 'auto' }}>
-{`curl http://127.0.0.1:${apiPort}/projects \\
-  -H "Authorization: Bearer <token>"`}
-                      </pre>
-                    </SettingsCard>
-                  </>
-                )}
-              </>
-            )}
+            {settings && activeSection === 'ai'       && <AiSection       key={version} settings={settings} saveField={saveField} patchLocal={patchLocal} />}
+            {settings && activeSection === 'localApi' && <LocalApiSection key={version} settings={settings} saveField={saveField} />}
 
             {/* Tags */}
             {activeSection === 'tags' && <TagsSection />}
 
             {/* Modules */}
-            {activeSection === 'modules' && <ModulesSection aiKeysStored={aiKeysStored} />}
+            {activeSection === 'modules' && <ModulesSection aiKeysStored={settings?.ai?.keysStored || {}} />}
 
             {/* Appearance */}
             {activeSection === 'appearance' && (
