@@ -1,18 +1,17 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, CheckIcon, AIIcon, APIIcon, PuzzleIcon } from '../constants/SimpleSvgExports'
 import { SettingsNavItem } from '../components/Settings/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { applyTheme, normalizeThemeId } from '../lib/theme.js'
 import { applyStyle, normalizeStyleId, applySmoothAnimations } from '../lib/appearanceStyle.js'
-import { SHORTCUT_DEFS } from '../lib/shortcuts'
 import StorageTab from '../components/Settings/StorageTab'
 import ObsidianTab from '../components/Settings/ObsidianTab'
 import ModulesSection from '../components/Settings/ModulesSection'
 import TagsSection from '../components/Settings/TagsSection'
-import UpdatesSection from '../components/Settings/UpdatesSection'
+import UpdatesTab from '../components/Settings/UpdatesTab'
 import TerminalSection from '../components/Settings/TerminalSection'
-import ShortcutsSection from '../components/Settings/ShortcutsSection'
-import DangerSection from '../components/Settings/DangerSection'
+import ShortcutsTab from '../components/Settings/ShortcutsTab'
+import DangerTab from '../components/Settings/DangerTab'
 import GitHubSection from '../components/Settings/GitHubSection'
 import AiSection from '../components/Settings/AiSection'
 import LocalApiSection from '../components/Settings/LocalApiSection'
@@ -65,56 +64,12 @@ export default function Settings() {
     return window.api?.settings.update(patch).catch(console.error)
   }, [patchLocal])
 
-  const [resetConfirm,     setResetConfirm]     = useState(false)
-  const [rerunConfirm,     setRerunConfirm]     = useState(false)
-  const [dangerConfirm,    setDangerConfirm]    = useState(null) // null | 'todos' | 'notes' | 'projects'
   // Shell preference
   const [platform,         setPlatform]         = useState('win32')
-
-  // Shortcuts
-  const [shortcutOverrides, setShortcutOverrides] = useState({})
-  const [capturingId,       setCapturingId]       = useState(null)
-  const shortcutOverridesRef = useRef({})
-  useEffect(() => { shortcutOverridesRef.current = shortcutOverrides }, [shortcutOverrides])
-
-  useEffect(() => {
-    if (!capturingId) return
-    const def = SHORTCUT_DEFS.find(d => d.id === capturingId)
-    if (!def) return
-    const handler = (e) => {
-      if (e.key === 'Escape') { setCapturingId(null); return }
-      if (['Control','Shift','Alt','Meta'].includes(e.key)) return
-      e.preventDefault(); e.stopPropagation()
-      let key
-      if (def.chord) {
-        if (e.key.length > 1) return
-        key = `g+${e.key.toLowerCase()}`
-      } else {
-        const parts = []
-        if (e.ctrlKey || e.metaKey) parts.push('ctrl')
-        if (e.shiftKey) parts.push('shift')
-        parts.push(e.key.toLowerCase())
-        key = parts.join('+')
-      }
-      const next = { ...shortcutOverridesRef.current, [capturingId]: key }
-      setShortcutOverrides(next)
-      window.api?.settings.update({ app: { shortcuts: next } }).catch(() => {})
-      window.dispatchEvent(new Event('croco:shortcuts-changed'))
-      setCapturingId(null)
-    }
-    window.addEventListener('keydown', handler, true)
-    return () => window.removeEventListener('keydown', handler, true)
-  }, [capturingId])
-
-  // Updates
-  const [updateInfo,       setUpdateInfo]       = useState(null) // null | {checking} | result
-  const [updateChecking,   setUpdateChecking]   = useState(false)
-  const [updateInstalling, setUpdateInstalling] = useState(false)
 
   const applySettings = useCallback((s) => {
     if (!s) return
     setSettings(s)
-    setShortcutOverrides(s.app?.shortcuts || {})
     const backend = s.app?.storageBackend || 'json'
     window._currentStorageBackend = backend
   }, [])
@@ -134,6 +89,7 @@ export default function Settings() {
       .catch(console.error)
   }, [applySettings])
 
+  // Puts every setting back to its default and re-applies the default look.
   const handleReset = async () => {
     if (window.api) {
       const defaults = await window.api.settings.reset().catch(console.error)
@@ -152,46 +108,6 @@ export default function Settings() {
         window.api?.system.setWindowGlass(!!a.glass).catch(console.error)
       }
     }
-    setResetConfirm(false)
-  }
-
-  const handleRerunSetup = async () => {
-    if (window.api) {
-      await window.api.settings.update({ app: { onboarded: false } }).catch(console.error)
-    }
-    setRerunConfirm(false)
-    window.location.reload()
-  }
-
-  const handleClearTodos = async () => {
-    if (!window.api) return
-    setDangerConfirm(null)
-    const todos = await window.api.todos.getAll().catch(console.error) || []
-    await Promise.all(todos.map(t => window.api.todos.delete(t.id).catch(console.error)))
-    window.dispatchEvent(new CustomEvent('croco:data-changed'))
-  }
-
-  const handleClearNotes = async () => {
-    if (!window.api) return
-    setDangerConfirm(null)
-    const notes = await window.api.notes.getAll().catch(console.error) || []
-    await Promise.all(notes.map(n => window.api.notes.delete(n.id).catch(console.error)))
-    window.dispatchEvent(new CustomEvent('croco:data-changed'))
-  }
-
-  const handleDeleteProjects = async () => {
-    if (!window.api) return
-    setDangerConfirm(null)
-    const projects = await window.api.projects.getAll().catch(console.error) || []
-    await Promise.all(projects.map(p => window.api.projects.delete(p.id).catch(console.error)))
-    window.dispatchEvent(new CustomEvent('croco:data-changed'))
-  }
-
-
-  const DANGER_ACTIONS = {
-    todos:    { label: 'Clear all todos?',    body: 'This will permanently delete every todo across all projects. This cannot be undone.', confirm: 'Clear Todos',    fn: handleClearTodos    },
-    notes:    { label: 'Clear all notes?',    body: 'This will permanently delete every note across all projects. This cannot be undone.', confirm: 'Clear Notes',    fn: handleClearNotes    },
-    projects: { label: 'Delete all projects?', body: 'This removes all project metadata from the app. Your actual code folders are not deleted.', confirm: 'Delete All', fn: handleDeleteProjects },
   }
 
   return (
@@ -255,32 +171,9 @@ export default function Settings() {
             {/* Terminal app */}
             {activeSection === 'terminal' && <TerminalSection toast={toast} />}
 
-            {/* Updates */}
-            {activeSection === 'updates' && (
-              <UpdatesSection
-                updateChecking={updateChecking} setUpdateChecking={setUpdateChecking}
-                updateInfo={updateInfo} setUpdateInfo={setUpdateInfo}
-                updateInstalling={updateInstalling} setUpdateInstalling={setUpdateInstalling}
-                toast={toast}
-              />
-            )}
-
-            {/* Shortcuts */}
-            {activeSection === 'shortcuts' && (
-              <ShortcutsSection
-                capturingId={capturingId} setCapturingId={setCapturingId}
-                shortcutOverrides={shortcutOverrides} setShortcutOverrides={setShortcutOverrides}
-              />
-            )}
-
-            {/* Danger Zone */}
-            {activeSection === 'danger' && (
-              <DangerSection
-                rerunConfirm={rerunConfirm} setRerunConfirm={setRerunConfirm} handleRerunSetup={handleRerunSetup}
-                resetConfirm={resetConfirm} setResetConfirm={setResetConfirm} handleReset={handleReset}
-                dangerConfirm={dangerConfirm} setDangerConfirm={setDangerConfirm} dangerActions={DANGER_ACTIONS}
-              />
-            )}
+            {activeSection === 'updates' && <UpdatesTab />}
+            {settings && activeSection === 'shortcuts' && <ShortcutsTab key={version} settings={settings} />}
+            {activeSection === 'danger' && <DangerTab key={version} onReset={handleReset} />}
 
           </div>
         </div>
