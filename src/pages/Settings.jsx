@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon, AIIcon, APIIcon, PuzzleIcon } from '../constants/SimpleSvgExports'
-import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, ToggleChip, Toggle, InfoBox } from '../components/Settings/Exports'
+import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, CheckIcon, AIIcon, APIIcon, PuzzleIcon } from '../constants/SimpleSvgExports'
+import { SettingsNavItem } from '../components/Settings/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { applyTheme, normalizeThemeId } from '../lib/theme.js'
 import { applyStyle, normalizeStyleId, applySmoothAnimations } from '../lib/appearanceStyle.js'
@@ -17,6 +17,7 @@ import GitHubSection from '../components/Settings/GitHubSection'
 import AiSection from '../components/Settings/AiSection'
 import LocalApiSection from '../components/Settings/LocalApiSection'
 import AppearanceSection from '../components/Settings/AppearanceSection'
+import GeneralSection from '../components/Settings/GeneralSection'
 import UserSection from '../components/Settings/UserSection'
 import PathsSection from '../components/Settings/PathsSection'
 import DefaultsSection from '../components/Settings/DefaultsSection'
@@ -64,10 +65,6 @@ export default function Settings() {
     return window.api?.settings.update(patch).catch(console.error)
   }, [patchLocal])
 
-  const [closeBehavior, setCloseBehavior] = useState('tray')
-  const [launchOnStartup, setLaunchOnStartup] = useState(false)
-  const [launchOnStartupBusy, setLaunchOnStartupBusy] = useState(false)
-
   const [resetConfirm,     setResetConfirm]     = useState(false)
   const [rerunConfirm,     setRerunConfirm]     = useState(false)
   const [dangerConfirm,    setDangerConfirm]    = useState(null) // null | 'todos' | 'notes' | 'projects'
@@ -90,12 +87,6 @@ export default function Settings() {
   const [autoBackupLastAt,    setAutoBackupLastAt]    = useState(null)
   const [autoBackupBusy,      setAutoBackupBusy]      = useState(false)
   const [autoBackupResult,    setAutoBackupResult]    = useState(null) // null | { ok: bool, message: str }
-
-  // Desktop notifications for schedules/deadlines
-  const [deadlineRemindersEnabled, setDeadlineRemindersEnabled] = useState(true)
-  const [showHiddenOnDashboard, setShowHiddenOnDashboard] = useState(false)
-  const [notifPrefs, setNotifPrefs] = useState({})
-  const [desktopPermissionGranted, setDesktopPermissionGranted] = useState(null) // null (unknown yet) | bool
 
   // Obsidian vault sync
   const [obsidianEnabled,    setObsidianEnabled]    = useState(false)
@@ -148,7 +139,6 @@ export default function Settings() {
   const applySettings = useCallback((s) => {
     if (!s) return
     setSettings(s)
-    setCloseBehavior(s.app?.closeBehavior || 'tray')
     setShortcutOverrides(s.app?.shortcuts || {})
     const backend = s.app?.storageBackend || 'json'
     setStorageBackend(backend)
@@ -160,15 +150,10 @@ export default function Settings() {
     setAutoBackupInterval(s.app?.autoBackup?.intervalDays || 1)
     setAutoBackupRetention(s.app?.autoBackup?.retentionCount || 7)
     setAutoBackupLastAt(s.app?.autoBackup?.lastBackupAt || null)
-    setDeadlineRemindersEnabled(s.app?.deadlineReminders?.enabled ?? true)
-    setShowHiddenOnDashboard(!!s.app?.showHiddenOnDashboard)
-    setNotifPrefs(s.app?.notifications || {})
   }, [])
 
   useEffect(() => {
     if (!window.api) return
-    window.api.app?.autostart.isEnabled().then(setLaunchOnStartup).catch(() => {})
-    window.api.notify?.isDesktopPermissionGranted().then(setDesktopPermissionGranted).catch(() => {})
     Promise.all([
       window.api.settings.get(),
       window.api.system.userData(),
@@ -181,21 +166,6 @@ export default function Settings() {
       })
       .catch(console.error)
   }, [applySettings])
-
-  const toggleLaunchOnStartup = async () => {
-    if (!window.api || launchOnStartupBusy) return
-    setLaunchOnStartupBusy(true)
-    const next = !launchOnStartup
-    try {
-      if (next) await window.api.app.autostart.enable()
-      else await window.api.app.autostart.disable()
-      setLaunchOnStartup(next)
-    } catch (e) {
-      toast?.error?.('Could not update startup setting', e.message)
-    } finally {
-      setLaunchOnStartupBusy(false)
-    }
-  }
 
   const handleObsidianToggle = () => {
     setObsidianEnabled(prev => {
@@ -264,36 +234,6 @@ export default function Settings() {
     } finally {
       setAutoBackupBusy(false)
     }
-  }
-
-  const handleShowHiddenToggle = () => {
-    setShowHiddenOnDashboard(prev => {
-      const next = !prev
-      window.api?.settings.update({ app: { showHiddenOnDashboard: next } }).catch(() => {})
-      return next
-    })
-  }
-
-  const handleNotifToggle = (event) => {
-    setNotifPrefs(prev => {
-      const next = { ...prev, [event]: !prev[event] }
-      window.api?.settings.update({ app: { notifications: { [event]: next[event] } } }).catch(() => {})
-      return next
-    })
-  }
-
-  const handleDeadlineRemindersToggle = () => {
-    setDeadlineRemindersEnabled(prev => {
-      const next = !prev
-      window.api?.settings.update({ app: { deadlineReminders: { enabled: next } } }).catch(() => {})
-      return next
-    })
-  }
-
-  const handleRequestDesktopPermission = async () => {
-    if (!window.api) return
-    const granted = await window.api.notify.requestDesktopPermission().catch(() => false)
-    setDesktopPermissionGranted(!!granted)
   }
 
   const handleReset = async () => {
@@ -409,101 +349,7 @@ export default function Settings() {
             {/* Appearance */}
             {settings && activeSection === 'appearance' && <AppearanceSection key={version} settings={settings} saveField={saveField} />}
 
-            {/* Behaviour */}
-            {activeSection === 'behaviour' && (
-              <>
-                <SectionTitle icon={<TagIcon />} title="General" desc="How Croco starts, closes, and notifies you." />
-
-                <SettingsCard>
-                  <FieldLabel>When closing the window</FieldLabel>
-                  <FieldDesc>What happens when you click the X button.</FieldDesc>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                    {[
-                      { id: 'tray', label: <><BellIcon size={12} /> Keep Running in Background</> },
-                      { id: 'quit', label: <><XCircleIcon size={12} /> Quit</> },
-                    ].map(opt => (
-                      <ToggleChip
-                        key={opt.id}
-                        label={opt.label}
-                        active={closeBehavior === opt.id}
-                        color="var(--accent)"
-                        bg="var(--accent-dim)"
-                        onClick={() => { setCloseBehavior(opt.id); saveField({ app: { closeBehavior: opt.id } }) }}
-                      />
-                    ))}
-                  </div>
-                  {closeBehavior === 'tray' && (
-                    <InfoBox>Croco stays open in the background. Click its icon near the clock to reopen it or quit for good.</InfoBox>
-                  )}
-                </SettingsCard>
-
-                <SettingsCard>
-                  <FieldLabel>Open When I Turn On My Computer</FieldLabel>
-                  <FieldDesc>Croco opens by itself when you log in.</FieldDesc>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                    {[
-                      { id: true,  label: <><CheckCircleIcon size={12} /> Enabled</> },
-                      { id: false, label: <><XCircleIcon size={12} /> Disabled</> },
-                    ].map(opt => (
-                      <ToggleChip
-                        key={String(opt.id)}
-                        label={opt.label}
-                        active={launchOnStartup === opt.id}
-                        color="var(--accent)"
-                        bg="var(--accent-dim)"
-                        disabled={launchOnStartupBusy}
-                        onClick={() => { if (launchOnStartup !== opt.id) toggleLaunchOnStartup() }}
-                      />
-                    ))}
-                  </div>
-                </SettingsCard>
-
-                <SettingsCard>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                      <FieldLabel>Show hidden projects on the Dashboard</FieldLabel>
-                      <FieldDesc>Hidden projects are left off the Dashboard unless you turn this on. Archived projects never show there.</FieldDesc>
-                    </div>
-                    <Toggle value={showHiddenOnDashboard} onChange={handleShowHiddenToggle} />
-                  </div>
-                </SettingsCard>
-
-                <SettingsCard>
-                  <FieldLabel>Desktop Notifications</FieldLabel>
-                  <FieldDesc>Pop-up alerts from your computer. Choose which ones you want.</FieldDesc>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12, marginBottom: desktopPermissionGranted === false ? 12 : 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 12, color: 'var(--text)' }}>Deadline reminders <span style={{ color: 'var(--dimmer)' }}>— when a deadline arrives</span></span>
-                      <Toggle value={deadlineRemindersEnabled} onChange={handleDeadlineRemindersToggle} />
-                    </div>
-                    {[
-                      { id: 'runFinished',   label: 'Run finished',        desc: 'a project run completes' },
-                      { id: 'runFailed',     label: 'Run failed',          desc: 'a project run stops with an error' },
-                      { id: 'pushSucceeded', label: 'Upload succeeded',    desc: 'only when Croco is in the background' },
-                      { id: 'pushFailed',    label: 'Upload failed',       desc: 'the upload to GitHub did not work' },
-                      { id: 'aiReply',       label: 'AI reply ready',      desc: 'only when Croco is in the background' },
-                      { id: 'focusEnded',    label: 'Focus session ended', desc: 'a work or break timer ends' },
-                    ].map(n => (
-                      <div key={n.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 12, color: 'var(--text)' }}>{n.label} <span style={{ color: 'var(--dimmer)' }}>— {n.desc}</span></span>
-                        <Toggle value={!!notifPrefs[n.id]} onChange={() => handleNotifToggle(n.id)} />
-                      </div>
-                    ))}
-                  </div>
-                  {desktopPermissionGranted === false && (
-                    <InfoBox>
-                      Your computer hasn't allowed Croco to show notifications yet.
-                      <button
-                        onClick={handleRequestDesktopPermission}
-                        style={{ marginLeft: 8, padding: '3px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 11, fontFamily: 'Geist, sans-serif', cursor: 'pointer' }}
-                      >
-                        Allow Notifications
-                      </button>
-                    </InfoBox>
-                  )}
-                </SettingsCard>
-              </>
-            )}
+            {settings && activeSection === 'behaviour' && <GeneralSection key={version} settings={settings} saveField={saveField} />}
 
             {/* Storage */}
             {activeSection === 'storage' && (
