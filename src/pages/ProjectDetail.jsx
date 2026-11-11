@@ -1,16 +1,13 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
+import ReadmeTab from '../components/ProjectDetail/ReadmeTab'
+import FilesTab from '../components/ProjectDetail/FilesTab'
+import DepsTab from '../components/ProjectDetail/DepsTab'
 import { useParams, useNavigate } from 'react-router-dom'
-import {
-  ArrowLeftIcon, StarIcon, IdeLogoIcon, FolderOpenIcon, GithubIcon,
-  PlayIcon, StopIcon,
-  DownloadIcon, RefreshIcon, AlertTriangleIcon, ExternalLinkIcon,
-  ClockIcon, CommitIcon, CalendarIcon, TagIcon, SearchIcon, PackageIcon,
-  CheckCircleIcon, NoteIcon2, FileIcon, PinIcon, LinkIcon, CheckIcon,
-} from '../constants/SimpleSvgExports'
+import { ArrowLeftIcon, StarIcon, IdeLogoIcon, FolderOpenIcon, GithubIcon, PlayIcon, StopIcon, DownloadIcon, RefreshIcon, AlertTriangleIcon, ExternalLinkIcon, ClockIcon, CommitIcon, CalendarIcon, TagIcon, SearchIcon, PackageIcon, CheckCircleIcon, NoteIcon2, PinIcon, LinkIcon, CheckIcon } from '../constants/SimpleSvgExports'
 import { CardBtn } from '../components/Projects/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { useKeyboard } from '../hooks/useKeyboard'
-import { renderMarkdown, applyTermText, SHELL_OPTS_WIN, SHELL_OPTS_UNIX } from '../lib/projectDetailHelpers'
+import { applyTermText, SHELL_OPTS_WIN, SHELL_OPTS_UNIX } from '../lib/projectDetailHelpers'
 import { isTodoLocked } from '../lib/todoPriorities'
 import VisBadge from '../components/ProjectDetail/VisBadge'
 import MetaItem from '../components/ProjectDetail/MetaItem'
@@ -18,8 +15,7 @@ import StatCard from '../components/ProjectDetail/StatCard'
 import InfoSection from '../components/ProjectDetail/InfoSection'
 import Spinner from '../components/ProjectDetail/Spinner'
 import DangerRow from '../components/ProjectDetail/DangerRow'
-import DepsBtn from '../components/ProjectDetail/DepsBtn'
-import FileTreeNodes from '../components/ProjectDetail/FileTreeNodes'
+
 import TerminalPanel from '../components/ProjectDetail/TerminalPanel'
 // Lazy — xterm.js is a real chunk of weight (~340KB) that shouldn't sit in
 // the main bundle for every ProjectDetail visit when most opens never touch
@@ -959,166 +955,10 @@ export default function ProjectDetail() {
           </div>
 
           {/* ─ DEPS ──────────────────────────────────────── */}
-          {tab === 'deps' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {depsLoading ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '40px 0' }}>
-                  <Spinner size={14} />
-                  <span style={{ fontSize: 12, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Reading dependencies…</span>
-                </div>
-              ) : !deps || deps.type === 'unknown' ? (
-                <EmptyState compact mono
-                  icon={<PackageIcon size={24} />}
-                  title="No dependency file found"
-                  body="Expected package.json, requirements.txt, go.mod, or Cargo.toml"
-                  action={<button onClick={loadDeps} style={{ padding: '7px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>Refresh</button>}
-                />
-              ) : (
-                <>
-                  {/* Header */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 10, fontFamily: 'Geist Mono, monospace', padding: '3px 7px', borderRadius: 'var(--r-sm)', background: 'rgba(74,158,255,0.1)', color: '#4a9eff' }}>
-                      {deps.type}
-                    </span>
-                    {deps.name && <span style={{ fontSize: 11, color: 'var(--dim)', fontFamily: 'Geist Mono, monospace' }}>{deps.name}@{deps.version}</span>}
-                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-                      {deps.type === 'node' && (
-                        <>
-                          <DepsBtn
-                            loading={depsOp === 'install'}
-                            onClick={() => runDepsOp('install', () => window.api.projects.installDependencies(project.id))}
-                          >
-                            Install All
-                          </DepsBtn>
-                          <DepsBtn
-                            loading={depsOp === 'update'}
-                            onClick={() => runDepsOp('update', () => window.api.projects.updateDependencies(project.id))}
-                          >
-                            Update All
-                          </DepsBtn>
-                        </>
-                      )}
-                      <button onClick={loadDeps} style={{ padding: '5px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>
-                        Refresh
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Add dependency (Node only) */}
-                  {deps.type === 'node' && (
-                    <div style={{ display: 'flex', gap: 7, alignItems: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '10px 12px' }}>
-                      <input
-                        value={addPkgInput}
-                        onChange={e => setAddPkgInput(e.target.value)}
-                        placeholder="package-name[@version]"
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' && addPkgInput.trim()) {
-                            runDepsOp(`add:${addPkgInput}`, () => window.api.projects.addDependency(project.id, addPkgInput.trim(), addPkgDev))
-                            setAddPkgInput('')
-                          }
-                        }}
-                        style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 12, color: 'var(--text)', fontFamily: 'Geist Mono, monospace' }}
-                      />
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--dim)', cursor: 'pointer', flexShrink: 0 }}>
-                        <input type="checkbox" checked={addPkgDev} onChange={e => setAddPkgDev(e.target.checked)} style={{ accentColor: 'var(--orange)' }} />
-                        dev
-                      </label>
-                      <button
-                        disabled={!addPkgInput.trim() || !!depsOp}
-                        onClick={() => {
-                          if (!addPkgInput.trim()) return
-                          runDepsOp(`add:${addPkgInput}`, () => window.api.projects.addDependency(project.id, addPkgInput.trim(), addPkgDev))
-                          setAddPkgInput('')
-                        }}
-                        style={{ padding: '5px 12px', borderRadius: 'var(--r-md)', border: 'none', background: addPkgInput.trim() ? 'var(--orange)' : 'var(--dimmer)', color: '#fff', fontSize: 11, cursor: addPkgInput.trim() ? 'pointer' : 'not-allowed', fontFamily: 'Geist, sans-serif', flexShrink: 0 }}
-                      >
-                        + Add
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Output */}
-                  {(depsOp || depsOutput) && (
-                    <div style={{ background: '#0a0a0a', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '10px 14px' }}>
-                      {depsOp && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: depsOutput ? 8 : 0 }}>
-                          <Spinner size={11} />
-                          <span style={{ fontSize: 11, color: 'var(--orange)', fontFamily: 'Geist Mono, monospace' }}>
-                            Running npm {depsOp.startsWith('add:') ? `install ${depsOp.slice(4)}` : depsOp}…
-                          </span>
-                        </div>
-                      )}
-                      {depsOutput && (
-                        <pre style={{ fontSize: 10, color: 'var(--dim)', fontFamily: 'Geist Mono, monospace', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 160, overflowY: 'auto' }}>
-                          {depsOutput}
-                        </pre>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Dep sections */}
-                  {[
-                    { key: 'dependencies',     label: 'Dependencies' },
-                    { key: 'devDependencies',  label: 'Dev Dependencies' },
-                    { key: 'peerDependencies', label: 'Peer Dependencies' },
-                  ].map(({ key, label }) => {
-                    const entries = Object.entries(deps[key] || {})
-                    if (!entries.length) return null
-                    return (
-                      <InfoSection key={key} label={`${label} (${entries.length})`}>
-                        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
-                          {entries.map(([pkg, ver], i) => (
-                            <div key={pkg} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', borderBottom: i < entries.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                              <span style={{ fontSize: 12, color: 'var(--text)', flex: 1, fontFamily: 'Geist Mono, monospace' }}>{pkg}</span>
-                              <span style={{ fontSize: 10, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace', flexShrink: 0 }}>{String(ver).slice(0, 20)}</span>
-                              {deps.type === 'node' && (
-                                <button
-                                  disabled={!!depsOp}
-                                  onClick={() => runDepsOp(`remove:${pkg}`, () => window.api.projects.removeDependency(project.id, pkg))}
-                                  style={{ padding: '3px 8px', borderRadius: 'var(--r-sm)', border: '1px solid rgba(255,68,68,0.2)', background: 'rgba(255,68,68,0.06)', color: '#ff5555', fontSize: 10, cursor: depsOp ? 'not-allowed' : 'pointer', fontFamily: 'Geist, sans-serif', flexShrink: 0, opacity: depsOp ? 0.5 : 1 }}
-                                >
-                                  Remove
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </InfoSection>
-                    )
-                  })}
-                </>
-              )}
-            </div>
-          )}
+          {tab === 'deps' && <DepsTab addPkgDev={addPkgDev} addPkgInput={addPkgInput} deps={deps} depsLoading={depsLoading} depsOp={depsOp} depsOutput={depsOutput} loadDeps={loadDeps} project={project} runDepsOp={runDepsOp} setAddPkgDev={setAddPkgDev} setAddPkgInput={setAddPkgInput} />}
 
           {/* ─ FILES ─────────────────────────────────────────── */}
-          {tab === 'files' && (
-            <div>
-              {fileLoading ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '40px 0' }}>
-                  <Spinner size={14} />
-                  <span style={{ fontSize: 12, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Reading files…</span>
-                </div>
-              ) : !fileTree || fileTree.length === 0 ? (
-                <EmptyState compact mono
-                  icon={<FolderOpenIcon size={24} />}
-                  title="Project folder is empty"
-                  body={project.paths?.projectRoot}
-                  action={<button onClick={loadFiles} style={{ padding: '7px 16px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--dim)', fontSize: 12, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>Refresh</button>}
-                />
-              ) : (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>{project.paths?.projectRoot}</span>
-                    <button onClick={loadFiles} style={{ padding: '4px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'Geist, sans-serif' }}>Refresh</button>
-                  </div>
-                  <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden', fontFamily: 'Geist Mono, monospace' }}>
-                    <FileTreeNodes nodes={fileTree} depth={0} expanded={expanded} setExpanded={setExpanded} onOpenFile={p => window.api?.system.openPath(p)} onContextMenu={(e, entry) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, entry }) }} />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {tab === 'files' && <FilesTab expanded={expanded} fileLoading={fileLoading} fileTree={fileTree} loadFiles={loadFiles} project={project} setCtxMenu={setCtxMenu} setExpanded={setExpanded} />}
 
           {/* ─ DOCKER ────────────────────────────────────── */}
           {tab === 'docker' && <DockerPanel projectId={project.id} />}
@@ -1369,34 +1209,7 @@ export default function ProjectDetail() {
           )}
 
           {/* ─ README ───────────────────────────────────── */}
-          {tab === 'readme' && (
-            <div>
-              {readmeLoading ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '40px 0' }}>
-                  <Spinner size={14} />
-                  <span style={{ fontSize: 12, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>Loading README…</span>
-                </div>
-              ) : readme === false || !readme ? (
-                <EmptyState compact mono icon={<FileIcon size={24} />} title="No README found" body="Add a README.md to your project root" />
-              ) : (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: 11, fontFamily: 'Geist Mono, monospace', color: 'var(--dimmer)', background: 'var(--border)', padding: '3px 8px', borderRadius: 'var(--r-sm)' }}>
-                      {readme.filename}
-                    </span>
-                  </div>
-                  <div
-                    className="markdown-body"
-                    style={{
-                      fontSize: 13, lineHeight: 1.7, color: 'var(--text)',
-                      '--md-code-bg': 'var(--card)',
-                    }}
-                    dangerouslySetInnerHTML={{ __html: renderMarkdown(readme.content) }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+          {tab === 'readme' && <ReadmeTab readme={readme} readmeLoading={readmeLoading} />}
 
           {/* ─ SETTINGS ──────────────────────────────────── */}
           {tab === 'settings' && editDraft && (() => {
