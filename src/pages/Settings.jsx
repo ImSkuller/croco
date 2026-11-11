@@ -5,8 +5,8 @@ import { useToast } from '../components/Toast/useToast.js'
 import { applyTheme, normalizeThemeId } from '../lib/theme.js'
 import { applyStyle, normalizeStyleId, applySmoothAnimations } from '../lib/appearanceStyle.js'
 import { SHORTCUT_DEFS } from '../lib/shortcuts'
-import StorageSection from '../components/Settings/StorageSection'
-import ObsidianSection from '../components/Settings/ObsidianSection'
+import StorageTab from '../components/Settings/StorageTab'
+import ObsidianTab from '../components/Settings/ObsidianTab'
 import ModulesSection from '../components/Settings/ModulesSection'
 import TagsSection from '../components/Settings/TagsSection'
 import UpdatesSection from '../components/Settings/UpdatesSection'
@@ -71,31 +71,6 @@ export default function Settings() {
   // Shell preference
   const [platform,         setPlatform]         = useState('win32')
 
-  // Storage
-  const [storageBackend,   setStorageBackend]   = useState('json') // 'json' | 'sqlite'
-  const [migrating,        setMigrating]        = useState(false)
-  const [migrateResult,    setMigrateResult]    = useState(null) // null | { ok: bool, message: str }
-
-  // Backup / restore
-  const [backupBusy,       setBackupBusy]       = useState(null) // null | 'export' | 'import'
-  const [backupResult,     setBackupResult]     = useState(null) // null | { ok: bool, message: str }
-
-  // Scheduled automatic backups
-  const [autoBackupEnabled,   setAutoBackupEnabled]   = useState(true)
-  const [autoBackupInterval,  setAutoBackupInterval]  = useState(1)
-  const [autoBackupRetention, setAutoBackupRetention] = useState(7)
-  const [autoBackupLastAt,    setAutoBackupLastAt]    = useState(null)
-  const [autoBackupBusy,      setAutoBackupBusy]      = useState(false)
-  const [autoBackupResult,    setAutoBackupResult]    = useState(null) // null | { ok: bool, message: str }
-
-  // Obsidian vault sync
-  const [obsidianEnabled,    setObsidianEnabled]    = useState(false)
-  const [obsidianVaultPath,  setObsidianVaultPath]  = useState('')
-  const [obsidianLastSync,   setObsidianLastSync]   = useState(null)
-  const [obsidianPathCheck,  setObsidianPathCheck]  = useState(null) // null | { valid: bool, message?: str }
-  const [obsidianSyncing,    setObsidianSyncing]    = useState(false)
-  const [obsidianSyncResult, setObsidianSyncResult] = useState(null) // null | { ok: bool, message: str }
-
   // Shortcuts
   const [shortcutOverrides, setShortcutOverrides] = useState({})
   const [capturingId,       setCapturingId]       = useState(null)
@@ -141,15 +116,7 @@ export default function Settings() {
     setSettings(s)
     setShortcutOverrides(s.app?.shortcuts || {})
     const backend = s.app?.storageBackend || 'json'
-    setStorageBackend(backend)
     window._currentStorageBackend = backend
-    setObsidianEnabled(s.app?.obsidian?.enabled || false)
-    setObsidianVaultPath(s.app?.obsidian?.vaultPath || '')
-    setObsidianLastSync(s.app?.obsidian?.lastSyncAt || null)
-    setAutoBackupEnabled(s.app?.autoBackup?.enabled ?? true)
-    setAutoBackupInterval(s.app?.autoBackup?.intervalDays || 1)
-    setAutoBackupRetention(s.app?.autoBackup?.retentionCount || 7)
-    setAutoBackupLastAt(s.app?.autoBackup?.lastBackupAt || null)
   }, [])
 
   useEffect(() => {
@@ -166,75 +133,6 @@ export default function Settings() {
       })
       .catch(console.error)
   }, [applySettings])
-
-  const handleObsidianToggle = () => {
-    setObsidianEnabled(prev => {
-      const next = !prev
-      window.api?.settings.update({ app: { obsidian: { enabled: next, vaultPath: obsidianVaultPath } } }).catch(() => {})
-      return next
-    })
-  }
-
-  const handlePickVault = async () => {
-    if (!window.api) return
-    const picked = await window.api.system.showFolderPicker()
-    if (!picked) return
-    const check = await window.api.obsidian.testVaultPath(picked).catch(() => ({ valid: false, message: 'Could not validate this folder.' }))
-    setObsidianPathCheck(check)
-    if (!check.valid) return
-    setObsidianVaultPath(picked)
-    window.api.settings.update({ app: { obsidian: { enabled: obsidianEnabled, vaultPath: picked } } }).catch(() => {})
-  }
-
-  const handleObsidianSyncNow = async () => {
-    if (!window.api) return
-    setObsidianSyncing(true)
-    setObsidianSyncResult(null)
-    try {
-      const r = await window.api.obsidian.syncAll()
-      const failedPart = r.failed ? `, ${r.failed} failed` : ''
-      setObsidianSyncResult({ ok: true, message: `Synced ${r.synced} note${r.synced === 1 ? '' : 's'}${failedPart}.` })
-      setObsidianLastSync(new Date().toISOString())
-    } catch (err) {
-      setObsidianSyncResult({ ok: false, message: err?.message || String(err) })
-    } finally {
-      setObsidianSyncing(false)
-    }
-  }
-
-  const handleAutoBackupToggle = () => {
-    setAutoBackupEnabled(prev => {
-      const next = !prev
-      window.api?.settings.update({ app: { autoBackup: { enabled: next, intervalDays: autoBackupInterval, retentionCount: autoBackupRetention } } }).catch(() => {})
-      return next
-    })
-  }
-
-  const handleAutoBackupIntervalChange = (days) => {
-    setAutoBackupInterval(days)
-    window.api?.settings.update({ app: { autoBackup: { enabled: autoBackupEnabled, intervalDays: days, retentionCount: autoBackupRetention } } }).catch(() => {})
-  }
-
-  const handleAutoBackupRetentionChange = (count) => {
-    setAutoBackupRetention(count)
-    window.api?.settings.update({ app: { autoBackup: { enabled: autoBackupEnabled, intervalDays: autoBackupInterval, retentionCount: count } } }).catch(() => {})
-  }
-
-  const handleBackUpNow = async () => {
-    if (!window.api) return
-    setAutoBackupBusy(true)
-    setAutoBackupResult(null)
-    try {
-      await window.api.data.backupNow()
-      const now = new Date().toISOString()
-      setAutoBackupLastAt(now)
-      setAutoBackupResult({ ok: true, message: 'Backup saved.' })
-    } catch (err) {
-      setAutoBackupResult({ ok: false, message: err?.message || String(err) })
-    } finally {
-      setAutoBackupBusy(false)
-    }
-  }
 
   const handleReset = async () => {
     if (window.api) {
@@ -351,33 +249,8 @@ export default function Settings() {
 
             {settings && activeSection === 'behaviour' && <GeneralSection key={version} settings={settings} saveField={saveField} />}
 
-            {/* Storage */}
-            {activeSection === 'storage' && (
-              <StorageSection
-                storageBackend={storageBackend} setStorageBackend={setStorageBackend}
-                migrating={migrating} setMigrating={setMigrating}
-                migrateResult={migrateResult} setMigrateResult={setMigrateResult}
-                backupBusy={backupBusy} setBackupBusy={setBackupBusy}
-                backupResult={backupResult} setBackupResult={setBackupResult}
-                autoBackupEnabled={autoBackupEnabled} onToggleAutoBackup={handleAutoBackupToggle}
-                autoBackupInterval={autoBackupInterval} onChangeAutoBackupInterval={handleAutoBackupIntervalChange}
-                autoBackupRetention={autoBackupRetention} onChangeAutoBackupRetention={handleAutoBackupRetentionChange}
-                autoBackupLastAt={autoBackupLastAt}
-                autoBackupBusy={autoBackupBusy} autoBackupResult={autoBackupResult}
-                onBackUpNow={handleBackUpNow}
-              />
-            )}
-
-            {/* Obsidian */}
-            {activeSection === 'obsidian' && (
-              <ObsidianSection
-                obsidianEnabled={obsidianEnabled} handleObsidianToggle={handleObsidianToggle}
-                obsidianVaultPath={obsidianVaultPath} setObsidianVaultPath={setObsidianVaultPath}
-                handlePickVault={handlePickVault} obsidianPathCheck={obsidianPathCheck}
-                obsidianSyncResult={obsidianSyncResult} obsidianLastSync={obsidianLastSync}
-                obsidianSyncing={obsidianSyncing} handleObsidianSyncNow={handleObsidianSyncNow}
-              />
-            )}
+            {settings && activeSection === 'storage'  && <StorageTab  key={version} settings={settings} saveField={saveField} />}
+            {settings && activeSection === 'obsidian' && <ObsidianTab key={version} settings={settings} saveField={saveField} />}
 
             {/* Terminal app */}
             {activeSection === 'terminal' && <TerminalSection toast={toast} />}
