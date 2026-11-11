@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, LockIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon, AIIcon, EyeIcon, EyeOffIcon, APIIcon, CopyIcon, AlertTriangleIcon, PuzzleIcon } from '../constants/SimpleSvgExports'
-import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, PathInput, IDEOption, ToggleChip, Toggle, InfoBox, SmallBtn } from '../components/Settings/Exports'
+import { UserIcon, FolderIcon, SaveIcon, GitIcon, PaletteIcon, ShieldIcon, TagIcon, RefreshIcon, KeyboardIcon, DatabaseIcon, VaultIcon, CheckIcon, XCircleIcon, BellIcon, CheckCircleIcon, AIIcon, EyeIcon, EyeOffIcon, APIIcon, CopyIcon, AlertTriangleIcon, PuzzleIcon } from '../constants/SimpleSvgExports'
+import { SettingsNavItem, SectionTitle, SettingsCard, FieldLabel, FieldDesc, TextInput, ToggleChip, Toggle, InfoBox, SmallBtn } from '../components/Settings/Exports'
 import { useToast } from '../components/Toast/useToast.js'
 import { THEMES, applyTheme, getThemeAccentSwatch, normalizeThemeId } from '../lib/theme.js'
 import { STYLES, applyStyle, normalizeStyleId, applySmoothAnimations } from '../lib/appearanceStyle.js'
@@ -14,37 +14,11 @@ import UpdatesSection from '../components/Settings/UpdatesSection'
 import TerminalSection from '../components/Settings/TerminalSection'
 import ShortcutsSection from '../components/Settings/ShortcutsSection'
 import DangerSection from '../components/Settings/DangerSection'
+import UserSection from '../components/Settings/UserSection'
+import PathsSection from '../components/Settings/PathsSection'
+import DefaultsSection from '../components/Settings/DefaultsSection'
+import { codeStyle, mergeDeep } from '../components/Settings/shared.js'
 import useDiscordPresence from '../hooks/useDiscordPresence'
-
-const codeStyle = {
-  fontFamily:   'Geist Mono, monospace',
-  fontSize:     11,
-  background:   'var(--border)',
-  color:        'var(--text)',
-  padding:      '1px 5px',
-  borderRadius: 'var(--r-sm)',
-}
-
-const IDE_OPTIONS = [
-  { value: 'vscode',    label: 'Visual Studio Code' },
-  { value: 'cursor',    label: 'Cursor'             },
-  { value: 'windsurf',  label: 'Windsurf'           },
-  { value: 'trae',      label: 'Trae'               },
-  { value: 'zed',       label: 'Zed'                },
-  { value: 'fleet',     label: 'Fleet'              },
-  { value: 'webstorm',  label: 'WebStorm'           },
-  { value: 'idea',      label: 'IntelliJ IDEA'      },
-  { value: 'sublime',   label: 'Sublime Text'       },
-  { value: 'neovim',    label: 'Neovim'             },
-  { value: 'vim',       label: 'Vim'                },
-  { value: 'claude-code', label: 'Claude Code'       },
-]
-
-const PRESET_TAGS = [
-  'Developer', 'Designer', 'Student',    'Hobbyist',
-  'Builder',   'Maker',    'Engineer',   'Researcher',
-  'Freelancer','Open Source','Architect','Hacker',
-]
 
 const NAV_SECTIONS = [
   { id: 'user',       label: 'User',         icon: <UserIcon />    },
@@ -65,16 +39,10 @@ const NAV_SECTIONS = [
   { id: 'danger',     label: 'Danger Zone',  icon: <ShieldIcon />  },
 ]
 
-const SHELL_OPTIONS = {
-  win32:  [{ value: '',           label: 'cmd.exe (default)' }, { value: 'powershell', label: 'PowerShell' }],
-  other:  [{ value: '',           label: 'sh (default)' }, { value: 'bash', label: 'Bash' }, { value: 'zsh', label: 'Zsh' }, { value: 'fish', label: 'Fish' }],
-}
-
 export default function Settings() {
   const toast = useToast()
   const [activeSection, setActiveSection] = useState('user')
   useDiscordPresence('In Settings', NAV_SECTIONS.find(s => s.id === activeSection)?.label)
-  const [loading,       setLoading]       = useState(true)
 
   // Opt-in font picker previews need their real faces loaded to render
   // correctly — deferred until the Appearance tab is actually opened
@@ -83,15 +51,22 @@ export default function Settings() {
     if (activeSection === 'appearance') lazyLoadAllPickerFonts()
   }, [activeSection])
 
-  const [userName,    setUserName]    = useState('')
-
-  const [publicPath,  setPublicPath]  = useState('')
-  const [hiddenPath,  setHiddenPath]  = useState('')
+  // Latest copy of the settings (for sections that read their own values from
+  // it). `version` is bumped when everything is replaced at once (Reset) so
+  // sections remount with the fresh values.
+  const [settings, setSettings] = useState(null)
+  const [version,  setVersion]  = useState(0)
   const [appDataPath, setAppDataPath] = useState('')
 
-  const [defaultIDE,        setDefaultIDE]        = useState('vscode')
-  const [defaultBranch,     setDefaultBranch]     = useState('main')
-  const [defaultVisibility, setDefaultVisibility] = useState('public')
+  // Updates the local copy only.
+  const patchLocal = useCallback((patch) => setSettings(prev => mergeDeep(prev || {}, patch)), [])
+  // Every control on this page saves itself the moment it changes: it updates
+  // the local copy and persists the same patch. Free-text fields call this
+  // onBlur instead of on every keystroke.
+  const saveField = useCallback((patch) => {
+    patchLocal(patch)
+    return window.api?.settings.update(patch).catch(console.error)
+  }, [patchLocal])
 
   const [ghUsername,    setGhUsername]    = useState('')
   // ghToken only ever holds a value the user just typed/received this
@@ -118,16 +93,12 @@ export default function Settings() {
   // "shown once" rule as e.g. a GitHub OAuth device code).
   const [apiTokenReveal,setApiTokenReveal]= useState(null)
   const [apiBusy,       setApiBusy]       = useState(false)
-  const [userAvatar,    setUserAvatar]    = useState(null)
   const [oauthEnabled,  setOauthEnabled]  = useState(true) // optimistic default (always true in shipped builds); corrected after the async check below
   const [oauthData,     setOauthData]     = useState(null) // {user_code, verification_uri, device_code, interval}
   const [oauthPolling,  setOauthPolling]  = useState(false)
   const oauthPollRef = useRef(null) // { timerId, inFlight } — lets us clear/reschedule and avoid overlapping poll requests
 
-  const [userTag,       setUserTag]       = useState('Developer')
-  const [tagLocked,     setTagLocked]     = useState(false)
   const [closeBehavior, setCloseBehavior] = useState('tray')
-  const [customDataPath,setCustomDataPath]= useState('')
   const [launchOnStartup, setLaunchOnStartup] = useState(false)
   const [launchOnStartupBusy, setLaunchOnStartupBusy] = useState(false)
 
@@ -143,7 +114,6 @@ export default function Settings() {
   const [rerunConfirm,     setRerunConfirm]     = useState(false)
   const [dangerConfirm,    setDangerConfirm]    = useState(null) // null | 'todos' | 'notes' | 'projects'
   // Shell preference
-  const [defaultShell,     setDefaultShell]     = useState('')
   const [platform,         setPlatform]         = useState('win32')
 
   // Storage
@@ -247,14 +217,7 @@ export default function Settings() {
 
   const applySettings = useCallback((s) => {
     if (!s) return
-    setUserName(s.user?.name || '')
-    setUserAvatar(s.user?.avatar || null)
-    setUserTag(s.user?.tag || 'Developer')
-    setPublicPath(s.paths?.publicProjects || '')
-    setHiddenPath(s.paths?.hiddenProjects || '')
-    setDefaultIDE(s.defaults?.ide || 'vscode')
-    setDefaultBranch(s.defaults?.gitBranch || 'main')
-    setDefaultVisibility(s.defaults?.visibility || 'public')
+    setSettings(s)
     setGhUsername(s.user?.github?.username || '')
     setGhTokenStored(!!s.user?.github?.tokenStored)
     setSecretsFallbackActive(!!s.app?.secretsFallbackActive)
@@ -266,7 +229,6 @@ export default function Settings() {
     setApiRunning(!!s.api?.running)
     setApiTokenStored(!!s.api?.tokenStored)
     setCloseBehavior(s.app?.closeBehavior || 'tray')
-    setCustomDataPath(s.app?.dataPath || '')
     const color = s.appearance?.accentColor || '#e8e4dc'
     setAccentColor(color)
     const theme = normalizeThemeId(s.appearance?.theme || 'default')
@@ -278,7 +240,6 @@ export default function Settings() {
     setFontBody(s.appearance?.fontBody || 'Geist')
     setFontDisplay(s.appearance?.fontDisplay || 'Lora')
     setLogoBg(s.appearance?.logoBg || '#ffffff')
-    setDefaultShell(s.defaults?.shell || '')
     setShortcutOverrides(s.app?.shortcuts || {})
     const backend = s.app?.storageBackend || 'json'
     setStorageBackend(backend)
@@ -296,7 +257,7 @@ export default function Settings() {
   }, [])
 
   useEffect(() => {
-    if (!window.api) { Promise.resolve().then(() => setLoading(false)); return }
+    if (!window.api) return
     window.api.github?.oauthConfigured().then(v => setOauthEnabled(!!v)).catch(() => {})
     window.api.app?.autostart.isEnabled().then(setLaunchOnStartup).catch(() => {})
     window.api.notify?.isDesktopPermissionGranted().then(setDesktopPermissionGranted).catch(() => {})
@@ -309,16 +270,8 @@ export default function Settings() {
         applySettings(s)
         setAppDataPath(userData || '')
         setPlatform(plat || 'win32')
-        // Check if user has a locked community tag
-        const ghUser = s.user?.github?.username
-        if (ghUser) {
-          window.api.system.lookupCommunityUser(ghUser)
-            .then(cu => { if (cu?.locked) setTagLocked(true) })
-            .catch(() => {})
-        }
       })
       .catch(console.error)
-      .finally(() => setLoading(false))
   }, [applySettings])
 
   const toggleLaunchOnStartup = async () => {
@@ -334,12 +287,6 @@ export default function Settings() {
     } finally {
       setLaunchOnStartupBusy(false)
     }
-  }
-
-  const pickFolder = async (setter, onPicked) => {
-    if (!window.api) return
-    const picked = await window.api.system.showFolderPicker()
-    if (picked) { setter(picked); onPicked?.(picked) }
   }
 
   const handleObsidianToggle = () => {
@@ -521,20 +468,6 @@ export default function Settings() {
     setDesktopPermissionGranted(!!granted)
   }
 
-  const handleAvatarUpload = async () => {
-    if (!window.api) return
-    const filePath = await window.api.system.showFilePicker(null, [
-      { name: 'Images', extensions: ['png', 'jpg', 'jpeg'] },
-    ])
-    if (!filePath) return
-    try {
-      const b64 = await window.api.settings.saveAvatar(filePath)
-      setUserAvatar(b64)
-    } catch (e) {
-      toast.error('Avatar upload failed', e.message)
-    }
-  }
-
   const handleTestGithub = async () => {
     if (!ghToken.trim()) return
     setGhTestStatus('testing')
@@ -603,7 +536,7 @@ export default function Settings() {
             // Lookup community tag
             if (login) {
               const cu = await window.api.system.lookupCommunityUser(login).catch(() => null)
-              if (cu) setUserTag(cu.tag)
+              if (cu) patchLocal({ user: { tag: cu.tag } })
             }
           } else if (res?.status === 'access_denied' || res?.status === 'expired_token') {
             finish({ ok: false, message: 'Login was denied or expired.' })
@@ -626,14 +559,6 @@ export default function Settings() {
     }
   }
 
-  // Every control on this page saves itself the moment it changes — a chip/
-  // toggle/swatch/select persists immediately on click (same instant-apply
-  // pattern Theme/Glass already used); a free-text field persists onBlur
-  // instead of on every keystroke. Nothing on this page depends on a
-  // separate "Save Changes" action anymore. `saveField` is the shared
-  // one-line persist call each of those wires up to.
-  const saveField = (patch) => window.api?.settings.update(patch).catch(console.error)
-
   // GitHub's personal access token is the one field on this page that still
   // needs an explicit save (same reasoning as the AI key's own "Save Key"
   // button below): it's a secret written to the OS keyring, not a plain
@@ -650,7 +575,7 @@ export default function Settings() {
   const handleReset = async () => {
     if (window.api) {
       const defaults = await window.api.settings.reset().catch(console.error)
-      if (defaults) applySettings(defaults)
+      if (defaults) { applySettings(defaults); setVersion(v => v + 1) }
     }
     setResetConfirm(false)
   }
@@ -730,189 +655,9 @@ export default function Settings() {
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
           <div className="pm-page" style={{ maxWidth: 640, padding: '32px 40px' }}>
 
-            {/* User */}
-            {activeSection === 'user' && (
-              <>
-                <SectionTitle icon={<UserIcon />} title="User" desc="Your name and photo." />
-
-                <SettingsCard>
-                  <FieldLabel>Avatar</FieldLabel>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: 'var(--text)', fontFamily: 'Geist Mono, monospace', flexShrink: 0, overflow: 'hidden' }}>
-                      {userAvatar
-                        ? <img src={userAvatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : (userName.slice(0, 2).toUpperCase() || '??')}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <SmallBtn onClick={handleAvatarUpload}>Upload Photo</SmallBtn>
-                      {userAvatar && (
-                        <SmallBtn onClick={() => { setUserAvatar(null); window.api?.settings.update({ user: { avatar: null } }) }}>
-                          Remove
-                        </SmallBtn>
-                      )}
-                      <span style={{ fontSize: 11, color: 'var(--dimmer)' }}>PNG or JPG, max 2MB</span>
-                    </div>
-                  </div>
-                </SettingsCard>
-
-                <SettingsCard>
-                  <FieldLabel>Display Name</FieldLabel>
-                  <FieldDesc>Shown in the sidebar and in the Dashboard greeting.</FieldDesc>
-                  <TextInput value={userName} onChange={setUserName} onBlur={() => saveField({ user: { name: userName } })} placeholder="Your name" />
-                </SettingsCard>
-
-                <SettingsCard>
-                  <FieldLabel>Tag</FieldLabel>
-                  <FieldDesc>Shown under your name in the sidebar.</FieldDesc>
-                  {tagLocked ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 8,
-                        background: 'var(--accent-dim)', border: '1px solid var(--accent)',
-                        borderRadius: 'var(--r-xl)', padding: '6px 14px',
-                      }}>
-                        <span style={{ display: 'flex', color: 'var(--accent)' }}><LockIcon size={14} /></span>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{userTag}</span>
-                      </div>
-                      <span style={{ fontSize: 11, color: 'var(--dimmer)', fontFamily: 'Geist Mono, monospace' }}>
-                        predefined by the author
-                      </span>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-                      {PRESET_TAGS.map(tag => (
-                        <button
-                          key={tag}
-                          onClick={() => { setUserTag(tag); saveField({ user: { tag } }) }}
-                          style={{
-                            padding: '5px 12px', borderRadius: 'var(--r-xl)', cursor: 'pointer',
-                            fontFamily: 'Geist, sans-serif', fontSize: 12,
-                            border:     `1px solid ${userTag === tag ? 'var(--accent)' : 'var(--border)'}`,
-                            background: userTag === tag ? 'var(--accent-dim)' : 'var(--card)',
-                            color:      userTag === tag ? 'var(--text)'       : 'var(--dim)',
-                            transition: 'all var(--transition-fast)',
-                          }}
-                        >
-                          {tag}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </SettingsCard>
-              </>
-            )}
-
-            {/* Paths */}
-            {activeSection === 'paths' && (
-              <>
-                <SectionTitle icon={<FolderIcon />} title="Folders" desc="Where your projects and Croco's data are saved." />
-
-                <SettingsCard>
-                  <FieldLabel>Projects Folder</FieldLabel>
-                  <FieldDesc>New projects are created here.</FieldDesc>
-                  <PathInput
-                    value={publicPath}
-                    onChange={setPublicPath}
-                    onBlur={() => saveField({ paths: { publicProjects: publicPath } })}
-                    onBrowse={() => pickFolder(setPublicPath, (p) => saveField({ paths: { publicProjects: p } }))}
-                  />
-                </SettingsCard>
-
-                <SettingsCard>
-                  <FieldLabel>Private Projects Folder</FieldLabel>
-                  <FieldDesc>New private projects are created here. The folder is hidden in your file explorer.</FieldDesc>
-                  <PathInput
-                    value={hiddenPath}
-                    onChange={setHiddenPath}
-                    onBlur={() => saveField({ paths: { hiddenProjects: hiddenPath } })}
-                    onBrowse={() => pickFolder(setHiddenPath, (p) => saveField({ paths: { hiddenProjects: p } }))}
-                  />
-                </SettingsCard>
-
-                <SettingsCard>
-                  <FieldLabel>Croco Data Folder</FieldLabel>
-                  <FieldDesc>Where Croco saves your projects' details, notes, and todos.</FieldDesc>
-                  <PathInput value={loading ? 'Loading…' : appDataPath} onChange={() => {}} disabled />
-                </SettingsCard>
-
-                <SettingsCard>
-                  <FieldLabel>Use a Different Data Folder</FieldLabel>
-                  <FieldDesc>Save your data somewhere else, like a Dropbox or OneDrive folder. Leave empty to use the default. Your existing data is not moved for you.</FieldDesc>
-                  <PathInput
-                    value={customDataPath}
-                    onChange={setCustomDataPath}
-                    onBlur={() => saveField({ app: { dataPath: customDataPath } })}
-                    onBrowse={() => pickFolder(setCustomDataPath, (p) => saveField({ app: { dataPath: p } }))}
-                    placeholder="Leave empty to use the default"
-                  />
-                  {customDataPath && (
-                    <InfoBox>Croco will now use <span style={{ fontFamily: 'Geist Mono, monospace', color: 'var(--text)' }}>{customDataPath}</span>. To keep your old data, copy it over from <span style={{ fontFamily: 'Geist Mono, monospace', color: 'var(--text)' }}>{appDataPath}</span>.</InfoBox>
-                  )}
-                </SettingsCard>
-              </>
-            )}
-
-            {/* Defaults */}
-            {activeSection === 'defaults' && (
-              <>
-                <SectionTitle icon={<SaveIcon />} title="New Projects" desc="Starting choices for new projects." />
-
-                <SettingsCard>
-                  <FieldLabel>Code Editor</FieldLabel>
-                  <FieldDesc>The editor that opens when a project doesn't have its own.</FieldDesc>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginTop: 8 }}>
-                    {IDE_OPTIONS.map(ide => (
-                      <IDEOption
-                        key={ide.value}
-                        ide={ide}
-                        selected={defaultIDE === ide.value}
-                        onClick={() => { setDefaultIDE(ide.value); saveField({ defaults: { ide: ide.value } }) }}
-                      />
-                    ))}
-                  </div>
-                </SettingsCard>
-
-                <SettingsCard>
-                  <FieldLabel>Main Branch Name</FieldLabel>
-                  <FieldDesc>The branch name used when saving and uploading your changes with Git.</FieldDesc>
-                  <TextInput value={defaultBranch} onChange={setDefaultBranch} onBlur={() => saveField({ defaults: { gitBranch: defaultBranch } })} placeholder="main" mono />
-                </SettingsCard>
-
-                <SettingsCard>
-                  <FieldLabel>New Projects Are</FieldLabel>
-                  <FieldDesc>Public projects show up as normal. Hidden ones are kept private.</FieldDesc>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    {['public', 'hidden'].map(v => (
-                      <ToggleChip
-                        key={v}
-                        label={v}
-                        active={defaultVisibility === v}
-                        color={v === 'hidden' ? 'var(--purple)' : 'var(--blue)'}
-                        bg={v === 'hidden' ? 'rgba(168,85,247,0.1)' : 'rgba(74,158,255,0.1)'}
-                        onClick={() => { setDefaultVisibility(v); saveField({ defaults: { visibility: v } }) }}
-                      />
-                    ))}
-                  </div>
-                </SettingsCard>
-
-                <SettingsCard>
-                  <FieldLabel>Terminal Type</FieldLabel>
-                  <FieldDesc>The command-line program used when you run a project. If unsure, keep the default.</FieldDesc>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                    {(SHELL_OPTIONS[platform] || SHELL_OPTIONS.other).map(opt => (
-                      <ToggleChip
-                        key={opt.value}
-                        label={opt.label}
-                        active={defaultShell === opt.value}
-                        color="var(--accent)"
-                        bg="var(--accent-dim)"
-                        onClick={() => { setDefaultShell(opt.value); saveField({ defaults: { shell: opt.value } }) }}
-                      />
-                    ))}
-                  </div>
-                </SettingsCard>
-              </>
-            )}
+            {settings && activeSection === 'user'     && <UserSection     key={version} settings={settings} saveField={saveField} patchLocal={patchLocal} />}
+            {settings && activeSection === 'paths'    && <PathsSection    key={version} settings={settings} saveField={saveField} appDataPath={appDataPath} />}
+            {settings && activeSection === 'defaults' && <DefaultsSection key={version} settings={settings} saveField={saveField} platform={platform} />}
 
             {/* GitHub */}
             {activeSection === 'github' && (
