@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Fuse from 'fuse.js'
 import {
   PlusIcon,
   GridIcon,
@@ -116,13 +117,29 @@ export default function Projects() {
   // threaded into every predicate below.
   const liveProjects = useMemo(() => projects.filter(p => !p.trashedAt), [projects])
 
+  // Fuzzy search (fuse.js) over name/tags/description — typo-tolerant, so
+  // "porfolio" still finds "portfolio". Shared by the main list and the
+  // archived dropdown: null means "no query, everything matches"; otherwise
+  // it's the set of matching project ids.
+  const fuse = useMemo(() => new Fuse(liveProjects, {
+    keys: [
+      { name: 'name', weight: 0.6 },
+      { name: 'tags', weight: 0.25 },
+      { name: 'description', weight: 0.15 },
+    ],
+    threshold: 0.35,
+    ignoreLocation: true,
+  }), [liveProjects])
+
+  const searchMatchIds = useMemo(() => {
+    const q = search.trim()
+    if (!q) return null
+    return new Set(fuse.search(q).map(r => r.item.id))
+  }, [fuse, search])
+
   const filtered = useMemo(() => sortProjects(
     liveProjects.filter(p => {
-      const q = search.toLowerCase()
-      const matchSearch = !q
-        || p.name.toLowerCase().includes(q)
-        || (p.tags || []).some(t => t.toLowerCase().includes(q))
-        || (p.description || '').toLowerCase().includes(q)
+      const matchSearch = !searchMatchIds || searchMatchIds.has(p.id)
       const matchFilter =
         filter === 'Archived'   ? !!p.archived :
         filter === 'All'        ? !p.archived :
@@ -134,23 +151,19 @@ export default function Projects() {
       return matchSearch && matchFilter && matchTag
     }),
     sort
-  ), [liveProjects, search, filter, sort, selectedTag, runningIds])
+  ), [liveProjects, searchMatchIds, filter, sort, selectedTag, runningIds])
 
   // Archived projects, shown as a collapsible dropdown under the "All" tab
   // instead of forcing a separate tab switch to find them.
   const archivedProjects = useMemo(() => sortProjects(
     liveProjects.filter(p => {
       if (!p.archived) return false
-      const q = search.toLowerCase()
-      const matchSearch = !q
-        || p.name.toLowerCase().includes(q)
-        || (p.tags || []).some(t => t.toLowerCase().includes(q))
-        || (p.description || '').toLowerCase().includes(q)
+      const matchSearch = !searchMatchIds || searchMatchIds.has(p.id)
       const matchTag = !selectedTag || (p.tags || []).includes(selectedTag)
       return matchSearch && matchTag
     }),
     sort
-  ), [liveProjects, search, sort, selectedTag])
+  ), [liveProjects, searchMatchIds, sort, selectedTag])
 
   const counts = useMemo(() => ({
     All:        liveProjects.filter(p => !p.archived).length,
