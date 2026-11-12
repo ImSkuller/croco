@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { RefreshIcon, DownloadIcon, CheckCircleIcon } from '../../constants/SimpleSvgExports'
-import { SectionTitle, SettingsCard, FieldLabel, FieldDesc, InfoBox } from './Exports'
+import { SectionTitle, SettingsCard, FieldLabel, FieldDesc, InfoBox, Toggle } from './Exports'
 
 export default function UpdatesSection({
   updateChecking, setUpdateChecking, updateInfo, setUpdateInfo,
-  updateInstalling, setUpdateInstalling, toast,
+  updateInstalling, setUpdateInstalling, toast, autoUpdate, onToggleAutoUpdate,
 }) {
   const [progress, setProgress] = useState(null) // { downloaded, total }
 
@@ -31,6 +31,15 @@ export default function UpdatesSection({
   return (
     <>
       <SectionTitle icon={<RefreshIcon />} title="Updates" desc="Check for the latest version of Croco." />
+      <SettingsCard>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <div>
+            <FieldLabel>Install updates automatically</FieldLabel>
+            <FieldDesc>When a new version is out, Croco installs it as soon as it starts, then restarts. While Croco is already open it only tells you, so it never restarts in the middle of your work.</FieldDesc>
+          </div>
+          <Toggle value={autoUpdate} onChange={onToggleAutoUpdate} />
+        </div>
+      </SettingsCard>
       <SettingsCard>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <div>

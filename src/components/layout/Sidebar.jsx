@@ -110,18 +110,35 @@ export default function Sidebar({ position = 'left' }) {
   // Check for updates at launch, then again every 6 hours while the app stays
   // open (long-lived sessions would otherwise never hear about a release).
   // The toast only fires once per version so the recheck isn't naggy.
+  // With "Install updates automatically" on (Settings → Updates, default),
+  // the launch check also installs — right after startup there's no work to
+  // lose. The 6-hourly rechecks only notify, so an update never restarts the
+  // app out from under someone mid-task.
   useEffect(() => {
     if (!window.api?.updates) return
     let announced = null
+    let launchCheck = true
+    const notify = (info) => {
+      setHasUpdate(true)
+      if (announced !== info.latest) {
+        announced = info.latest
+        toast.warning(`Update v${info.latest} available`, 'Go to Settings → Updates to install.')
+      }
+    }
     const check = () => window.api.updates.check()
-      .then(info => {
-        if (info?.hasUpdate) {
-          setHasUpdate(true)
-          if (announced !== info.latest) {
-            announced = info.latest
-            toast.warning(`Update v${info.latest} available`, 'Go to Settings → Updates to install.')
-          }
-        }
+      .then(async (info) => {
+        if (!info?.hasUpdate) return
+        const isLaunch = launchCheck
+        launchCheck = false
+        if (!isLaunch) return notify(info)
+        const s = await window.api.settings.get().catch(() => null)
+        if (s?.app?.autoUpdate === false) return notify(info)
+        setHasUpdate(true)
+        toast.warning(`Updating to v${info.latest}…`, 'Croco will restart when it is done.')
+        // Resolves only by restarting the app; it rejects on failure.
+        await window.api.updates.install().catch((e) => {
+          toast.error('Automatic update failed', `${e?.message || e || ''} You can retry in Settings → Updates.`.trim())
+        })
       })
       .catch(() => {})
     check()

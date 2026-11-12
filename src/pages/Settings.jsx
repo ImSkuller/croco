@@ -171,7 +171,7 @@ export default function Settings() {
             {/* Terminal app */}
             {activeSection === 'terminal' && <TerminalSection toast={toast} />}
 
-            {activeSection === 'updates' && <UpdatesTab />}
+            {settings && activeSection === 'updates' && <UpdatesTab key={version} settings={settings} saveField={saveField} />}
             {settings && activeSection === 'shortcuts' && <ShortcutsTab key={version} settings={settings} />}
             {activeSection === 'danger' && <DangerTab key={version} onReset={handleReset} />}
 

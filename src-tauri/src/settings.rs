@@ -109,6 +109,10 @@ pub fn default_settings() -> Value {
             "version": env!("CARGO_PKG_VERSION"),
             "onboarded": false,
             "closeBehavior": "tray",
+            // Install a new version by itself when Croco starts (the 6-hourly
+            // recheck while the app stays open only ever notifies, so an
+            // update never restarts the app mid-work). See Sidebar.jsx.
+            "autoUpdate": true,
             "dataPath": "",
             "storageBackend": "json",
             "obsidian": { "enabled": false, "vaultPath": "", "lastSyncAt": null },
