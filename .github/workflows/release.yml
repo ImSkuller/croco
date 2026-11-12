@@ -65,18 +65,15 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Croco ${{ github.ref_name }}'
           releaseBody: |
-            ## Croco 2.0.2
+            ## Croco 2.0.3
 
-            **Easier to understand**
-            - Settings, Onboarding and module descriptions rewritten in plain language, with clearer section names (Folders, New Projects, General, Terminal App).
+            **New**
+            - Automatic updates: Croco installs a new version when it starts (Settings -> Updates -> "Install updates automatically", on by default). While it is already open it only tells you.
+            - Terminal (`croco`): `due`, `search`, `fav`, `archive`, `folder`, `star`, `rmnote`, `branch`, `switch` and `stash` commands.
+            - Projects search now tolerates typos.
+            - The Shell tab uses the official xterm.js addons (better links, search, rendering).
 
-            **Fixed**
-            - Dashboard language breakdown is now weighted by code size and ignores JSON, Markdown and YAML.
-            - Per-project language detection skips data/markup languages and refreshes every 3 days.
-            - Settings Reset now fully restores the default look, including the window glass effect.
-
-            **Under the hood**
-            - Settings and project pages split into smaller components.
+            Note: automatic updating starts with this version, so 2.0.2 and older need one manual update (Settings -> Updates -> Install) first.
 
             Windows is the supported platform for this release; macOS/Linux builds are provided as-is and untested.
           releaseDraft: true
