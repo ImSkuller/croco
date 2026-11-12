@@ -26,14 +26,21 @@ pub const COMMANDS: &[Cmd] = &[
     Cmd { name: "project",   args: "<name or #>",                          desc: "Details for one project" },
     Cmd { name: "cmd",       args: "<name or #>",                          desc: "Open a command prompt inside a project" },
     Cmd { name: "open",      args: "<name or #>",                          desc: "Open a project in its editor" },
+    Cmd { name: "folder",    args: "<name or #>",                          desc: "Open a project's folder in your file manager" },
+    Cmd { name: "fav",       args: "<name or #>",                          desc: "Favourite or unfavourite a project" },
+    Cmd { name: "archive",   args: "<name or #>",                          desc: "Archive or unarchive a project" },
     Cmd { name: "todos",     args: "[all|done|<project>]",                 desc: "List todos (open by default)" },
     Cmd { name: "add",       args: "<title> [!high] [@project] [due:YYYY-MM-DD]", desc: "Add a todo" },
     Cmd { name: "edit",      args: "<# or id> [new title] [!prio] [due:date|none] [@project|@none]", desc: "Edit a todo" },
     Cmd { name: "done",      args: "<# or text>",                          desc: "Tick a todo off (or back on)" },
     Cmd { name: "rm",        args: "<# or text>",                          desc: "Move a todo to the app's Trash" },
+    Cmd { name: "due",       args: "[days]",                               desc: "Overdue and upcoming todos and deadlines (default 7 days)" },
+    Cmd { name: "search",    args: "<text>",                               desc: "Find projects, todos and notes (note text too)" },
     Cmd { name: "notes",     args: "[filter]",                             desc: "List notes" },
     Cmd { name: "note",      args: "<title> [ : body]",                    desc: "Create a note" },
     Cmd { name: "read",      args: "<# or text>",                          desc: "Print a note" },
+    Cmd { name: "star",      args: "<# or text>",                          desc: "Star or unstar a note" },
+    Cmd { name: "rmnote",    args: "<# or text>",                          desc: "Move a note to the app's Trash" },
     Cmd { name: "schedules", args: "",                                     desc: "Upcoming deadlines" },
     Cmd { name: "stats",     args: "[today|7d|30d|3m|all]",                desc: "Todo completion rate" },
     Cmd { name: "git",       args: "<project> [git args…]",                desc: "Run git in a project (no args: status summary)" },
@@ -41,6 +48,9 @@ pub const COMMANDS: &[Cmd] = &[
     Cmd { name: "log",       args: "<project> [count]",                    desc: "Recent commits as a graph" },
     Cmd { name: "diff",      args: "<project> [args]",                     desc: "git diff" },
     Cmd { name: "commit",    args: "<project> <message>",                  desc: "Stage everything and commit" },
+    Cmd { name: "branch",    args: "<project> [new-branch]",               desc: "List branches, or create and switch to a new one" },
+    Cmd { name: "switch",    args: "<project> <branch>",                   desc: "Switch to a branch" },
+    Cmd { name: "stash",     args: "<project> [pop|list|…]",               desc: "Stash your changes (or pop/list stashes)" },
     Cmd { name: "push",      args: "<project>",                            desc: "git push" },
     Cmd { name: "pull",      args: "<project>",                            desc: "git pull" },
     Cmd { name: "github",    args: "<project> [issues|prs|runs|releases|repo|web]", desc: "GitHub info via the gh CLI" },
@@ -130,14 +140,21 @@ pub fn run(ctx: &Ctx, input: &str) -> Outcome {
         "project" | "show" => project(ctx, rest),
         "cmd" | "shell" | "sh" => enter_shell(ctx, rest),
         "open" => open_project(ctx, rest),
+        "folder" | "explore" | "reveal" => open_folder(ctx, rest),
+        "fav" | "favourite" | "favorite" => toggle_project_flag(ctx, rest, "favourite", "Added to favourites", "Removed from favourites"),
+        "archive" => toggle_project_flag(ctx, rest, "archived", "Archived", "Unarchived"),
         "todos" | "todo" | "t" => todos(ctx, rest),
         "add" | "a" | "new" => add_todo(ctx, rest),
         "edit" | "e" => edit_todo(ctx, rest),
         "done" | "toggle" | "check" | "x" => toggle_todo(ctx, rest),
         "rm" | "delete" | "del" => remove_todo(ctx, rest),
+        "due" | "upcoming" => due(ctx, rest),
+        "search" | "find" | "s" => search(ctx, rest),
         "notes" | "n" => notes(ctx, rest),
         "note" => add_note(ctx, rest),
         "read" | "cat" => read_note(ctx, rest),
+        "star" => star_note(ctx, rest),
+        "rmnote" => remove_note(ctx, rest),
         "schedules" | "schedule" | "deadlines" => schedules(ctx),
         "stats" | "rate" => stats(ctx, rest),
         "git" => git(ctx, rest),
@@ -148,6 +165,11 @@ pub fn run(ctx: &Ctx, input: &str) -> Outcome {
         }),
         "diff" => git_shortcut(ctx, rest, |r| format!("git diff {r}")),
         "commit" => commit(ctx, rest),
+        "branch" | "branches" => git_shortcut(ctx, rest, |r| {
+            if r.trim().is_empty() { "git branch -vv".into() } else { format!("git switch -c {r}") }
+        }),
+        "switch" | "checkout" | "co" => git_shortcut(ctx, rest, |r| format!("git switch {r}")),
+        "stash" => git_shortcut(ctx, rest, |r| format!("git stash {r}")),
         "push" => git_shortcut(ctx, rest, |r| format!("git push {r}")),
         "pull" => git_shortcut(ctx, rest, |r| format!("git pull {r}")),
         "fetch" => git_shortcut(ctx, rest, |_| "git fetch --all --prune".into()),
@@ -424,21 +446,7 @@ fn todos(ctx: &Ctx, arg: &str) -> Outcome {
 
     let mut lines = vec![bold(&format!("{title} ({total})"))];
     for (i, t) in list.iter().enumerate() {
-        let done = flag(t, "completed");
-        let mark = if done { green("✓") } else { dim("○") };
-        let title_txt = truncate(s(t, "title"), 60);
-        let title_txt = if done { dim(&title_txt) } else { title_txt };
-        let mut tail = vec![];
-        if let Some((label, late)) = t["dueDate"].as_str().and_then(due_label) {
-            if !done { tail.push(if late { red(&label) } else { dim(&label) }); }
-        }
-        if let Some(n) = t["projectId"].as_str().and_then(|id| names.get(id)) {
-            tail.push(blue(&format!("@{n}")));
-        }
-        lines.push(format!(
-            "  {} {} {} {}  {}",
-            accent(&format!("{:>2}", i + 1)), mark, priority_tag(s(t, "priority")), title_txt, tail.join(" ")
-        ));
+        lines.push(todo_row(i, t, &names));
     }
     if total > list.len() {
         lines.push(dim(&format!("  … and {} more", total - list.len())));
@@ -620,7 +628,8 @@ fn add_note(ctx: &Ctx, arg: &str) -> Outcome {
     }
 }
 
-fn read_note(ctx: &Ctx, token: &str) -> Outcome {
+/// Resolve "3", an id prefix, or a title fragment against the last notes listing.
+fn pick_note(ctx: &Ctx, token: &str) -> Result<Value, String> {
     let screen = ctx.last_notes.borrow().clone();
     let pool = live(ctx.store.list(Kind::Notes));
     let ids: Vec<String> = if screen.is_empty() {
@@ -630,8 +639,35 @@ fn read_note(ctx: &Ctx, token: &str) -> Outcome {
     } else {
         screen
     };
-    match resolve(&ids, pool, token) {
+    resolve(&ids, pool, token)
+}
+
+fn read_note(ctx: &Ctx, token: &str) -> Outcome {
+    match pick_note(ctx, token) {
         Ok(n) => out(vec![bold(s(&n, "title")), dim(&"─".repeat(40)), ctx.store.note_content(&n)]),
+        Err(e) => err(&e),
+    }
+}
+
+fn star_note(ctx: &Ctx, token: &str) -> Outcome {
+    let mut n = match pick_note(ctx, token) { Ok(n) => n, Err(e) => return err(&e) };
+    let starred = !flag(&n, "starred");
+    n["starred"] = json!(starred);
+    match ctx.store.save(Kind::Notes, &n) {
+        Ok(()) => ok(&format!("{} {}", if starred { "Starred" } else { "Unstarred" }, bold(s(&n, "title")))),
+        Err(e) => err(&e),
+    }
+}
+
+fn remove_note(ctx: &Ctx, token: &str) -> Outcome {
+    let mut n = match pick_note(ctx, token) { Ok(n) => n, Err(e) => return err(&e) };
+    // Soft delete, like the app: it lands in Trash and can be restored.
+    n["trashedAt"] = json!(Utc::now().to_rfc3339());
+    match ctx.store.save(Kind::Notes, &n) {
+        Ok(()) => {
+            ctx.last_notes.borrow_mut().clear();
+            ok(&format!("Moved {} to Trash", bold(s(&n, "title"))))
+        }
         Err(e) => err(&e),
     }
 }
@@ -708,6 +744,165 @@ fn stats(ctx: &Ctx, arg: &str) -> Outcome {
     }
     lines.push(format!("  {} {}", pad("Open now", 9), accent(&open.to_string())));
     out(lines)
+}
+
+// ── search & due ─────────────────────────────────────────────────────────────
+
+type Names = std::collections::HashMap<String, String>;
+
+fn todo_row(i: usize, t: &Value, names: &Names) -> String {
+    let done = flag(t, "completed");
+    let mark = if done { green("✓") } else { dim("○") };
+    let title = truncate(s(t, "title"), 60);
+    let title = if done { dim(&title) } else { title };
+    let mut tail = vec![];
+    if !done {
+        if let Some((label, late)) = t["dueDate"].as_str().and_then(due_label) {
+            tail.push(if late { red(&label) } else { dim(&label) });
+        }
+    }
+    if let Some(n) = t["projectId"].as_str().and_then(|id| names.get(id)) {
+        tail.push(blue(&format!("@{n}")));
+    }
+    format!("  {} {} {} {}  {}", accent(&format!("{:>2}", i + 1)), mark, priority_tag(s(t, "priority")), title, tail.join(" "))
+}
+
+fn search(ctx: &Ctx, query: &str) -> Outcome {
+    let q = query.trim().to_lowercase();
+    if q.is_empty() { return err("Search for what? /search <text>"); }
+    let has = |text: &str| text.to_lowercase().contains(&q);
+    let mut lines: Vec<String> = vec![];
+    let gap = |lines: &mut Vec<String>| if !lines.is_empty() { lines.push(String::new()); };
+
+    let hits: Vec<String> = ctx
+        .ordered_projects()
+        .iter()
+        .enumerate()
+        .filter(|(_, p)| has(s(p, "name")) || has(s(p, "slug")) || has(s(p, "description")))
+        .map(|(i, p)| format!("  {} {}  {}", accent(&format!("{:>2}", i + 1)), bold(&truncate(s(p, "name"), 30)), dim(&truncate(s(p, "description"), 40))))
+        .collect();
+    if !hits.is_empty() {
+        lines.push(bold(&format!("Projects ({})", hits.len())));
+        lines.extend(hits);
+    }
+
+    let names = project_name_map(ctx);
+    let mut todos: Vec<Value> = live(ctx.store.list(Kind::Todos)).into_iter().filter(|t| has(s(t, "title"))).collect();
+    sort_todos(&mut todos);
+    todos.sort_by_key(|t| flag(t, "completed")); // open ones first (stable)
+    todos.truncate(30);
+    *ctx.last_todos.borrow_mut() = todos.iter().map(|t| s(t, "id").to_string()).collect();
+    if !todos.is_empty() {
+        gap(&mut lines);
+        lines.push(bold(&format!("Todos ({})", todos.len())));
+        for (i, t) in todos.iter().enumerate() { lines.push(todo_row(i, t, &names)); }
+    }
+
+    let mut notes: Vec<(Value, String)> = vec![];
+    for n in live(ctx.store.list(Kind::Notes)).into_iter().filter(|n| !flag(n, "archived")) {
+        if has(s(&n, "title")) {
+            notes.push((n, String::new()));
+        } else if let Some(line) = ctx.store.note_content(&n).lines().find(|l| has(l)) {
+            let snippet = line.trim().to_string();
+            notes.push((n, snippet));
+        }
+    }
+    notes.sort_by(|a, b| s(&b.0, "updatedAt").cmp(s(&a.0, "updatedAt")));
+    notes.truncate(30);
+    *ctx.last_notes.borrow_mut() = notes.iter().map(|(n, _)| s(n, "id").to_string()).collect();
+    if !notes.is_empty() {
+        gap(&mut lines);
+        lines.push(bold(&format!("Notes ({})", notes.len())));
+        for (i, (n, snippet)) in notes.iter().enumerate() {
+            lines.push(format!("  {} {}  {}", accent(&format!("{:>2}", i + 1)), pad(&truncate(s(n, "title"), 30), 30), dim(&truncate(snippet, 40))));
+        }
+    }
+
+    if lines.is_empty() { return Outcome::Out(dim(&format!("Nothing matches “{}”.", query.trim()))); }
+    lines.push(dim("  Numbers are per section: open <#> · done <#> · read <#>"));
+    out(lines)
+}
+
+fn due(ctx: &Ctx, arg: &str) -> Outcome {
+    let a = arg.trim().trim_end_matches('d');
+    let days: i64 = if a.is_empty() {
+        7
+    } else {
+        match a.parse::<i64>() {
+            Ok(n) if n >= 0 => n,
+            _ => return err("Use a number of days: /due 7"),
+        }
+    };
+    let today = Local::now().date_naive();
+    let within = |date: &str| -> bool {
+        date.get(..10)
+            .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
+            .map(|d| (d - today).num_days() <= days)
+            .unwrap_or(false)
+    };
+    let current = ctx.current_project();
+    let mut list: Vec<Value> = open_todos_sorted(ctx)
+        .into_iter()
+        .filter(|t| within(s(t, "dueDate")))
+        .filter(|t| current.as_ref().map(|p| s(t, "projectId") == s(p, "id")).unwrap_or(true))
+        .collect();
+    list.sort_by(|a, b| s(a, "dueDate").cmp(s(b, "dueDate")));
+    *ctx.last_todos.borrow_mut() = list.iter().map(|t| s(t, "id").to_string()).collect();
+
+    // Deadlines aren't tied to a project, so only show them at home.
+    let mut deadlines: Vec<Value> = if current.is_some() {
+        vec![]
+    } else {
+        live(ctx.store.list(Kind::Schedules)).into_iter().filter(|x| !flag(x, "completed") && within(s(x, "dueDate"))).collect()
+    };
+    deadlines.sort_by(|a, b| s(a, "dueDate").cmp(s(b, "dueDate")));
+
+    if list.is_empty() && deadlines.is_empty() {
+        return Outcome::Out(dim(&format!("Nothing due in the next {days} days.")));
+    }
+    let names = project_name_map(ctx);
+    let mut lines = vec![];
+    if !list.is_empty() {
+        lines.push(bold(&format!("Todos due within {days} days ({})", list.len())));
+        for (i, t) in list.iter().enumerate() { lines.push(todo_row(i, t, &names)); }
+    }
+    if !deadlines.is_empty() {
+        if !lines.is_empty() { lines.push(String::new()); }
+        lines.push(bold(&format!("Deadlines ({})", deadlines.len())));
+        for x in &deadlines {
+            let when = x["dueDate"].as_str().and_then(due_label).map(|(l, late)| if late { red(&l) } else { dim(&l) }).unwrap_or_default();
+            lines.push(format!("  {} {}  {}  {}", dim("◷"), pad(&truncate(s(x, "title"), 40), 40), pad(s(x, "dueDate"), 10), when));
+        }
+    }
+    out(lines)
+}
+
+// ── project housekeeping ─────────────────────────────────────────────────────
+
+fn toggle_project_flag(ctx: &Ctx, query: &str, key: &str, on_msg: &str, off_msg: &str) -> Outcome {
+    let mut p = match need_project(ctx, query) { Ok(p) => p, Err(e) => return e };
+    let now_on = !flag(&p, key);
+    p[key] = json!(now_on);
+    match ctx.store.save(Kind::Projects, &p) {
+        Ok(()) => ok(&format!("{}: {}", if now_on { on_msg } else { off_msg }, bold(s(&p, "name")))),
+        Err(e) => err(&e),
+    }
+}
+
+fn open_folder(ctx: &Ctx, query: &str) -> Outcome {
+    let p = match need_project(ctx, query) { Ok(p) => p, Err(e) => return e };
+    let root = match existing_root(&p) { Ok(r) => r, Err(e) => return e };
+    let spawned = if cfg!(windows) {
+        Command::new("explorer").arg(&root).spawn()
+    } else if cfg!(target_os = "macos") {
+        Command::new("open").arg(&root).spawn()
+    } else {
+        Command::new("xdg-open").arg(&root).spawn()
+    };
+    match spawned {
+        Ok(_) => ok(&format!("Opened the folder for {}", bold(s(&p, "name")))),
+        Err(e) => err(&format!("Couldn't open the folder: {e}")),
+    }
 }
 
 // ── launching things ─────────────────────────────────────────────────────────
