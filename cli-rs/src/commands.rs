@@ -116,6 +116,25 @@ impl Ctx {
         ps
     }
 
+    /// Todos Croco still tracks: no project, an active project, or the project
+    /// you're currently inside. Trashed, archived and deleted projects' todos
+    /// stay out of lists and counts.
+    pub fn tracked_todos(&self) -> Vec<Value> {
+        let current = self.current.borrow().clone();
+        let active: Vec<String> = live(self.store.list(Kind::Projects))
+            .iter()
+            .filter(|p| !flag(p, "archived"))
+            .map(|p| s(p, "id").to_string())
+            .collect();
+        live(self.store.list(Kind::Todos))
+            .into_iter()
+            .filter(|t| {
+                let pid = s(t, "projectId");
+                pid.is_empty() || current.as_deref() == Some(pid) || active.iter().any(|id| id == pid)
+            })
+            .collect()
+    }
+
     fn project_by_number(&self, n: usize) -> Option<Value> {
         if self.project_order.borrow().is_empty() { self.ordered_projects(); }
         let id = self.project_order.borrow().get(n.checked_sub(1)?)?.clone();
@@ -263,7 +282,7 @@ fn prio_rank(p: &str) -> u8 {
 }
 
 fn open_todos_sorted(ctx: &Ctx) -> Vec<Value> {
-    let mut v: Vec<Value> = live(ctx.store.list(Kind::Todos)).into_iter().filter(|t| !flag(t, "completed")).collect();
+    let mut v: Vec<Value> = ctx.tracked_todos().into_iter().filter(|t| !flag(t, "completed")).collect();
     sort_todos(&mut v);
     v
 }
@@ -421,18 +440,22 @@ fn todos(ctx: &Ctx, arg: &str) -> Outcome {
             None => (open_todos_sorted(ctx), "Open todos".to_string()),
         },
         "all" => {
-            let mut v = live(ctx.store.list(Kind::Todos));
+            let mut v = ctx.tracked_todos();
             sort_todos(&mut v);
             (v, "All todos".to_string())
         }
         "done" | "completed" => {
-            let mut v: Vec<Value> = live(ctx.store.list(Kind::Todos)).into_iter().filter(|t| flag(t, "completed")).collect();
+            let mut v: Vec<Value> = ctx.tracked_todos().into_iter().filter(|t| flag(t, "completed")).collect();
             v.sort_by(|a, b| s(b, "completedAt").cmp(s(a, "completedAt")));
             (v, "Completed".to_string())
         }
         _ => {
             let p = match need_project(ctx, arg) { Ok(p) => p, Err(e) => return e };
-            let v: Vec<Value> = open_todos_sorted(ctx).into_iter().filter(|t| s(t, "projectId") == s(&p, "id")).collect();
+            let mut v: Vec<Value> = live(ctx.store.list(Kind::Todos))
+                .into_iter()
+                .filter(|t| !flag(t, "completed") && s(t, "projectId") == s(&p, "id"))
+                .collect();
+            sort_todos(&mut v);
             (v, format!("Open todos · {}", s(&p, "name")))
         }
     };
@@ -729,7 +752,7 @@ fn window_stats(todos: &[Value], days: Option<i64>) -> (u32, usize, usize) {
 }
 
 fn stats(ctx: &Ctx, arg: &str) -> Outcome {
-    let todos = live(ctx.store.list(Kind::Todos));
+    let todos = ctx.tracked_todos();
     let open = todos.iter().filter(|t| !flag(t, "completed")).count();
     let a = arg.trim().to_lowercase();
     let wanted: Vec<_> = RANGES.iter().filter(|r| a.is_empty() || r.0 == a).collect();
@@ -787,7 +810,7 @@ fn search(ctx: &Ctx, query: &str) -> Outcome {
     }
 
     let names = project_name_map(ctx);
-    let mut todos: Vec<Value> = live(ctx.store.list(Kind::Todos)).into_iter().filter(|t| has(s(t, "title"))).collect();
+    let mut todos: Vec<Value> = ctx.tracked_todos().into_iter().filter(|t| has(s(t, "title"))).collect();
     sort_todos(&mut todos);
     todos.sort_by_key(|t| flag(t, "completed")); // open ones first (stable)
     todos.truncate(30);
@@ -1108,7 +1131,7 @@ fn dash_todo(t: &Value) -> DashTodo {
 
 pub fn dashboard(ctx: &Ctx) -> Dash {
     let ps = ctx.ordered_projects();
-    let todos_all = live(ctx.store.list(Kind::Todos));
+    let todos_all = ctx.tracked_todos();
     let open: Vec<Value> = {
         let mut v: Vec<Value> = todos_all.iter().filter(|t| !flag(t, "completed")).cloned().collect();
         sort_todos(&mut v);
@@ -1147,7 +1170,7 @@ pub fn dashboard(ctx: &Ctx) -> Dash {
 /// The one-line status shown by a bare piped `croco`.
 pub fn summary(ctx: &Ctx) -> String {
     let projects = live(ctx.store.list(Kind::Projects)).into_iter().filter(|p| !flag(p, "archived")).count();
-    let todos = live(ctx.store.list(Kind::Todos));
+    let todos = ctx.tracked_todos();
     let open = todos.iter().filter(|t| !flag(t, "completed")).count();
     let (rate, _, _) = window_stats(&todos, Some(7));
     format!(
