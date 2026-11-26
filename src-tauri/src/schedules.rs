@@ -257,8 +257,14 @@ pub fn check_and_send_deadline_reminders(app: &AppHandle) {
     }
 
     let now_local = chrono::Local::now().naive_local();
+    let projects = crate::read_all_projects(app);
     let due: Vec<Value> = read_all_schedules_raw(app)
         .into_iter()
+        // No reminders for deadlines of archived, trashed or deleted projects.
+        .filter(|s| match s["projectId"].as_str().filter(|id| !id.is_empty()) {
+            Some(id) => projects.iter().any(|p| p["id"].as_str() == Some(id) && !crate::is_inactive_project(p)),
+            None => true,
+        })
         .filter(|s| {
             is_deadline_due_for_reminder(
                 s["dueDate"].as_str().unwrap_or(""),

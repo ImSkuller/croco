@@ -87,6 +87,12 @@ fn unique_slug(base: &str, projects: &[Value]) -> String {
     slug
 }
 
+/// Archived and trashed projects are no longer tracked: no commit stats,
+/// recent commits or deadline reminders.
+pub fn is_inactive_project(p: &Value) -> bool {
+    p["archived"].as_bool().unwrap_or(false) || p["trashedAt"].is_string()
+}
+
 pub fn read_all_projects(app: &AppHandle) -> Vec<Value> {
     crate::external_changes_check(app);
     // Return from cache if warm

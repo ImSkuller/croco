@@ -236,6 +236,7 @@ pub async fn personality_scan_commits(app: AppHandle) -> Result<Value, String> {
     let mut per_project: std::collections::HashMap<String, (i64, String)> = std::collections::HashMap::new();
 
     for p in &projects {
+        if crate::is_inactive_project(p) { continue; }
         let id = p["id"].as_str().unwrap_or("").to_string();
         let root = crate::project_root_str(p);
         if id.is_empty() || root.is_empty() { continue; }
@@ -274,6 +275,12 @@ pub async fn personality_scan_commits(app: AppHandle) -> Result<Value, String> {
         habits["projectStats"] = json!({});
     }
     let stats_map = habits["projectStats"].as_object_mut().unwrap();
+    // Forget projects that were permanently deleted. Archived and trashed ones
+    // keep their history in case they come back. An empty list more likely
+    // means the data folder couldn't be read than that everything is gone.
+    if !projects.is_empty() {
+        stats_map.retain(|id, _| projects.iter().any(|p| p["id"].as_str() == Some(id.as_str())));
+    }
     for (id, (count, last_at)) in per_project {
         let entry = stats_map.entry(id).or_insert_with(|| json!({ "opens": 0, "commits": 0, "todos": 0, "lastActivityAt": "" }));
         entry["commits"] = json!(count);

@@ -806,7 +806,7 @@ pub async fn git_get_all_recent_commits(app: AppHandle, limit: Option<u32>) -> V
     let per = limit.unwrap_or(5) as usize;
     let projects = crate::projects_get_all(app);
     let mut all: Vec<(i64, Value)> = projects.iter()
-        .filter(|p| !p["archived"].as_bool().unwrap_or(false))
+        .filter(|p| !crate::is_inactive_project(p))
         .filter_map(|p| {
             let root = crate::project_root_str(p);
             if root.is_empty() || !Path::new(&root).exists() { return None; }
@@ -847,7 +847,7 @@ pub async fn git_sync_all_last_commit_dates(app: AppHandle) -> Result<Value, Str
     let projects = crate::projects_get_all(app.clone());
     let mut synced = 0;
     for p in &projects {
-        if p["archived"].as_bool().unwrap_or(false) { continue; }
+        if crate::is_inactive_project(p) { continue; }
         let root = crate::project_root_str(p);
         if root.is_empty() || !Path::new(&root).exists() { continue; }
         let Some(id) = p["id"].as_str() else { continue };
