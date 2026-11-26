@@ -8,6 +8,7 @@ import { useKeyboard } from '../hooks/useKeyboard'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
 import { normalizePriorities, hexToRgba, slugifyPriorityId } from '../lib/todoPriorities'
 import useDiscordPresence from '../hooks/useDiscordPresence'
+import { activeProjects, inActiveProjects } from '../lib/activeProjects'
 
 const FILTERS = ['All', 'Active', 'Completed']
 const SCHEDULE_FILTERS = ['Upcoming', 'Overdue', 'Completed', 'All']
@@ -227,11 +228,11 @@ export default function Todo() {
     if (priority === id) setPriority('All')
   }
 
-  const projectNames = ['All Projects', ...projects.map(p => p.name)]
+  const projectNames = ['All Projects', ...activeProjects(projects).map(p => p.name)]
 
   // Trashed todos are excluded everywhere on this page — Trash.jsx is the
-  // only place that shows them.
-  const liveTodos = todos.filter(t => !t.trashedAt)
+  // only place that shows them. So are todos of archived or deleted projects.
+  const liveTodos = inActiveProjects(todos.filter(t => !t.trashedAt), projects)
 
   const filtered = liveTodos.filter(t => {
     const matchSearch   = t.title.toLowerCase().includes(search.toLowerCase())
@@ -247,7 +248,7 @@ export default function Todo() {
     Completed: liveTodos.filter(t => t.completed).length,
   }
 
-  const filteredSchedules = schedules.filter(s => {
+  const filteredSchedules = inActiveProjects(schedules, projects).filter(s => {
     const matchSearch  = s.title.toLowerCase().includes(search.toLowerCase())
     const matchProject = project === 'All Projects' ? true : projects.find(p => p.id === s.projectId)?.name === project
     const dueMs = scheduleDueMs(s)

@@ -670,7 +670,7 @@ export default function Ideas() {
                       }}
                     >
                       <option value="">No project</option>
-                      {projects.filter(p => !p.archived).map(p => (
+                      {projects.filter(p => !p.archived && !p.trashedAt).map(p => (
                         // A native <option> can't render an SVG icon, so an
                         // "icon:<id>" project falls back to the plain folder
                         // emoji here rather than showing the raw string.

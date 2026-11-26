@@ -3,6 +3,7 @@
 // in one place so the two never quietly disagree on the same numbers.
 
 import { aggregateLanguages } from './languages.js'
+import { activeProjects } from './activeProjects.js'
 
 export const NEGLECT_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000 // 14 days
 
@@ -10,15 +11,16 @@ function scoreOf(stat) {
   return (stat.opens || 0) + (stat.commits || 0) + (stat.todos || 0)
 }
 
-/** Ranks projects by combined opens+commits+todos activity. */
+/**
+ * Ranks projects by combined opens+commits+todos activity. habits.json keeps
+ * stats for every project ever tracked, so anything archived, trashed or
+ * deleted is left out here.
+ */
 export function scoreProjects(projectStats, projects) {
-  const projectById = new Map(projects.map(p => [p.id, p]))
-  return Object.entries(projectStats || {}).map(([id, stat]) => ({
-    id,
-    name: projectById.get(id)?.name || '(deleted project)',
-    stat,
-    score: scoreOf(stat),
-  }))
+  const projectById = new Map(activeProjects(projects).map(p => [p.id, p]))
+  return Object.entries(projectStats || {})
+    .filter(([id]) => projectById.has(id))
+    .map(([id, stat]) => ({ id, name: projectById.get(id).name, stat, score: scoreOf(stat) }))
 }
 
 /** Projects whose lastActivityAt is older than NEGLECT_THRESHOLD_MS, quietest first. */

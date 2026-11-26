@@ -15,6 +15,7 @@ import { applyTheme, THEMES, getThemeAccentSwatch } from '../../lib/theme'
 import CrocoGame from '../CrocoGame/CrocoGame.jsx'
 import CloneModal from '../Projects/CloneModal.jsx'
 import { ProjectIcon } from '../ui/ProjectIcon'
+import { inActiveProjects } from '../../lib/activeProjects'
 
 const TYPE_COLOR = {
   project: 'var(--blue)',
@@ -156,7 +157,7 @@ export default function Sidebar({ position = 'left' }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const openTodosCount    = useMemo(() => todos.filter(t => !t.completed && !t.trashedAt).length, [todos])
+  const openTodosCount    = useMemo(() => inActiveProjects(todos.filter(t => !t.completed && !t.trashedAt), projects).length, [todos, projects])
   const unarchivedNotes   = useMemo(() => notes.filter(n => !n.archived && !n.trashedAt).length, [notes])
   const activeProjects    = useMemo(() => projects.filter(p => !p.archived && !p.trashedAt).length, [projects])
   const trashedCount      = useMemo(() =>

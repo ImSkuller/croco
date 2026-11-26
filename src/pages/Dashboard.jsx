@@ -6,6 +6,7 @@ import CommitHeatmapCard from '../components/Patterns/CommitHeatmapCard'
 import { useToast } from '../components/Toast/useToast.js'
 import { useData, patchData, refreshData, EMPTY_LIST } from '../lib/store'
 import { aggregateLanguages, languagesNeedRefresh } from '../lib/languages'
+import { inActiveProjects } from '../lib/activeProjects'
 import useDiscordPresence from '../hooks/useDiscordPresence'
 
 export default function Dashboard() {
@@ -95,7 +96,7 @@ export default function Dashboard() {
   // Behaviour → "Show hidden projects on the Dashboard").
   const showHidden = !!settings?.app?.showHiddenOnDashboard
   const liveProjects = projects.filter(p => !p.trashedAt && !p.archived && (showHidden || p.visibility !== 'hidden'))
-  const liveTodos     = todos.filter(t => !t.trashedAt)
+  const liveTodos     = inActiveProjects(todos.filter(t => !t.trashedAt), projects)
   const recents     = liveProjects.slice(0, 5)
   const favourites  = liveProjects.filter(p => p.favourite)
   const openTodos   = liveTodos.filter(t => !t.completed).slice(0, 5)

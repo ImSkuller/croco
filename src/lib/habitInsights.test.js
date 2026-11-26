@@ -33,9 +33,15 @@ describe('scoreProjects', () => {
     ])
   })
 
-  it('labels a stat with no matching project as deleted', () => {
-    const stats = { gone: { opens: 1, commits: 0, todos: 0 } }
-    expect(scoreProjects(stats, [])[0].name).toBe('(deleted project)')
+  it('ignores deleted, trashed and archived projects', () => {
+    const stat = { opens: 1, commits: 0, todos: 0 }
+    const stats = { gone: stat, trashed: stat, old: stat, live: stat }
+    const projects = [
+      { id: 'trashed', name: 'T', trashedAt: '2026-01-01T00:00:00Z' },
+      { id: 'old', name: 'O', archived: true },
+      { id: 'live', name: 'L' },
+    ]
+    expect(scoreProjects(stats, projects).map(r => r.id)).toEqual(['live'])
   })
 
   it('handles missing/empty stats', () => {

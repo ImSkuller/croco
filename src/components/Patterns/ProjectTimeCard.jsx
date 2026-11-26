@@ -1,5 +1,6 @@
 import SettingsCard from '../Settings/SettingsCard'
 import { ClockIcon } from '../../constants/SimpleSvgExports'
+import { activeProjects } from '../../lib/activeProjects'
 
 // projectStats.<id>.runSeconds accumulates every time a project's dev/
 // build/test command runs and exits (run_ops.rs), or a real terminal
@@ -15,9 +16,10 @@ function formatDuration(totalSeconds) {
 }
 
 export default function ProjectTimeCard({ projectStats, projects }) {
-  const projectById = new Map(projects.map(p => [p.id, p]))
+  const projectById = new Map(activeProjects(projects).map(p => [p.id, p]))
   const rows = Object.entries(projectStats || {})
-    .map(([id, stat]) => ({ id, name: projectById.get(id)?.name || '(deleted project)', seconds: stat.runSeconds || 0 }))
+    .filter(([id]) => projectById.has(id))
+    .map(([id, stat]) => ({ id, name: projectById.get(id).name, seconds: stat.runSeconds || 0 }))
     .filter(r => r.seconds > 0)
     .sort((a, b) => b.seconds - a.seconds)
     .slice(0, 6)

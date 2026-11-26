@@ -13,14 +13,17 @@ import CommitHeatmapCard from '../components/Patterns/CommitHeatmapCard'
 import WeeklyTrendCard from '../components/Patterns/WeeklyTrendCard'
 import LanguageMixCard from '../components/Patterns/LanguageMixCard'
 import useDiscordPresence from '../hooks/useDiscordPresence'
+import { activeProjects, inActiveProjects } from '../lib/activeProjects'
 
 const COMMIT_SCAN_TTL_MS = 5 * 60 * 1000 // rescan git logs at most every 5 min on auto-visit
 
 export default function Patterns() {
   useDiscordPresence('Browsing Croco', 'Patterns')
   const profile  = useData('personality')
-  const projects = useData('projects') || EMPTY_LIST
-  const todos    = useData('todos') || EMPTY_LIST
+  const allProjects = useData('projects') || EMPTY_LIST
+  const allTodos    = useData('todos') || EMPTY_LIST
+  const projects = activeProjects(allProjects)
+  const todos    = inActiveProjects(allTodos, allProjects)
   const ensure   = useDataStore(s => s.ensure)
 
   useEffect(() => {

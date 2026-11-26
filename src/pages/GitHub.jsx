@@ -30,7 +30,7 @@ export default function GitHubPage() {
   const projects = useData('projects') || EMPTY_LIST
   const [tab, setTab] = useState('overview')
 
-  const linkedProjects = projects.filter(p => p.github && !p.archived)
+  const linkedProjects = projects.filter(p => p.github && !p.archived && !p.trashedAt)
   useDiscordPresence('Browsing Croco', `GitHub — ${TABS.find(t => t.id === tab)?.label}`)
 
   return (

@@ -3,6 +3,7 @@
 // That's a deliberate choice: it works with zero configuration and no
 // external API dependency.
 import { findNeglectedProjects, computeCommitStreaks } from './habitInsights'
+import { inActiveProjects } from './activeProjects'
 
 const MAX_SUGGESTIONS = 5
 
@@ -57,11 +58,12 @@ function priorityBacklogSuggestion(todos) {
  */
 export function computeSuggestions({ profile, projects, todos }) {
   if (!profile) return []
+  const liveTodos = inActiveProjects((todos || []).filter(t => !t.trashedAt), projects)
   const suggestions = [
     streakRiskSuggestion(profile),
-    overdueTodoSuggestion(todos || []),
+    overdueTodoSuggestion(liveTodos),
     ...neglectedProjectSuggestions(profile, projects || []),
-    priorityBacklogSuggestion(todos || []),
+    priorityBacklogSuggestion(liveTodos),
   ].filter(Boolean)
   return suggestions.slice(0, MAX_SUGGESTIONS)
 }
